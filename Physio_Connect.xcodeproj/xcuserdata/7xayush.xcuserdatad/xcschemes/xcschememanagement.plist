@@ -2,9 +2,13 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-	<key>SUPABASE_PUBLISHABLE_KEY</key>
-	<string>sb_publishable_CQrdtsEZH2JTGsm2tjELfQ_RYm63cyq</string>
-	<key>SUPABASE_URL</key>
-	<string>https://bvguhuumnumebhblmjrd.supabase.co</string>
+	<key>SchemeUserState</key>
+	<dict>
+		<key>Physio_Connect.xcscheme_^#shared#^_</key>
+		<dict>
+			<key>orderHint</key>
+			<integer>0</integer>
+		</dict>
+	</dict>
 </dict>
 </plist>

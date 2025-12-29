@@ -6,6 +6,13 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		5692390F2F02EAFA008A9CE0 /* SupabaseManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5692390E2F02EAF3008A9CE0 /* SupabaseManager.swift */; };
+		569239122F02F01F008A9CE0 /* Supabase in Frameworks */ = {isa = PBXBuildFile; productRef = 569239112F02F01F008A9CE0 /* Supabase */; };
+		569239142F02F132008A9CE0 /* PhysioModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 569239132F02F12E008A9CE0 /* PhysioModels.swift */; };
+		569239182F02F171008A9CE0 /* PhysioService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 569239172F02F16F008A9CE0 /* PhysioService.swift */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXContainerItemProxy section */
 		1F7F0C6F2F029AE5006CED20 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -27,6 +34,9 @@
 		1F7F0C582F029AE3006CED20 /* Physio_Connect.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Physio_Connect.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		1F7F0C6E2F029AE5006CED20 /* Physio_ConnectTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = Physio_ConnectTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		1F7F0C782F029AE5006CED20 /* Physio_ConnectUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = Physio_ConnectUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		5692390E2F02EAF3008A9CE0 /* SupabaseManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SupabaseManager.swift; sourceTree = "<group>"; };
+		569239132F02F12E008A9CE0 /* PhysioModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhysioModels.swift; sourceTree = "<group>"; };
+		569239172F02F16F008A9CE0 /* PhysioService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhysioService.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -65,6 +75,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				569239122F02F01F008A9CE0 /* Supabase in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -88,9 +99,13 @@
 		1F7F0C4F2F029AE3006CED20 = {
 			isa = PBXGroup;
 			children = (
+				5692390E2F02EAF3008A9CE0 /* SupabaseManager.swift */,
+				569239132F02F12E008A9CE0 /* PhysioModels.swift */,
+				569239172F02F16F008A9CE0 /* PhysioService.swift */,
 				1F7F0C5A2F029AE3006CED20 /* Physio_Connect */,
 				1F7F0C712F029AE5006CED20 /* Physio_ConnectTests */,
 				1F7F0C7B2F029AE5006CED20 /* Physio_ConnectUITests */,
+				569239102F02F01F008A9CE0 /* Frameworks */,
 				1F7F0C592F029AE3006CED20 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -103,6 +118,13 @@
 				1F7F0C782F029AE5006CED20 /* Physio_ConnectUITests.xctest */,
 			);
 			name = Products;
+			sourceTree = "<group>";
+		};
+		569239102F02F01F008A9CE0 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			name = Frameworks;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -125,6 +147,7 @@
 			);
 			name = Physio_Connect;
 			packageProductDependencies = (
+				569239112F02F01F008A9CE0 /* Supabase */,
 			);
 			productName = Physio_Connect;
 			productReference = 1F7F0C582F029AE3006CED20 /* Physio_Connect.app */;
@@ -208,6 +231,9 @@
 			);
 			mainGroup = 1F7F0C4F2F029AE3006CED20;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				5692390D2F02BC26008A9CE0 /* XCRemoteSwiftPackageReference "supabase-swift" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 1F7F0C592F029AE3006CED20 /* Products */;
 			projectDirPath = "";
@@ -249,6 +275,9 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				569239142F02F132008A9CE0 /* PhysioModels.swift in Sources */,
+				569239182F02F171008A9CE0 /* PhysioService.swift in Sources */,
+				5692390F2F02EAFA008A9CE0 /* SupabaseManager.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -563,6 +592,25 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		5692390D2F02BC26008A9CE0 /* XCRemoteSwiftPackageReference "supabase-swift" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/supabase/supabase-swift";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 2.5.1;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		569239112F02F01F008A9CE0 /* Supabase */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 5692390D2F02BC26008A9CE0 /* XCRemoteSwiftPackageReference "supabase-swift" */;
+			productName = Supabase;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 1F7F0C502F029AE3006CED20 /* Project object */;
 }
