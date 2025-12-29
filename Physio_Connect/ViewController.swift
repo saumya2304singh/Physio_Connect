@@ -3,26 +3,19 @@ import UIKit
 final class ViewController: UIViewController, UITableViewDataSource {
 
     private let tableView = UITableView()
-    private let service = PhysioService()
+    private let service = PhysioService.shared
     private var items: [Physiotherapist] = []
 
     override func viewDidLoad() {
         super.viewDidLoad()
-
         title = "Physiotherapists"
-        view.backgroundColor = .white   // <- force white (not systemBackground)
+        view.backgroundColor = .white
 
-        let label = UILabel()
-        label.text = "ViewController Loaded ✅"
-        label.textColor = .black
-        label.translatesAutoresizingMaskIntoConstraints = false
-        view.addSubview(label)
+        setupTable()
 
-        NSLayoutConstraint.activate([
-            label.centerXAnchor.constraint(equalTo: view.centerXAnchor),
-            label.centerYAnchor.constraint(equalTo: view.centerYAnchor)
-        ])
+        Task { await load() }
     }
+
 
 
 

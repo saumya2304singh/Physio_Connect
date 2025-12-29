@@ -7,10 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		5692390F2F02EAFA008A9CE0 /* SupabaseManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5692390E2F02EAF3008A9CE0 /* SupabaseManager.swift */; };
 		569239122F02F01F008A9CE0 /* Supabase in Frameworks */ = {isa = PBXBuildFile; productRef = 569239112F02F01F008A9CE0 /* Supabase */; };
-		569239142F02F132008A9CE0 /* PhysioModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 569239132F02F12E008A9CE0 /* PhysioModels.swift */; };
-		569239182F02F171008A9CE0 /* PhysioService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 569239172F02F16F008A9CE0 /* PhysioService.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -34,9 +31,6 @@
 		1F7F0C582F029AE3006CED20 /* Physio_Connect.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Physio_Connect.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		1F7F0C6E2F029AE5006CED20 /* Physio_ConnectTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = Physio_ConnectTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		1F7F0C782F029AE5006CED20 /* Physio_ConnectUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = Physio_ConnectUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
-		5692390E2F02EAF3008A9CE0 /* SupabaseManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SupabaseManager.swift; sourceTree = "<group>"; };
-		569239132F02F12E008A9CE0 /* PhysioModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhysioModels.swift; sourceTree = "<group>"; };
-		569239172F02F16F008A9CE0 /* PhysioService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhysioService.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -99,9 +93,6 @@
 		1F7F0C4F2F029AE3006CED20 = {
 			isa = PBXGroup;
 			children = (
-				5692390E2F02EAF3008A9CE0 /* SupabaseManager.swift */,
-				569239132F02F12E008A9CE0 /* PhysioModels.swift */,
-				569239172F02F16F008A9CE0 /* PhysioService.swift */,
 				1F7F0C5A2F029AE3006CED20 /* Physio_Connect */,
 				1F7F0C712F029AE5006CED20 /* Physio_ConnectTests */,
 				1F7F0C7B2F029AE5006CED20 /* Physio_ConnectUITests */,
@@ -275,9 +266,6 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				569239142F02F132008A9CE0 /* PhysioModels.swift in Sources */,
-				569239182F02F171008A9CE0 /* PhysioService.swift in Sources */,
-				5692390F2F02EAFA008A9CE0 /* SupabaseManager.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
