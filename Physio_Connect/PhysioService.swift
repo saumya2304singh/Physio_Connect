@@ -139,5 +139,47 @@ extension PhysioService {
             .execute()
             .value
     }
+    
+    func fetchAvailableSlots(physioID: UUID, forDayContaining date: Date) async throws -> [SlotRow] {
+
+        // DB is timestamptz → use UTC day window to avoid timezone shift bugs
+        var cal = Calendar(identifier: .gregorian)
+        cal.timeZone = TimeZone(secondsFromGMT: 0)!   // UTC
+
+        let startOfDay = cal.startOfDay(for: date)
+        guard let endOfDay = cal.date(byAdding: .day, value: 1, to: startOfDay) else { return [] }
+
+        let f = ISO8601DateFormatter()
+        f.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+
+        let rows: [SlotRow] = try await client
+            .from("physio_availability_slots")
+            .select("id, physio_id, start_time, end_time, is_booked")
+            .eq("physio_id", value: physioID.uuidString)
+            .gte("start_time", value: f.string(from: startOfDay))
+            .lt("start_time", value: f.string(from: endOfDay))
+            .order("start_time", ascending: true)
+            .execute()
+            .value
+
+        return rows.filter { !$0.is_booked }
+    }
+
+
+        func createAppointment(_ payload: AppointmentInsertRow) async throws {
+            // Make sure your "appointments" columns match AppointmentInsertRow keys
+            _ = try await client
+                .from("appointments")
+                .insert(payload)
+                .execute()
+        }
+
+        func markSlotBooked(slotID: UUID) async throws {
+            _ = try await client
+                .from("physio_availability_slots")
+                .update(["is_booked": true])
+                .eq("id", value: slotID.uuidString)
+                .execute()
+        }
 }
 

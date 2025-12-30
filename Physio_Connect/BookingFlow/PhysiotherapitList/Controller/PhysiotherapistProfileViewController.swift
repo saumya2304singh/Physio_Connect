@@ -45,7 +45,7 @@ final class PhysiotherapistProfileViewController: UIViewController {
 
         // Targets
         profileView.backButton.addTarget(self, action: #selector(backTapped), for: .touchUpInside)
-        profileView.bookButton.addTarget(self, action: #selector(bookTapped), for: .touchUpInside)
+        profileView.bookButton.addTarget(self, action: #selector(bookAppointmentTapped), for: .touchUpInside)
         profileView.seeAllButton.addTarget(self, action: #selector(seeAllTapped), for: .touchUpInside)
 
         // Reviews table
@@ -53,6 +53,8 @@ final class PhysiotherapistProfileViewController: UIViewController {
         profileView.reviewsTableView.delegate = self
         
         profileView.aboutMoreButton.addTarget(self, action: #selector(aboutMoreTapped), for: .touchUpInside)
+
+        profileView.bookButton.addTarget(self, action: #selector(bookAppointmentTapped), for: .touchUpInside)
 
 
         loadData()
@@ -108,16 +110,24 @@ final class PhysiotherapistProfileViewController: UIViewController {
     }
 
 
-    @objc private func bookTapped() {
-        // Hook your booking flow here (slots screen etc.)
-        let alert = UIAlertController(
-            title: "Book Appointment",
-            message: "Next step: show available slots (physio_availability_slots).",
-            preferredStyle: .alert
-        )
-        alert.addAction(UIAlertAction(title: "OK", style: .default))
-        present(alert, animated: true)
+    @objc private func bookAppointmentTapped() {
+        // push next screen (home visit)
+        let vc = BookHomeVisitViewController(physioID: physioID) // <-- use your stored physioID
+
+        // If you're using a tab bar and want the next screen full-screen:
+        vc.hidesBottomBarWhenPushed = true
+
+        // Push
+        if let nav = navigationController {
+            nav.pushViewController(vc, animated: true)
+        } else {
+            // fallback: present if not embedded in nav
+            let nav = UINavigationController(rootViewController: vc)
+            nav.modalPresentationStyle = .fullScreen
+            present(nav, animated: true)
+        }
     }
+
 
     @objc private func seeAllTapped() {
         // Later: push a full reviews screen
