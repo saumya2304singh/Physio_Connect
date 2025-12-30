@@ -58,7 +58,7 @@ final class PhysiotherapistListViewController: UIViewController {
     private func fetchPhysios() {
         Task {
             do {
-                let rows = try await PhysioService.shared.fetchPhysiotherapists()
+                let rows = try await PhysioService.shared.fetchPhysiotherapistsForList()
                 var cards = rows.map { self.mapToCard($0) }
 
                 if let loc = LocationService.shared.lastLocation {
@@ -77,14 +77,20 @@ final class PhysiotherapistListViewController: UIViewController {
     }
 
     // MARK: - Map DB model → UI model (IMPORTANT)
-    private func mapToCard(_ p: Physiotherapist) -> PhysiotherapistCardModel {
+    private func mapToCard(_ p: PhysioListRow) -> PhysiotherapistCardModel
+{
 
         // feeText must be STRING
         let fee = Int(p.consultation_fee ?? 0)
         let feeText = "₹\(fee)/hr"
 
         // TEMP: until specialization join, keep this line same style
-        let spec = (p.place_of_work?.isEmpty == false) ? p.place_of_work! : "Physiotherapy specialist"
+        let spec =
+        p.physio_specializations?
+            .compactMap { $0.specializations?.name }
+            .first
+        ?? "Physiotherapy specialist"
+
 
         return PhysiotherapistCardModel(
             id: p.id,
@@ -195,7 +201,15 @@ extension PhysiotherapistListViewController: UITableViewDataSource, UITableViewD
         cell.configure(with: model)
         return cell
     }
+
+    func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
+        let model = isSearching ? filtered[indexPath.row] : items[indexPath.row]
+
+        let vc = PhysiotherapistProfileViewController(physioID: model.id, preloadCard: model)
+        navigationController?.pushViewController(vc, animated: true)
+    }
 }
+
 
 // MARK: - Search
 extension PhysiotherapistListViewController: UISearchBarDelegate {
