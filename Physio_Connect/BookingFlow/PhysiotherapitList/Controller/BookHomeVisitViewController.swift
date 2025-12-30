@@ -150,7 +150,7 @@ final class BookHomeVisitViewController: UIViewController {
                 let rows = try await PhysioService.shared.fetchUpcomingAvailableSlots(
                     physioID: physioID,
                     from: Date(),
-                    limit: 20
+                    limit: 15
                 )
                 print("🧠 Physio ID:", physioID)
                 print("🕒 Available slots fetched:", rows.count)

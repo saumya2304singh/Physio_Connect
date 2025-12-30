@@ -54,6 +54,7 @@ final class PhysiotherapistCardCell: UITableViewCell {
         avatarImage.contentMode = .scaleAspectFill
         avatarImage.backgroundColor = .systemGray5
         avatarImage.image = UIImage(named: "doctor_placeholder") ?? UIImage(systemName: "person.fill")
+        
         avatarImage.tintColor = .gray
         card.addSubview(avatarImage)
 
