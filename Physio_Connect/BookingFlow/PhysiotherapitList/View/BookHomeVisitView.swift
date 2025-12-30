@@ -69,12 +69,6 @@ final class BookHomeVisitView: UIView {
     private let homeTitle = UILabel()
     private let homeSub = UILabel()
 
-    // MARK: - Summary mini card
-    private let miniSummaryCard = UIView()
-    private let miniName = UILabel()
-    private let miniSpec = UILabel()
-    private let miniRating = UILabel()
-    private let miniFee = UILabel()
 
     // MARK: - Address Card
     private let addressCard = UIView()
@@ -374,32 +368,6 @@ final class BookHomeVisitView: UIView {
 
         stack.addArrangedSubview(doctorCard)
 
-        // ========== MINI SUMMARY ==========
-        styleCard(miniSummaryCard)
-
-        let miniStack = UIStackView()
-        miniStack.axis = .vertical
-        miniStack.spacing = 6
-        miniStack.translatesAutoresizingMaskIntoConstraints = false
-
-        miniName.font = .boldSystemFont(ofSize: 18)
-        miniSpec.font = .systemFont(ofSize: 14, weight: .semibold)
-        miniSpec.textColor = primaryBlue
-        miniRating.font = .systemFont(ofSize: 13, weight: .medium)
-        miniRating.textColor = .darkGray
-        miniFee.font = .systemFont(ofSize: 16, weight: .bold)
-        miniFee.textColor = primaryBlue
-
-        [miniName, miniSpec, miniRating, miniFee].forEach { miniStack.addArrangedSubview($0) }
-
-        miniSummaryCard.addSubview(miniStack)
-        NSLayoutConstraint.activate([
-            miniStack.topAnchor.constraint(equalTo: miniSummaryCard.topAnchor, constant: 14),
-            miniStack.leadingAnchor.constraint(equalTo: miniSummaryCard.leadingAnchor, constant: 14),
-            miniStack.trailingAnchor.constraint(equalTo: miniSummaryCard.trailingAnchor, constant: -14),
-            miniStack.bottomAnchor.constraint(equalTo: miniSummaryCard.bottomAnchor, constant: -14)
-        ])
-        stack.addArrangedSubview(miniSummaryCard)
 
         // ========== ADDRESS CARD ==========
         styleCard(addressCard)
@@ -769,11 +737,6 @@ final class BookHomeVisitView: UIView {
         doctorNameLabel.text = name
         doctorSpecLabel.text = spec
         doctorRatingLabel.text = rating
-
-        miniName.text = name
-        miniSpec.text = spec
-        miniRating.text = rating
-        miniFee.text = fee
     }
 
     func setSlotsCount(_ count: Int) {

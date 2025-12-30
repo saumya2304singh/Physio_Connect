@@ -128,6 +128,7 @@ extension PhysioService {
 
         return rows.compactMap { $0.specializations?.name }
     }
+    
 
     func fetchReviews(for physioID: UUID, limit: Int = 3) async throws -> [PhysioReviewRow] {
         try await client
@@ -164,7 +165,27 @@ extension PhysioService {
 
         return rows.filter { !$0.is_booked }
     }
+    func fetchUpcomingAvailableSlots(
+        physioID: UUID,
+        from start: Date = Date(),
+        limit: Int = 20
+    ) async throws -> [SlotRow] {
 
+        let f = ISO8601DateFormatter()
+        f.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+
+        let rows: [SlotRow] = try await client
+            .from("physio_availability_slots")
+            .select("id, physio_id, start_time, end_time, is_booked")
+            .eq("physio_id", value: physioID.uuidString)
+            .gte("start_time", value: f.string(from: start))
+            .order("start_time", ascending: true)
+            .limit(limit)
+            .execute()
+            .value
+
+        return rows.filter { !$0.is_booked }
+    }
 
         func createAppointment(_ payload: AppointmentInsertRow) async throws {
             // Make sure your "appointments" columns match AppointmentInsertRow keys

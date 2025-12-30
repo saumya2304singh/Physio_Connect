@@ -9,10 +9,12 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
                options connectionOptions: UIScene.ConnectionOptions) {
 
         guard let windowScene = (scene as? UIWindowScene) else { return }
-
         window = UIWindow(windowScene: windowScene)
-        let vc = PhysiotherapistListViewController()
-        window?.rootViewController = UINavigationController(rootViewController: vc)
+
+        let home = HomeViewController()
+        let nav = UINavigationController(rootViewController: home)
+
+        window?.rootViewController = nav
         window?.makeKeyAndVisible()
     }
 }

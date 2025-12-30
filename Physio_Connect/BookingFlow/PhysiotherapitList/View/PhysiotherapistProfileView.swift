@@ -155,11 +155,13 @@ final class PhysiotherapistProfileView: UIView {
 
         headerGradient.colors = [
             UIColor(hex: "1E6EF7").cgColor,
+            UIColor(hex: "1E6EF7").withAlphaComponent(0.75).cgColor,
             UIColor(hex: "5EC6F5").cgColor
         ]
-        headerGradient.locations = [0.44, 0.72] as [NSNumber]
-        headerGradient.startPoint = CGPoint(x: 0, y: 0.5)
-        headerGradient.endPoint = CGPoint(x: 1, y: 0.5)
+        headerGradient.locations = [0.0, 0.55, 1.0] as [NSNumber]
+        // Diagonal gradient: top-left (primary) -> bottom-right (cyan)
+        headerGradient.startPoint = CGPoint(x: 0.0, y: 0.0)
+        headerGradient.endPoint = CGPoint(x: 1.0, y: 1.0)
         header.layer.insertSublayer(headerGradient, at: 0)
 
         // Back button (chevron only)
