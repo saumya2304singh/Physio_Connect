@@ -39,6 +39,7 @@ final class AppointmentDetailsViewController: UIViewController, UITextViewDelega
         detailsView.updateNotesHeight()
 
         detailsView.notesTextView.delegate = self
+        detailsView.backButton.addTarget(self, action: #selector(backTapped), for: .touchUpInside)
         detailsView.callButton.addTarget(self, action: #selector(callTapped), for: .touchUpInside)
         detailsView.messageButton.addTarget(self, action: #selector(messageTapped), for: .touchUpInside)
     }
@@ -100,5 +101,9 @@ final class AppointmentDetailsViewController: UIViewController, UITextViewDelega
         let alert = UIAlertController(title: title, message: message, preferredStyle: .alert)
         alert.addAction(UIAlertAction(title: "OK", style: .default))
         present(alert, animated: true)
+    }
+
+    @objc private func backTapped() {
+        navigationController?.popToRootViewController(animated: true)
     }
 }

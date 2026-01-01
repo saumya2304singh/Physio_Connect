@@ -32,6 +32,7 @@ final class AppointmentsView: UIView {
     // Cards (Upcoming tab)
     let upcomingCard = UpcomingAppointmentTabCardView()
     let bookCard = BookHomeVisitsCardView()
+    private var hasUpcoming = false
 
     // Completed list (Completed tab)
     let completedList = CompletedAppointmentsListView()
@@ -116,6 +117,10 @@ final class AppointmentsView: UIView {
         contentStack.addArrangedSubview(bookCard)
         contentStack.addArrangedSubview(completedList)
 
+        upcomingCard.setContentHuggingPriority(.required, for: .vertical)
+        upcomingCard.setContentCompressionResistancePriority(.required, for: .vertical)
+        upcomingCard.heightAnchor.constraint(greaterThanOrEqualToConstant: 220).isActive = true
+
         // Layout
         NSLayoutConstraint.activate([
             topBar.topAnchor.constraint(equalTo: safeAreaLayoutGuide.topAnchor, constant: 6),
@@ -167,11 +172,18 @@ final class AppointmentsView: UIView {
 
     func setUpcoming(_ vm: UpcomingCardVM?) {
         if let vm {
+            hasUpcoming = true
             upcomingCard.isHidden = false
             upcomingCard.apply(vm: vm)
         } else {
+            hasUpcoming = false
             upcomingCard.isHidden = true
         }
+    }
+
+    func setCancelEnabled(_ enabled: Bool) {
+        upcomingCard.cancelButton.isEnabled = enabled
+        upcomingCard.cancelButton.alpha = enabled ? 1.0 : 0.6
     }
 
     func setCompleted(_ items: [CompletedAppointmentVM]) {
@@ -187,7 +199,7 @@ final class AppointmentsView: UIView {
     @objc private func segmentChanged() {
         let isUpcoming = segmented.selectedSegmentIndex == 0
 
-        upcomingCard.isHidden = !isUpcoming
+        upcomingCard.isHidden = !(isUpcoming && hasUpcoming)
         bookCard.isHidden = !isUpcoming
         completedList.isHidden = isUpcoming
     }
@@ -330,7 +342,12 @@ final class UpcomingAppointmentTabCardView: UIView {
         distanceRow.text = vm.distanceText
         specRow.text = vm.specializationText
         feeRow.text = vm.feeText
-        avatar.image = vm.image
+        if let image = vm.image {
+            avatar.image = image
+        } else {
+            avatar.image = UIImage(systemName: "person.fill")
+            avatar.tintColor = UIColor.black.withAlphaComponent(0.25)
+        }
     }
 }
 
@@ -505,7 +522,7 @@ final class CompletedAppointmentsListView: UIView, UITableViewDataSource, UITabl
     }
 
     func tableView(_ tableView: UITableView, heightForRowAt indexPath: IndexPath) -> CGFloat {
-        160
+        220
     }
 }
 
@@ -561,10 +578,12 @@ final class CompletedAppointmentCell: UITableViewCell {
         ])
 
         statusPill.translatesAutoresizingMaskIntoConstraints = false
-        statusPill.layer.cornerRadius = 12
+        statusPill.layer.cornerRadius = 10
 
         statusLabel.translatesAutoresizingMaskIntoConstraints = false
-        statusLabel.font = .systemFont(ofSize: 13, weight: .bold)
+        statusLabel.font = .systemFont(ofSize: 14, weight: .bold)
+        statusLabel.textAlignment = .left
+        statusLabel.numberOfLines = 1
         statusPill.addSubview(statusLabel)
 
         NSLayoutConstraint.activate([
@@ -576,7 +595,7 @@ final class CompletedAppointmentCell: UITableViewCell {
 
         headerRow.axis = .horizontal
         headerRow.alignment = .top
-        headerRow.spacing = 12
+        headerRow.spacing = 14
         headerRow.translatesAutoresizingMaskIntoConstraints = false
 
         avatar.translatesAutoresizingMaskIntoConstraints = false
@@ -585,12 +604,12 @@ final class CompletedAppointmentCell: UITableViewCell {
         avatar.clipsToBounds = true
         avatar.layer.cornerRadius = 12
         NSLayoutConstraint.activate([
-            avatar.widthAnchor.constraint(equalToConstant: 70),
-            avatar.heightAnchor.constraint(equalToConstant: 70)
+            avatar.widthAnchor.constraint(equalToConstant: 74),
+            avatar.heightAnchor.constraint(equalToConstant: 74)
         ])
 
         infoStack.axis = .vertical
-        infoStack.spacing = 4
+        infoStack.spacing = 6
         infoStack.translatesAutoresizingMaskIntoConstraints = false
 
         nameLabel.font = .systemFont(ofSize: 16, weight: .bold)
@@ -599,10 +618,12 @@ final class CompletedAppointmentCell: UITableViewCell {
         [ratingLabel, distanceLabel, specLabel].forEach {
             $0.font = .systemFont(ofSize: 13, weight: .semibold)
             $0.textColor = UIColor.black.withAlphaComponent(0.65)
+            $0.numberOfLines = 1
         }
 
         feeLabel.font = .systemFont(ofSize: 13, weight: .bold)
         feeLabel.textColor = UIColor(hex: "1E6EF7")
+        feeLabel.numberOfLines = 1
 
         infoStack.addArrangedSubview(nameLabel)
         infoStack.addArrangedSubview(ratingLabel)
@@ -614,7 +635,7 @@ final class CompletedAppointmentCell: UITableViewCell {
         headerRow.addArrangedSubview(infoStack)
 
         buttonsRow.axis = .horizontal
-        buttonsRow.spacing = 12
+        buttonsRow.spacing = 14
         buttonsRow.distribution = .fillEqually
         buttonsRow.translatesAutoresizingMaskIntoConstraints = false
 
@@ -623,7 +644,7 @@ final class CompletedAppointmentCell: UITableViewCell {
         rebookButton.setTitleColor(.white, for: .normal)
         rebookButton.layer.cornerRadius = 14
         rebookButton.titleLabel?.font = .systemFont(ofSize: 15, weight: .bold)
-        rebookButton.heightAnchor.constraint(equalToConstant: 44).isActive = true
+        rebookButton.heightAnchor.constraint(equalToConstant: 46).isActive = true
         rebookButton.addTarget(self, action: #selector(rebookTapped), for: .touchUpInside)
 
         reportButton.setTitle("View Report", for: .normal)
@@ -633,7 +654,7 @@ final class CompletedAppointmentCell: UITableViewCell {
         reportButton.layer.borderWidth = 1
         reportButton.layer.borderColor = UIColor(hex: "1E6EF7").cgColor
         reportButton.titleLabel?.font = .systemFont(ofSize: 15, weight: .bold)
-        reportButton.heightAnchor.constraint(equalToConstant: 44).isActive = true
+        reportButton.heightAnchor.constraint(equalToConstant: 46).isActive = true
         reportButton.addTarget(self, action: #selector(reportTapped), for: .touchUpInside)
 
         buttonsRow.addArrangedSubview(rebookButton)
@@ -646,15 +667,17 @@ final class CompletedAppointmentCell: UITableViewCell {
         NSLayoutConstraint.activate([
             statusPill.topAnchor.constraint(equalTo: card.topAnchor, constant: 12),
             statusPill.leadingAnchor.constraint(equalTo: card.leadingAnchor, constant: 12),
+            statusPill.trailingAnchor.constraint(equalTo: card.trailingAnchor, constant: -12),
+            statusPill.heightAnchor.constraint(equalToConstant: 28),
 
-            headerRow.topAnchor.constraint(equalTo: statusPill.bottomAnchor, constant: 10),
+            headerRow.topAnchor.constraint(equalTo: statusPill.bottomAnchor, constant: 14),
             headerRow.leadingAnchor.constraint(equalTo: card.leadingAnchor, constant: 12),
             headerRow.trailingAnchor.constraint(equalTo: card.trailingAnchor, constant: -12),
 
-            buttonsRow.topAnchor.constraint(equalTo: headerRow.bottomAnchor, constant: 12),
+            buttonsRow.topAnchor.constraint(equalTo: headerRow.bottomAnchor, constant: 18),
             buttonsRow.leadingAnchor.constraint(equalTo: card.leadingAnchor, constant: 12),
             buttonsRow.trailingAnchor.constraint(equalTo: card.trailingAnchor, constant: -12),
-            buttonsRow.bottomAnchor.constraint(equalTo: card.bottomAnchor, constant: -12)
+            buttonsRow.bottomAnchor.constraint(equalTo: card.bottomAnchor, constant: -16)
         ])
     }
 

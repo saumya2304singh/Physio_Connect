@@ -9,6 +9,7 @@ import UIKit
 final class AppointmentDetailsView: UIView {
 
     // MARK: - UI
+    let backButton = UIButton(type: .system)
     private let scrollView = UIScrollView()
     private let contentView = UIView()
 
@@ -66,11 +67,22 @@ final class AppointmentDetailsView: UIView {
         // Scroll
         scrollView.translatesAutoresizingMaskIntoConstraints = false
         contentView.translatesAutoresizingMaskIntoConstraints = false
+        backButton.translatesAutoresizingMaskIntoConstraints = false
+        backButton.setImage(UIImage(systemName: "chevron.left"), for: .normal)
+        backButton.tintColor = UIColor.black.withAlphaComponent(0.8)
+        backButton.backgroundColor = .clear
+        addSubview(backButton)
+
         addSubview(scrollView)
         scrollView.addSubview(contentView)
 
         NSLayoutConstraint.activate([
-            scrollView.topAnchor.constraint(equalTo: safeAreaLayoutGuide.topAnchor),
+            backButton.topAnchor.constraint(equalTo: safeAreaLayoutGuide.topAnchor, constant: 8),
+            backButton.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 16),
+            backButton.widthAnchor.constraint(equalToConstant: 36),
+            backButton.heightAnchor.constraint(equalToConstant: 36),
+
+            scrollView.topAnchor.constraint(equalTo: backButton.bottomAnchor, constant: 8),
             scrollView.leadingAnchor.constraint(equalTo: leadingAnchor),
             scrollView.trailingAnchor.constraint(equalTo: trailingAnchor),
             scrollView.bottomAnchor.constraint(equalTo: bottomAnchor),

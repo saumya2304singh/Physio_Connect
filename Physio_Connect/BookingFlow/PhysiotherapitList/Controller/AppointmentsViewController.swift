@@ -13,6 +13,8 @@ final class AppointmentsViewController: UIViewController {
     private let model = AppointmentsModel()
 
     private var currentUpcoming: UpcomingAppointment?
+    private var isCancelling = false
+    private var isRefreshing = false
 
     override func loadView() { view = apptView }
 
@@ -38,7 +40,27 @@ final class AppointmentsViewController: UIViewController {
 
         apptView.onCancelTapped = { [weak self] in
             guard let self else { return }
-            print("Cancel tapped")
+            guard let appt = self.currentUpcoming, !self.isCancelling else { return }
+            self.isCancelling = true
+            self.apptView.setCancelEnabled(false)
+            self.currentUpcoming = nil
+            self.apptView.setUpcoming(nil)
+            Task {
+                do {
+                    try await self.model.cancelAppointment(appointmentID: appt.appointmentID)
+                    await self.refreshAll()
+                } catch {
+                    print("❌ Cancel failed:", error)
+                    await MainActor.run {
+                        self.isCancelling = false
+                        self.apptView.setCancelEnabled(true)
+                    }
+                }
+                await MainActor.run {
+                    self.isCancelling = false
+                    self.apptView.setCancelEnabled(true)
+                }
+            }
         }
 
         apptView.onRescheduleTapped = { [weak self] in
@@ -70,6 +92,13 @@ final class AppointmentsViewController: UIViewController {
     }
 
     private func refreshAll() async {
+        if isRefreshing { return }
+        isRefreshing = true
+        defer {
+            Task { @MainActor in
+                self.isRefreshing = false
+            }
+        }
         do {
             async let upcoming = model.fetchUpcomingAppointment()
             async let past = model.fetchPastAppointments()
@@ -174,7 +203,12 @@ final class AppointmentsViewController: UIViewController {
                 image: nil
             )
         }
-
-        apptView.setCompleted(vms)
+        var unique: [UUID: CompletedAppointmentVM] = [:]
+        for vm in vms {
+            if unique[vm.appointmentID] == nil {
+                unique[vm.appointmentID] = vm
+            }
+        }
+        apptView.setCompleted(Array(unique.values))
     }
 }

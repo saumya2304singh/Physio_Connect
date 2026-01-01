@@ -21,12 +21,13 @@ final class AppointmentsModel {
 
         let nowISO = ISO8601DateFormatter().string(from: Date())
 
-        let rows: [AppointmentJoinedRow] = try await client
+        var rows: [AppointmentJoinedRow] = try await client
             .from("appointments")
             .select("""
                 id,
                 status,
                 address_text,
+                created_at,
                 physio_id,
                 slot:physio_availability_slots!appointments_slot_id_fkey(
                     start_time
@@ -44,7 +45,7 @@ final class AppointmentsModel {
                 )
             """)
             .eq("customer_id", value: userID)
-            .eq("status", value: "booked")
+            .or("status.eq.booked,status.eq.confirmed")
             .gte("physio_availability_slots.start_time", value: nowISO) // future only (works with embedded)
             .order("start_time", ascending: true, referencedTable: "physio_availability_slots")
 
@@ -52,16 +53,48 @@ final class AppointmentsModel {
             .execute()
             .value
 
+        if rows.isEmpty {
+            rows = try await client
+                .from("appointments")
+                .select("""
+                    id,
+                    status,
+                    address_text,
+                    created_at,
+                    physio_id,
+                    slot:physio_availability_slots!appointments_slot_id_fkey(
+                        start_time
+                    ),
+                    physio:physiotherapists!appointments_physio_id_fkey(
+                        id,
+                        name,
+                        avg_rating,
+                        reviews_count,
+                        location_text,
+                        consultation_fee,
+                        physio_specializations(
+                            specializations(name)
+                        )
+                    )
+                """)
+                .eq("customer_id", value: userID)
+                .or("status.eq.booked,status.eq.confirmed")
+                .order("start_time", ascending: false, referencedTable: "physio_availability_slots")
+                .limit(1)
+                .execute()
+                .value
+        }
+
         guard let first = rows.first,
-              let slot = first.slot,
               let physio = first.physio
         else { return nil }
+        let startTime = first.slot?.start_time ?? first.created_at
 
         return UpcomingAppointment(
             appointmentID: first.id,
             physioID: physio.id,
             physioName: physio.name,
-            startTime: slot.start_time,
+            startTime: startTime,
             address: first.address_text ?? "",
             specialization: physio.primarySpecialization ?? "Healthcare Professional",
             rating: physio.avg_rating,
@@ -69,6 +102,14 @@ final class AppointmentsModel {
             locationText: physio.location_text,
             fee: physio.consultation_fee
         )
+    }
+
+    func cancelAppointment(appointmentID: UUID) async throws {
+        _ = try await client
+            .from("appointments")
+            .update(["status": "cancelled"])
+            .eq("id", value: appointmentID.uuidString)
+            .execute()
     }
 
     /// Returns past appointments for current user: completed + cancelled
@@ -102,13 +143,14 @@ final class AppointmentsModel {
 
         // map -> view models
         let mapped: [PastAppointment] = merged.compactMap { row in
-            guard let slot = row.slot, let physio = row.physio else { return nil }
+            guard let physio = row.physio else { return nil }
+            let startTime = row.slot?.start_time ?? row.created_at
             return PastAppointment(
                 appointmentID: row.id,
                 physioID: physio.id,
                 physioName: physio.name,
                 status: row.status, // "completed" | "cancelled"
-                startTime: slot.start_time,
+                startTime: startTime,
                 specialization: physio.primarySpecialization ?? "Healthcare Professional",
                 rating: physio.avg_rating,
                 reviewsCount: physio.reviews_count,
@@ -127,6 +169,7 @@ final class AppointmentsModel {
         id,
         status,
         address_text,
+        created_at,
         physio_id,
         slot:physio_availability_slots!appointments_slot_id_fkey(
             start_time
@@ -152,6 +195,7 @@ private struct AppointmentJoinedRow: Decodable {
     let id: UUID
     let status: String
     let address_text: String?
+    let created_at: Date
     let physio_id: UUID
 
     let slot: SlotRow?
