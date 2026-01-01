@@ -16,6 +16,7 @@ final class HomeViewController: UIViewController {
 
     override func viewDidLoad() {
         super.viewDidLoad()
+        navigationController?.setNavigationBarHidden(true, animated: false)
 
         // ✅ Carousel button actions
         homeView.carousel.onViewDetailsTapped = { [weak self] appt in

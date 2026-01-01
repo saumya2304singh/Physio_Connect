@@ -4,12 +4,6 @@
 //
 //  Created by user@8 on 30/12/25.
 //
-//
-//  PhysiotherapistProfileViewController.swift
-//  Physio_Connect
-//
-//  Created by user@8 on 30/12/25.
-//
 
 import UIKit
 import CoreLocation

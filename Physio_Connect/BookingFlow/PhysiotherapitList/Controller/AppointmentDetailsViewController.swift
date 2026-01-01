@@ -30,7 +30,7 @@ final class AppointmentDetailsViewController: UIViewController, UITextViewDelega
 
     override func viewDidLoad() {
         super.viewDidLoad()
-
+        navigationController?.setNavigationBarHidden(true, animated: false)
         title = "Appointment Details"
         view.backgroundColor = UIColor(hex: "E3F0FF")
 
