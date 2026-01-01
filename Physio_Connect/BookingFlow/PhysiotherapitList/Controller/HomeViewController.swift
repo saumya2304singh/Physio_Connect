@@ -19,10 +19,17 @@ final class HomeViewController: UIViewController {
         // Button action
         homeView.card.primaryButton.addTarget(self, action: #selector(primaryTapped), for: .touchUpInside)
 
+        
         // Load initial card state
         Task { await refreshCard() }
     }
+    
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+        Task { await refreshCard() }
+    }
 
+    
     @objc private func primaryTapped() {
         // If we are in book state -> open physiotherapist list
         // If upcoming state -> open appointment details (optional)
