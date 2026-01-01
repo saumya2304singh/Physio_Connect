@@ -4,6 +4,7 @@
 //
 //  Created by Ayush Rai on 31/12/25.
 //
+
 import UIKit
 
 final class HomeViewController: UIViewController {
@@ -16,43 +17,38 @@ final class HomeViewController: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
 
-        // Button action
-        homeView.card.primaryButton.addTarget(self, action: #selector(primaryTapped), for: .touchUpInside)
+        // ✅ Carousel button actions
+        homeView.carousel.onBookTapped = { [weak self] in
+            guard let self else { return }
+            let vc = PhysiotherapistListViewController()
+            self.navigationController?.pushViewController(vc, animated: true)
+        }
 
-        
-        // Load initial card state
-        Task { await refreshCard() }
+        homeView.carousel.onUpcomingTapped = { [weak self] in
+            guard let self else { return }
+            // TODO: open AppointmentDetailsViewController when you make it
+            // For now:
+            //let vc = PhysiotherapistListViewController()
+            //self.navigationController?.pushViewController(vc, animated: true)
+        }
+
+        Task { await refreshCards() }
     }
-    
+
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
-        Task { await refreshCard() }
+        Task { await refreshCards() }
     }
 
-    
-    @objc private func primaryTapped() {
-        // If we are in book state -> open physiotherapist list
-        // If upcoming state -> open appointment details (optional)
-        // For now: always go to physiotherapist list when tapped in book state.
-
-        let vc = PhysiotherapistListViewController() // <-- use your actual VC name
-        navigationController?.pushViewController(vc, animated: true)
-    }
-
-    private func refreshCard() async {
+    private func refreshCards() async {
         do {
             let upcoming = try await model.fetchUpcomingAppointment()
             await MainActor.run {
-                if let appt = upcoming {
-                    self.homeView.card.apply(state: .upcoming(appt))
-                } else {
-                    self.homeView.card.apply(state: .bookHomeVisit)
-                }
+                self.homeView.setUpcoming(upcoming)
             }
         } catch {
-            // On error, fallback to book card
             await MainActor.run {
-                self.homeView.card.apply(state: .bookHomeVisit)
+                self.homeView.setUpcoming(nil)
             }
             print("❌ Home refresh error:", error)
         }

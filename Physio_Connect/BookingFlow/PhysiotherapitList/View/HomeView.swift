@@ -9,7 +9,7 @@ import UIKit
 
 final class HomeView: UIView {
 
-    // MARK: - UI
+    // MARK: - Top UI
     private let topBar = UIView()
     private let locationIcon = UIImageView()
     private let locationLabel = UILabel()
@@ -17,7 +17,8 @@ final class HomeView: UIView {
 
     private let titleLabel = UILabel()
 
-    let card = HomeHeroCardView()
+    // MARK: - Carousel (USING SEPARATE FILE)
+    let carousel = HomeCardsCarouselView()
 
     // MARK: - Init
     override init(frame: CGRect) {
@@ -25,9 +26,14 @@ final class HomeView: UIView {
         backgroundColor = UIColor(hex: "E3F0FF")
         build()
     }
-    required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
 
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
+
+    // MARK: - Build UI
     private func build() {
+
         // Top bar
         locationIcon.image = UIImage(systemName: "mappin.and.ellipse")
         locationIcon.tintColor = UIColor(hex: "1E6EF7")
@@ -35,11 +41,11 @@ final class HomeView: UIView {
 
         locationLabel.text = "Chennai"
         locationLabel.font = .systemFont(ofSize: 13, weight: .semibold)
-        locationLabel.textColor = .black.withAlphaComponent(0.7)
+        locationLabel.textColor = UIColor.black.withAlphaComponent(0.7)
         locationLabel.translatesAutoresizingMaskIntoConstraints = false
 
         profileButton.setImage(UIImage(systemName: "person.circle"), for: .normal)
-        profileButton.tintColor = .black.withAlphaComponent(0.7)
+        profileButton.tintColor = UIColor.black.withAlphaComponent(0.7)
         profileButton.translatesAutoresizingMaskIntoConstraints = false
 
         topBar.translatesAutoresizingMaskIntoConstraints = false
@@ -55,11 +61,12 @@ final class HomeView: UIView {
         titleLabel.translatesAutoresizingMaskIntoConstraints = false
         addSubview(titleLabel)
 
-        // Card
-        card.translatesAutoresizingMaskIntoConstraints = false
-        addSubview(card)
+        // Carousel
+        carousel.translatesAutoresizingMaskIntoConstraints = false
+        addSubview(carousel)
 
         NSLayoutConstraint.activate([
+            // Top bar
             topBar.topAnchor.constraint(equalTo: safeAreaLayoutGuide.topAnchor, constant: 8),
             topBar.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 16),
             topBar.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -16),
@@ -78,13 +85,19 @@ final class HomeView: UIView {
             profileButton.widthAnchor.constraint(equalToConstant: 34),
             profileButton.heightAnchor.constraint(equalToConstant: 34),
 
-            titleLabel.topAnchor.constraint(equalTo: topBar.bottomAnchor, constant: 8),
+            // Title
+            titleLabel.topAnchor.constraint(equalTo: topBar.bottomAnchor, constant: 10),
             titleLabel.centerXAnchor.constraint(equalTo: centerXAnchor),
 
-            card.topAnchor.constraint(equalTo: titleLabel.bottomAnchor, constant: 14),
-            card.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 16),
-            card.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -16)
-            // ✅ No fixed height here → card height becomes dynamic automatically.
+            // Carousel below title
+            carousel.topAnchor.constraint(equalTo: titleLabel.bottomAnchor, constant: 14),
+            carousel.leadingAnchor.constraint(equalTo: leadingAnchor),
+            carousel.trailingAnchor.constraint(equalTo: trailingAnchor)
         ])
+    }
+
+    // MARK: - Public API
+    func setUpcoming(_ appt: HomeUpcomingAppointment?) {
+        carousel.setUpcoming(appt)
     }
 }

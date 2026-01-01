@@ -36,6 +36,8 @@ final class HomeHeroCardView: UIView {
     private let nameLabel = UILabel()
     private let subtitleLabel = UILabel()
 
+    // ✅ Wrap metaStack so we can hide it without collapsing spacing weirdly
+    private let metaContainer = UIView()
     private let metaStack = UIStackView()
     private let dateRow = MetaRow(icon: "calendar", text: "")
     private let timeRow = MetaRow(icon: "clock", text: "")
@@ -77,7 +79,10 @@ final class HomeHeroCardView: UIView {
             container.topAnchor.constraint(equalTo: topAnchor),
             container.leadingAnchor.constraint(equalTo: leadingAnchor),
             container.trailingAnchor.constraint(equalTo: trailingAnchor),
-            container.bottomAnchor.constraint(equalTo: bottomAnchor)
+            container.bottomAnchor.constraint(equalTo: bottomAnchor),
+
+            // ✅ Prevent compression clipping
+            container.heightAnchor.constraint(greaterThanOrEqualToConstant: 280)
         ])
 
         // --- Top row ---
@@ -100,8 +105,11 @@ final class HomeHeroCardView: UIView {
         NSLayoutConstraint.activate([
             badgeIconWrap.widthAnchor.constraint(equalToConstant: 36),
             badgeIconWrap.heightAnchor.constraint(equalToConstant: 36),
+
             badgeIcon.centerXAnchor.constraint(equalTo: badgeIconWrap.centerXAnchor),
-            badgeIcon.centerYAnchor.constraint(equalTo: badgeIconWrap.centerYAnchor)
+            badgeIcon.centerYAnchor.constraint(equalTo: badgeIconWrap.centerYAnchor),
+            badgeIcon.widthAnchor.constraint(equalToConstant: 18),
+            badgeIcon.heightAnchor.constraint(equalToConstant: 18)
         ])
 
         pill.translatesAutoresizingMaskIntoConstraints = false
@@ -169,19 +177,32 @@ final class HomeHeroCardView: UIView {
 
         nameLabel.font = .systemFont(ofSize: 22, weight: .bold)
         nameLabel.textColor = .black
+        nameLabel.numberOfLines = 2
 
         subtitleLabel.font = .systemFont(ofSize: 14, weight: .medium)
         subtitleLabel.textColor = UIColor.black.withAlphaComponent(0.55)
+        subtitleLabel.numberOfLines = 2
 
+        // Meta stack
         metaStack.axis = .vertical
-        metaStack.spacing = 10
+        metaStack.spacing = 8
         metaStack.translatesAutoresizingMaskIntoConstraints = false
         metaStack.addArrangedSubview(dateRow)
         metaStack.addArrangedSubview(timeRow)
 
+        metaContainer.translatesAutoresizingMaskIntoConstraints = false
+        metaContainer.addSubview(metaStack)
+
+        NSLayoutConstraint.activate([
+            metaStack.topAnchor.constraint(equalTo: metaContainer.topAnchor),
+            metaStack.leadingAnchor.constraint(equalTo: metaContainer.leadingAnchor),
+            metaStack.trailingAnchor.constraint(equalTo: metaContainer.trailingAnchor),
+            metaStack.bottomAnchor.constraint(equalTo: metaContainer.bottomAnchor)
+        ])
+
         textStack.addArrangedSubview(nameLabel)
         textStack.addArrangedSubview(subtitleLabel)
-        textStack.addArrangedSubview(metaStack)
+        textStack.addArrangedSubview(metaContainer)
 
         contentRow.addArrangedSubview(avatarWrap)
         contentRow.addArrangedSubview(textStack)
@@ -219,12 +240,17 @@ final class HomeHeroCardView: UIView {
             contentRow.topAnchor.constraint(equalTo: topRow.bottomAnchor, constant: 14),
             contentRow.leadingAnchor.constraint(equalTo: container.leadingAnchor, constant: 16),
             contentRow.trailingAnchor.constraint(equalTo: container.trailingAnchor, constant: -16),
+            contentRow.bottomAnchor.constraint(lessThanOrEqualTo: primaryButton.topAnchor, constant: -8)
+,
 
-            primaryButton.topAnchor.constraint(equalTo: contentRow.bottomAnchor, constant: 16),
+            // ✅ Button always visible at bottom
             primaryButton.leadingAnchor.constraint(equalTo: container.leadingAnchor, constant: 16),
             primaryButton.trailingAnchor.constraint(equalTo: container.trailingAnchor, constant: -16),
             primaryButton.heightAnchor.constraint(equalToConstant: 52),
-            primaryButton.bottomAnchor.constraint(equalTo: container.bottomAnchor, constant: -16)
+            primaryButton.bottomAnchor.constraint(equalTo: container.bottomAnchor, constant: -16),
+
+            // ✅ Content must end ABOVE button, prevents clipping issues
+            contentRow.bottomAnchor.constraint(lessThanOrEqualTo: primaryButton.topAnchor, constant: -16)
         ])
     }
 
@@ -239,8 +265,6 @@ final class HomeHeroCardView: UIView {
         let g = CAGradientLayer()
         g.frame = primaryButton.bounds
         g.cornerRadius = primaryButton.layer.cornerRadius
-
-        // Normal app scheme (blue gradient, not purple)
         g.colors = [
             UIColor(hex: "1E6EF7").cgColor,
             UIColor(hex: "4E8CFF").cgColor
@@ -260,13 +284,13 @@ final class HomeHeroCardView: UIView {
         switch state {
 
         case .bookHomeVisit:
-            // Hide pill in book state (like your current logic)
             pill.isHidden = true
 
             nameLabel.text = "Book home visits"
             subtitleLabel.text = "Get certified physiotherapy at your doorsteps"
-            dateRow.isHidden = true
-            timeRow.isHidden = true
+
+            // ✅ Hide meta cleanly
+            metaContainer.isHidden = true
 
             primaryButton.setTitle("Book appointment", for: .normal)
 
@@ -274,11 +298,13 @@ final class HomeHeroCardView: UIView {
             pill.isHidden = false
             pillLabel.text = "Upcoming"
 
-            nameLabel.text = "Dr. \(appt.physioName)"
+            nameLabel.text = appt.physioName
+
+            // ✅ show specialization if your model has it, else fallback
             subtitleLabel.text = "Healthcare Professional"
 
-            dateRow.isHidden = false
-            timeRow.isHidden = false
+
+            metaContainer.isHidden = false
 
             let df1 = DateFormatter()
             df1.dateFormat = "EEEE, dd MMM"
@@ -292,9 +318,9 @@ final class HomeHeroCardView: UIView {
             primaryButton.setTitle("View Details", for: .normal)
         }
 
-        UIView.animate(withDuration: 0.25) {
-            self.layoutIfNeeded()
-        }
+        // ✅ Force refresh so button doesn’t get “stuck”
+        setNeedsLayout()
+        layoutIfNeeded()
     }
 }
 
