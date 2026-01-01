@@ -16,7 +16,8 @@ final class HomeCardsCarouselView: UIView, UICollectionViewDataSource, UICollect
     // Public
     let pageControl = UIPageControl()
     var onBookTapped: (() -> Void)?
-    var onUpcomingTapped: (() -> Void)?
+    // Fires when user taps the Upcoming card primary button ("View Details")
+    var onViewDetailsTapped: ((HomeUpcomingAppointment) -> Void)?
 
     private var cards: [CardType] = [.book]
 
@@ -36,6 +37,9 @@ final class HomeCardsCarouselView: UIView, UICollectionViewDataSource, UICollect
         cv.showsHorizontalScrollIndicator = false
         cv.decelerationRate = .fast
         cv.isPagingEnabled = false // we will snap manually
+        // ✅ Allow quick taps on buttons inside horizontally scrolling cells
+        cv.delaysContentTouches = false
+        cv.canCancelContentTouches = true
         cv.dataSource = self
         cv.delegate = self
         cv.register(HomeCardCell.self, forCellWithReuseIdentifier: HomeCardCell.reuseID)
@@ -98,13 +102,15 @@ final class HomeCardsCarouselView: UIView, UICollectionViewDataSource, UICollect
         switch cards[indexPath.item] {
         case .book:
             cell.card.apply(state: .bookHomeVisit)
-            cell.card.primaryButton.removeTarget(nil, action: nil, for: .allEvents)
-            cell.card.primaryButton.addTarget(self, action: #selector(bookTapped), for: .touchUpInside)
+            cell.onPrimaryTapped = { [weak self] in
+                self?.onBookTapped?()
+            }
 
         case .upcoming(let appt):
             cell.card.apply(state: .upcoming(appt))
-            cell.card.primaryButton.removeTarget(nil, action: nil, for: .allEvents)
-            cell.card.primaryButton.addTarget(self, action: #selector(upcomingTapped), for: .touchUpInside)
+            cell.onPrimaryTapped = { [weak self] in
+                self?.onViewDetailsTapped?(appt)
+            }
         }
 
         return cell
@@ -142,8 +148,6 @@ final class HomeCardsCarouselView: UIView, UICollectionViewDataSource, UICollect
         targetContentOffset.pointee = CGPoint(x: max(0, targetX), y: 0)
     }
 
-    @objc private func bookTapped() { onBookTapped?() }
-    @objc private func upcomingTapped() { onUpcomingTapped?() }
 }
 
 // MARK: - Cell
@@ -151,12 +155,14 @@ private final class HomeCardCell: UICollectionViewCell {
 
     static let reuseID = "HomeCardCell"
     let card = HomeHeroCardView()
+    var onPrimaryTapped: (() -> Void)?
 
     override init(frame: CGRect) {
         super.init(frame: frame)
         contentView.backgroundColor = .clear
         card.translatesAutoresizingMaskIntoConstraints = false
         contentView.addSubview(card)
+        card.primaryButton.addTarget(self, action: #selector(primaryTapped), for: .touchUpInside)
 
         NSLayoutConstraint.activate([
             card.topAnchor.constraint(equalTo: contentView.topAnchor),
@@ -167,5 +173,13 @@ private final class HomeCardCell: UICollectionViewCell {
     }
 
     required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
-}
 
+    override func prepareForReuse() {
+        super.prepareForReuse()
+        onPrimaryTapped = nil
+    }
+
+    @objc private func primaryTapped() {
+        onPrimaryTapped?()
+    }
+}

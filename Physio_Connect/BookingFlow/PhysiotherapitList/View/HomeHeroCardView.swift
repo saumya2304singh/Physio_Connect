@@ -300,8 +300,7 @@ final class HomeHeroCardView: UIView {
 
             nameLabel.text = appt.physioName
 
-            // ✅ show specialization if your model has it, else fallback
-            subtitleLabel.text = "Healthcare Professional"
+            subtitleLabel.text = appt.specializationText
 
 
             metaContainer.isHidden = false

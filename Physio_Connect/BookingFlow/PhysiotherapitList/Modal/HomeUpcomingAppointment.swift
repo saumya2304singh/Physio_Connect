@@ -13,6 +13,9 @@ struct HomeUpcomingAppointment {
 
     let physioName: String
     let serviceMode: String
+    let specializationText: String
+    let consultationFeeText: String
+    let ratingText: String
 
     let startTime: Date
     let endTime: Date
@@ -20,4 +23,3 @@ struct HomeUpcomingAppointment {
     let address: String
     let status: String
 }
-
