@@ -142,10 +142,16 @@ extension PhysioService {
     }
     
     func fetchAvailableSlots(physioID: UUID, forDayContaining date: Date) async throws -> [SlotRow] {
+        // Ensure slots exist for the selected day when using templates.
+        do {
+            try await generateSlotsForDateIfNeeded(physioID: physioID, date: date)
+        } catch {
+            print("❌ generate_slots_for_range failed:", error)
+        }
 
-        // DB is timestamptz → use UTC day window to avoid timezone shift bugs
+        // DB is timestamptz → use local day window for user-selected date
         var cal = Calendar(identifier: .gregorian)
-        cal.timeZone = TimeZone(secondsFromGMT: 0)!   // UTC
+        cal.timeZone = TimeZone.current
 
         let startOfDay = cal.startOfDay(for: date)
         guard let endOfDay = cal.date(byAdding: .day, value: 1, to: startOfDay) else { return [] }
@@ -164,6 +170,31 @@ extension PhysioService {
             .value
 
         return rows.filter { !$0.is_booked }
+    }
+
+    private func generateSlotsForDateIfNeeded(physioID: UUID, date: Date) async throws {
+        let localCal = Calendar.current
+        let startOfDay = localCal.startOfDay(for: date)
+
+        let df = DateFormatter()
+        df.calendar = localCal
+        df.timeZone = TimeZone.current
+        df.dateFormat = "yyyy-MM-dd"
+
+        let day = df.string(from: startOfDay)
+        let tz = TimeZone.current.identifier
+
+        _ = try await client
+            .rpc(
+                "generate_slots_for_range",
+                params: [
+                    "p_physio_id": physioID.uuidString,
+                    "p_from": day,
+                    "p_to": day,
+                    "p_tz": tz
+                ]
+            )
+            .execute()
     }
     func fetchUpcomingAvailableSlots(
         physioID: UUID,
@@ -203,4 +234,3 @@ extension PhysioService {
                 .execute()
         }
 }
-

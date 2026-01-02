@@ -32,11 +32,8 @@ final class ProfileView: UIView {
 
     private let emailRow = ProfileRowView(title: "Email")
     private let phoneRow = ProfileRowView(title: "Phone")
-    private let addressRow = ProfileRowView(title: "Address")
     private let genderRow = ProfileRowView(title: "Gender")
     private let dobRow = ProfileRowView(title: "Date of Birth")
-
-    private let conditionRow = ProfileRowView(title: "Medical Condition")
 
     private let locationRow = ProfileRowView(title: "Location")
     private let notificationRow = ProfileToggleRowView(title: "Notifications")
@@ -60,10 +57,8 @@ final class ProfileView: UIView {
         nameLabel.text = data.name
         emailRow.setValue(data.email)
         phoneRow.setValue(data.phone)
-        addressRow.setValue(data.address)
         genderRow.setValue(data.gender)
         dobRow.setValue(data.dateOfBirth)
-        conditionRow.setValue(data.healthIdentifier)
         locationRow.setValue(data.location)
         notificationRow.setOn(data.notificationsEnabled)
     }
@@ -118,7 +113,6 @@ final class ProfileView: UIView {
         buildTopBar()
         buildHeader()
         buildPersonalInfo()
-        buildMedicalCondition()
         buildSettings()
         buildPrivacy()
         buildSignOut()
@@ -208,23 +202,10 @@ final class ProfileView: UIView {
         stack.addArrangedSubview(makeSeparator())
         stack.addArrangedSubview(phoneRow)
         stack.addArrangedSubview(makeSeparator())
-        stack.addArrangedSubview(addressRow)
-        stack.addArrangedSubview(makeSeparator())
         stack.addArrangedSubview(genderRow)
         stack.addArrangedSubview(makeSeparator())
         stack.addArrangedSubview(dobRow)
 
-        card.addSubview(stack)
-        pinCardStack(stack, to: card)
-
-        stackView.addArrangedSubview(card)
-    }
-
-    private func buildMedicalCondition() {
-        let card = makeCardView()
-        let stack = makeCardStack()
-
-        stack.addArrangedSubview(conditionRow)
         card.addSubview(stack)
         pinCardStack(stack, to: card)
 
