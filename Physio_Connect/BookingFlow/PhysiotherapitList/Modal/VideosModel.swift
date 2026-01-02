@@ -103,9 +103,10 @@ final class VideosModel {
     }
 
     func signedThumbnailURL(path: String) async throws -> URL {
-        try await client.storage
+        let normalized = path.trimmingCharacters(in: .whitespacesAndNewlines).trimmingCharacters(in: CharacterSet(charactersIn: "/"))
+        return try await client.storage
             .from(thumbnailBucket)
-            .createSignedURL(path: path, expiresIn: 3600)
+            .createSignedURL(path: normalized, expiresIn: 3600)
     }
 
     func upsertProgress(exerciseID: UUID,

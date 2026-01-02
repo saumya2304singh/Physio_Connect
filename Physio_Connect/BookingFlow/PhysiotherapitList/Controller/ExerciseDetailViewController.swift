@@ -17,6 +17,7 @@ final class ExerciseDetailViewController: UIViewController {
     private let descriptionText: String?
     private let durationSeconds: Int?
     private let videoPath: String
+    private let thumbnailPath: String?
     private let programID: UUID?
     private let exerciseID: UUID
     private let sets: Int?
@@ -26,7 +27,9 @@ final class ExerciseDetailViewController: UIViewController {
     private let scroll = UIScrollView()
     private let content = UIStackView()
 
+    private let headerTitle = UILabel()
     private let videoCard = UIView()
+    private let thumbnailImageView = UIImageView()
     private let playButton = UIButton(type: .system)
     private let metaTitle = UILabel()
     private let metaSub = UILabel()
@@ -39,6 +42,7 @@ final class ExerciseDetailViewController: UIViewController {
          descriptionText: String?,
          durationSeconds: Int?,
          videoPath: String,
+         thumbnailPath: String?,
          programID: UUID?,
          exerciseID: UUID,
          sets: Int?,
@@ -49,6 +53,7 @@ final class ExerciseDetailViewController: UIViewController {
         self.descriptionText = descriptionText
         self.durationSeconds = durationSeconds
         self.videoPath = videoPath
+        self.thumbnailPath = thumbnailPath
         self.programID = programID
         self.exerciseID = exerciseID
         self.sets = sets
@@ -64,8 +69,9 @@ final class ExerciseDetailViewController: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         view.backgroundColor = UIColor(hex: "E3F0FF")
-        title = "Exercise"
+        navigationItem.titleView = nil
         buildUI()
+        loadThumbnail()
     }
 
     private func buildUI() {
@@ -74,11 +80,19 @@ final class ExerciseDetailViewController: UIViewController {
         content.axis = .vertical
         content.spacing = 14
 
+        headerTitle.translatesAutoresizingMaskIntoConstraints = false
+        headerTitle.text = "Video"
+        headerTitle.font = .boldSystemFont(ofSize: 20)
+        headerTitle.textColor = .black
+        view.addSubview(headerTitle)
         view.addSubview(scroll)
         scroll.addSubview(content)
 
         NSLayoutConstraint.activate([
-            scroll.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
+            headerTitle.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 12),
+            headerTitle.centerXAnchor.constraint(equalTo: view.centerXAnchor),
+
+            scroll.topAnchor.constraint(equalTo: headerTitle.bottomAnchor, constant: 12),
             scroll.leadingAnchor.constraint(equalTo: view.leadingAnchor),
             scroll.trailingAnchor.constraint(equalTo: view.trailingAnchor),
             scroll.bottomAnchor.constraint(equalTo: view.bottomAnchor),
@@ -98,18 +112,35 @@ final class ExerciseDetailViewController: UIViewController {
         videoCard.layer.shadowRadius = 12
         videoCard.layer.shadowOffset = CGSize(width: 0, height: 8)
 
+        thumbnailImageView.translatesAutoresizingMaskIntoConstraints = false
+        thumbnailImageView.contentMode = .scaleAspectFill
+        thumbnailImageView.clipsToBounds = true
+        thumbnailImageView.layer.cornerRadius = 24
+        thumbnailImageView.backgroundColor = UIColor(hex: "E3F0FF")
+
         playButton.translatesAutoresizingMaskIntoConstraints = false
-        playButton.setImage(UIImage(systemName: "play.circle.fill"), for: .normal)
+        playButton.setImage(UIImage(systemName: "play.fill"), for: .normal)
         playButton.tintColor = UIColor(hex: "1E6EF7")
+        playButton.backgroundColor = .white
+        playButton.layer.cornerRadius = 28
+        playButton.layer.shadowColor = UIColor.black.cgColor
+        playButton.layer.shadowOpacity = 0.12
+        playButton.layer.shadowRadius = 10
+        playButton.layer.shadowOffset = CGSize(width: 0, height: 6)
         playButton.addTarget(self, action: #selector(playTapped), for: .touchUpInside)
 
+        videoCard.addSubview(thumbnailImageView)
         videoCard.addSubview(playButton)
         NSLayoutConstraint.activate([
             videoCard.heightAnchor.constraint(equalToConstant: 220),
+            thumbnailImageView.topAnchor.constraint(equalTo: videoCard.topAnchor),
+            thumbnailImageView.leadingAnchor.constraint(equalTo: videoCard.leadingAnchor),
+            thumbnailImageView.trailingAnchor.constraint(equalTo: videoCard.trailingAnchor),
+            thumbnailImageView.bottomAnchor.constraint(equalTo: videoCard.bottomAnchor),
             playButton.centerXAnchor.constraint(equalTo: videoCard.centerXAnchor),
             playButton.centerYAnchor.constraint(equalTo: videoCard.centerYAnchor),
-            playButton.widthAnchor.constraint(equalToConstant: 72),
-            playButton.heightAnchor.constraint(equalToConstant: 72)
+            playButton.widthAnchor.constraint(equalToConstant: 56),
+            playButton.heightAnchor.constraint(equalToConstant: 56)
         ])
 
         metaTitle.font = .systemFont(ofSize: 22, weight: .bold)
@@ -167,6 +198,27 @@ final class ExerciseDetailViewController: UIViewController {
                 }
             } catch {
                 showError("Video error", error.localizedDescription)
+            }
+        }
+    }
+
+    private func loadThumbnail() {
+        guard let thumbnailPath else { return }
+        Task {
+            do {
+                let url = try await videosModel.signedThumbnailURL(path: thumbnailPath)
+                await MainActor.run {
+                    self.thumbnailImageView.image = UIImage(systemName: "photo")
+                    let task = URLSession.shared.dataTask(with: url) { [weak self] data, _, _ in
+                        guard let self, let data, let image = UIImage(data: data) else { return }
+                        DispatchQueue.main.async {
+                            self.thumbnailImageView.image = image
+                        }
+                    }
+                    task.resume()
+                }
+            } catch {
+                return
             }
         }
     }
