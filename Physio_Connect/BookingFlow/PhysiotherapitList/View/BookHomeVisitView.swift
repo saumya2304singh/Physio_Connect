@@ -483,6 +483,7 @@ final class BookHomeVisitView: UIView {
         datePicker.translatesAutoresizingMaskIntoConstraints = false
         datePicker.preferredDatePickerStyle = .inline
         datePicker.datePickerMode = .date
+        datePicker.minimumDate = Calendar.current.startOfDay(for: Date())
 
         datePickerContainer.addSubview(datePicker)
         NSLayoutConstraint.activate([
