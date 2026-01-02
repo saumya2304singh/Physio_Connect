@@ -66,7 +66,7 @@ final class HomeCardsCarouselView: UIView, UICollectionViewDataSource, UICollect
             collectionView.topAnchor.constraint(equalTo: topAnchor),
             collectionView.leadingAnchor.constraint(equalTo: leadingAnchor),
             collectionView.trailingAnchor.constraint(equalTo: trailingAnchor),
-            collectionView.heightAnchor.constraint(equalToConstant: 320), // ✅ enough for button
+            collectionView.heightAnchor.constraint(equalToConstant: 250), // ✅ compact card height
 
             pageControl.topAnchor.constraint(equalTo: collectionView.bottomAnchor, constant: 14),
             pageControl.centerXAnchor.constraint(equalTo: centerXAnchor),
@@ -121,7 +121,7 @@ final class HomeCardsCarouselView: UIView, UICollectionViewDataSource, UICollect
                         layout collectionViewLayout: UICollectionViewLayout,
                         sizeForItemAt indexPath: IndexPath) -> CGSize {
         let w = collectionView.bounds.width - 32
-        return CGSize(width: w, height: 300)
+        return CGSize(width: w, height: 230)
     }
 
     // MARK: - Snap + dots

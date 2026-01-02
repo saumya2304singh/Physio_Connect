@@ -13,12 +13,14 @@ final class PhysiotherapistProfileViewController: UIViewController {
     private let profileView = PhysiotherapistProfileView()
     private let physioID: UUID
     private let preloadCard: PhysiotherapistCardModel?
+    private let isReschedule: Bool
 
     private var reviews: [PhysioReviewRow] = []
 
-    init(physioID: UUID, preloadCard: PhysiotherapistCardModel? = nil) {
+    init(physioID: UUID, preloadCard: PhysiotherapistCardModel? = nil, isReschedule: Bool = false) {
         self.physioID = physioID
         self.preloadCard = preloadCard
+        self.isReschedule = isReschedule
         super.init(nibName: nil, bundle: nil)
     }
 
@@ -106,7 +108,7 @@ final class PhysiotherapistProfileViewController: UIViewController {
 
     @objc private func bookAppointmentTapped() {
         // push next screen (home visit)
-        let vc = BookHomeVisitViewController(physioID: physioID) // <-- use your stored physioID
+        let vc = BookHomeVisitViewController(physioID: physioID, isReschedule: isReschedule) // <-- use your stored physioID
 
         // If you're using a tab bar and want the next screen full-screen:
         vc.hidesBottomBarWhenPushed = true

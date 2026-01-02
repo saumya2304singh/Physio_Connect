@@ -11,14 +11,16 @@ final class BookHomeVisitViewController: UIViewController {
 
     private let bookView = BookHomeVisitView()
     private let physioID: UUID
+    private let isReschedule: Bool
 
     private var physioNameForSummary: String?
     private var slots: [SlotRow] = []
     private var selectedSlot: SlotRow?
 
     // MARK: - Init
-    init(physioID: UUID) {
+    init(physioID: UUID, isReschedule: Bool = false) {
         self.physioID = physioID
+        self.isReschedule = isReschedule
         super.init(nibName: nil, bundle: nil)
     }
     required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
@@ -308,8 +310,49 @@ final class BookHomeVisitViewController: UIViewController {
             serviceMode: "home"
         )
 
-        pushPayment(with: draft)
+        if isReschedule {
+            handleReschedule(draft)
+        } else {
+            pushPayment(with: draft)
+        }
 
+    }
+
+    private func handleReschedule(_ draft: BookingDraft) {
+        Task {
+            do {
+                _ = try await SupabaseManager.shared.client.auth.session
+                self.finalizeBookingAfterPayment(draft)
+            } catch {
+                await MainActor.run {
+                    self.pushSignupThenBook(draft: draft)
+                }
+            }
+        }
+    }
+
+    private func pushSignupThenBook(draft: BookingDraft) {
+        let df = DateFormatter()
+        df.dateFormat = "dd MMM yyyy"
+        let tf = DateFormatter()
+        tf.dateFormat = "h:mm a"
+
+        let signupDraft = AppointmentDraft(
+            dateText: df.string(from: draft.slotStart),
+            timeText: tf.string(from: draft.slotStart),
+            therapistName: draft.physioName,
+            addressText: draft.address
+        )
+
+        let model = CreateAccountModel(appointment: signupDraft)
+        let vc = CreateAccountViewController(model: model)
+
+        vc.onSignupComplete = { [weak self] in
+            guard let self else { return }
+            self.finalizeBookingAfterPayment(draft)
+        }
+
+        navigationController?.pushViewController(vc, animated: true)
     }
 
 

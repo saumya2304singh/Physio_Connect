@@ -67,7 +67,7 @@ final class AppointmentsViewController: UIViewController {
             guard let self else { return }
             guard let physioID = self.currentUpcoming?.physioID else { return }
 
-            let vc = PhysiotherapistProfileViewController(physioID: physioID, preloadCard: nil)
+            let vc = PhysiotherapistProfileViewController(physioID: physioID, preloadCard: nil, isReschedule: true)
             vc.hidesBottomBarWhenPushed = true
             self.navigationController?.pushViewController(vc, animated: true)
         }

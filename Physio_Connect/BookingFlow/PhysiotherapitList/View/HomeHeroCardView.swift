@@ -47,6 +47,9 @@ final class HomeHeroCardView: UIView {
     private let buttonChevron = UIImageView()
 
     private var gradientLayer: CAGradientLayer?
+    private var contentTopToTopRowConstraint: NSLayoutConstraint?
+    private var contentTopToContainerConstraint: NSLayoutConstraint?
+    private var buttonTopConstraint: NSLayoutConstraint?
 
     private var currentState: State = .bookHomeVisit
 
@@ -73,22 +76,20 @@ final class HomeHeroCardView: UIView {
         container.layer.shadowOpacity = 0.08
         container.layer.shadowRadius = 14
         container.layer.shadowOffset = CGSize(width: 0, height: 8)
+        container.directionalLayoutMargins = NSDirectionalEdgeInsets(top: 16, leading: 16, bottom: 16, trailing: 16)
         addSubview(container)
 
         NSLayoutConstraint.activate([
             container.topAnchor.constraint(equalTo: topAnchor),
             container.leadingAnchor.constraint(equalTo: leadingAnchor),
             container.trailingAnchor.constraint(equalTo: trailingAnchor),
-            container.bottomAnchor.constraint(equalTo: bottomAnchor),
-
-            // ✅ Prevent compression clipping
-            container.heightAnchor.constraint(greaterThanOrEqualToConstant: 280)
+            container.bottomAnchor.constraint(equalTo: bottomAnchor)
         ])
 
         // --- Top row ---
         topRow.axis = .horizontal
         topRow.alignment = .center
-        topRow.spacing = 10
+        topRow.spacing = 12
         topRow.translatesAutoresizingMaskIntoConstraints = false
 
         badgeIconWrap.translatesAutoresizingMaskIntoConstraints = false
@@ -147,7 +148,7 @@ final class HomeHeroCardView: UIView {
         // --- Content row ---
         contentRow.axis = .horizontal
         contentRow.alignment = .top
-        contentRow.spacing = 14
+        contentRow.spacing = 12
         contentRow.translatesAutoresizingMaskIntoConstraints = false
 
         avatarWrap.translatesAutoresizingMaskIntoConstraints = false
@@ -185,7 +186,7 @@ final class HomeHeroCardView: UIView {
 
         // Meta stack
         metaStack.axis = .vertical
-        metaStack.spacing = 8
+        metaStack.spacing = 6
         metaStack.translatesAutoresizingMaskIntoConstraints = false
         metaStack.addArrangedSubview(dateRow)
         metaStack.addArrangedSubview(timeRow)
@@ -214,7 +215,7 @@ final class HomeHeroCardView: UIView {
         primaryButton.titleLabel?.font = .systemFont(ofSize: 16, weight: .semibold)
         primaryButton.layer.cornerRadius = 14
         primaryButton.clipsToBounds = true
-        primaryButton.contentEdgeInsets = UIEdgeInsets(top: 14, left: 16, bottom: 14, right: 16)
+        primaryButton.contentEdgeInsets = UIEdgeInsets(top: 12, left: 16, bottom: 12, right: 16)
 
         buttonChevron.translatesAutoresizingMaskIntoConstraints = false
         buttonChevron.image = UIImage(systemName: "chevron.right")
@@ -232,25 +233,27 @@ final class HomeHeroCardView: UIView {
         container.addSubview(contentRow)
         container.addSubview(primaryButton)
 
+        contentTopToTopRowConstraint = contentRow.topAnchor.constraint(equalToSystemSpacingBelow: topRow.bottomAnchor, multiplier: 1.0)
+        contentTopToContainerConstraint = contentRow.topAnchor.constraint(equalTo: container.layoutMarginsGuide.topAnchor)
+        contentTopToContainerConstraint?.isActive = false
+        buttonTopConstraint = primaryButton.topAnchor.constraint(equalTo: contentRow.bottomAnchor, constant: 12)
+
         NSLayoutConstraint.activate([
-            topRow.topAnchor.constraint(equalTo: container.topAnchor, constant: 16),
-            topRow.leadingAnchor.constraint(equalTo: container.leadingAnchor, constant: 16),
-            topRow.trailingAnchor.constraint(lessThanOrEqualTo: container.trailingAnchor, constant: -16),
+            topRow.topAnchor.constraint(equalTo: container.layoutMarginsGuide.topAnchor),
+            topRow.leadingAnchor.constraint(equalTo: container.layoutMarginsGuide.leadingAnchor),
+            topRow.trailingAnchor.constraint(lessThanOrEqualTo: container.layoutMarginsGuide.trailingAnchor),
 
-            contentRow.topAnchor.constraint(equalTo: topRow.bottomAnchor, constant: 14),
-            contentRow.leadingAnchor.constraint(equalTo: container.leadingAnchor, constant: 16),
-            contentRow.trailingAnchor.constraint(equalTo: container.trailingAnchor, constant: -16),
-            contentRow.bottomAnchor.constraint(lessThanOrEqualTo: primaryButton.topAnchor, constant: -8)
-,
-
+            contentTopToTopRowConstraint!,
+            contentRow.leadingAnchor.constraint(equalTo: container.layoutMarginsGuide.leadingAnchor),
+            contentRow.trailingAnchor.constraint(equalTo: container.layoutMarginsGuide.trailingAnchor),
             // ✅ Button always visible at bottom
-            primaryButton.leadingAnchor.constraint(equalTo: container.leadingAnchor, constant: 16),
-            primaryButton.trailingAnchor.constraint(equalTo: container.trailingAnchor, constant: -16),
-            primaryButton.heightAnchor.constraint(equalToConstant: 52),
-            primaryButton.bottomAnchor.constraint(equalTo: container.bottomAnchor, constant: -16),
+            primaryButton.leadingAnchor.constraint(equalTo: container.layoutMarginsGuide.leadingAnchor),
+            primaryButton.trailingAnchor.constraint(equalTo: container.layoutMarginsGuide.trailingAnchor),
+            primaryButton.heightAnchor.constraint(equalToConstant: 48),
+            primaryButton.bottomAnchor.constraint(equalTo: container.layoutMarginsGuide.bottomAnchor),
 
-            // ✅ Content must end ABOVE button, prevents clipping issues
-            contentRow.bottomAnchor.constraint(lessThanOrEqualTo: primaryButton.topAnchor, constant: -16)
+            // ✅ Keep fixed spacing between content and button
+            buttonTopConstraint!
         ])
     }
 
@@ -284,6 +287,7 @@ final class HomeHeroCardView: UIView {
         switch state {
 
         case .bookHomeVisit:
+            topRow.isHidden = true
             pill.isHidden = true
 
             nameLabel.text = "Book home visits"
@@ -291,10 +295,14 @@ final class HomeHeroCardView: UIView {
 
             // ✅ Hide meta cleanly
             metaContainer.isHidden = true
+            contentTopToTopRowConstraint?.isActive = false
+            contentTopToContainerConstraint?.isActive = true
+            buttonTopConstraint?.constant = 8
 
             primaryButton.setTitle("Book appointment", for: .normal)
 
         case .upcoming(let appt):
+            topRow.isHidden = false
             pill.isHidden = false
             pillLabel.text = "Upcoming"
 
@@ -304,6 +312,9 @@ final class HomeHeroCardView: UIView {
 
 
             metaContainer.isHidden = false
+            contentTopToContainerConstraint?.isActive = false
+            contentTopToTopRowConstraint?.isActive = true
+            buttonTopConstraint?.constant = 12
 
             let df1 = DateFormatter()
             df1.dateFormat = "EEEE, dd MMM"

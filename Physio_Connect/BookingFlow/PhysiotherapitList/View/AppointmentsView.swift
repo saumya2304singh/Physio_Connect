@@ -443,15 +443,22 @@ struct CompletedAppointmentVM {
 
         var pillBg: UIColor {
             switch self {
-            case .completed: return UIColor.systemGreen.withAlphaComponent(0.18)
-            case .cancelled: return UIColor.systemRed.withAlphaComponent(0.18)
+            case .completed: return UIColor(hex: "E6F5EA")
+            case .cancelled: return UIColor(hex: "FCE4E4")
             }
         }
 
         var pillText: UIColor {
             switch self {
-            case .completed: return UIColor.systemGreen
-            case .cancelled: return UIColor.systemRed
+            case .completed: return UIColor(hex: "2E7D32")
+            case .cancelled: return UIColor(hex: "E53935")
+            }
+        }
+
+        var pillBorder: UIColor {
+            switch self {
+            case .completed: return UIColor(hex: "BFE3C7")
+            case .cancelled: return UIColor(hex: "F2B8B8")
             }
         }
     }
@@ -522,7 +529,7 @@ final class CompletedAppointmentsListView: UIView, UITableViewDataSource, UITabl
     }
 
     func tableView(_ tableView: UITableView, heightForRowAt indexPath: IndexPath) -> CGFloat {
-        220
+        250
     }
 }
 
@@ -579,6 +586,7 @@ final class CompletedAppointmentCell: UITableViewCell {
 
         statusPill.translatesAutoresizingMaskIntoConstraints = false
         statusPill.layer.cornerRadius = 10
+        statusPill.layer.borderWidth = 1
 
         statusLabel.translatesAutoresizingMaskIntoConstraints = false
         statusLabel.font = .systemFont(ofSize: 14, weight: .bold)
@@ -685,6 +693,7 @@ final class CompletedAppointmentCell: UITableViewCell {
         statusPill.backgroundColor = vm.status.pillBg
         statusLabel.textColor = vm.status.pillText
         statusLabel.text = vm.status.text
+        statusPill.layer.borderColor = vm.status.pillBorder.cgColor
 
         avatar.image = vm.image
         nameLabel.text = vm.physioName
