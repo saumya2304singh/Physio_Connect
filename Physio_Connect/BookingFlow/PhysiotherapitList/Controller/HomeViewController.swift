@@ -18,6 +18,8 @@ final class HomeViewController: UIViewController {
         super.viewDidLoad()
         navigationController?.setNavigationBarHidden(true, animated: false)
 
+        homeView.profileButton.addTarget(self, action: #selector(profileTapped), for: .touchUpInside)
+
         // ✅ Carousel button actions
         homeView.carousel.onViewDetailsTapped = { [weak self] appt in
             guard let self else { return }
@@ -83,5 +85,11 @@ final class HomeViewController: UIViewController {
             locationText: appt.address,
             feeText: appt.consultationFeeText
         )
+    }
+
+    @objc private func profileTapped() {
+        let vc = ProfileViewController()
+        vc.hidesBottomBarWhenPushed = true
+        navigationController?.pushViewController(vc, animated: true)
     }
 }

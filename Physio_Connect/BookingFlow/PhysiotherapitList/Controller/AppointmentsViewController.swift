@@ -35,7 +35,9 @@ final class AppointmentsViewController: UIViewController {
     private func bind() {
         apptView.onProfileTapped = { [weak self] in
             guard let self else { return }
-            print("Profile tapped")
+            let vc = ProfileViewController()
+            vc.hidesBottomBarWhenPushed = true
+            self.navigationController?.pushViewController(vc, animated: true)
         }
 
         apptView.onCancelTapped = { [weak self] in
