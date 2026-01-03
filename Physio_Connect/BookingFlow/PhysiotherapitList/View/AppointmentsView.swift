@@ -294,10 +294,13 @@ final class UpcomingAppointmentTabCardView: UIView {
             $0.numberOfLines = 1
         }
 
+        specRow.textColor = UIColor(hex: "1E6EF7")
+        feeRow.textColor = UIColor(hex: "1E6EF7")
+
         infoStack.addArrangedSubview(nameLabel)
+        infoStack.addArrangedSubview(specRow)
         infoStack.addArrangedSubview(ratingRow)
         infoStack.addArrangedSubview(distanceRow)
-        infoStack.addArrangedSubview(specRow)
         infoStack.addArrangedSubview(feeRow)
 
         cardRow.addArrangedSubview(avatar)
@@ -639,14 +642,15 @@ final class CompletedAppointmentCell: UITableViewCell {
             $0.numberOfLines = 1
         }
 
+        specLabel.textColor = UIColor(hex: "1E6EF7")
         feeLabel.font = .systemFont(ofSize: 13, weight: .bold)
         feeLabel.textColor = UIColor(hex: "1E6EF7")
         feeLabel.numberOfLines = 1
 
         infoStack.addArrangedSubview(nameLabel)
+        infoStack.addArrangedSubview(specLabel)
         infoStack.addArrangedSubview(ratingLabel)
         infoStack.addArrangedSubview(distanceLabel)
-        infoStack.addArrangedSubview(specLabel)
         infoStack.addArrangedSubview(feeLabel)
 
         headerRow.addArrangedSubview(avatar)

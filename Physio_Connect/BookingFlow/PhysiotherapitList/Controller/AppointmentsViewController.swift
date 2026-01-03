@@ -152,9 +152,9 @@ final class AppointmentsViewController: UIViewController {
 
         let feeText: String = {
             if let fee = appt.fee {
-                return "Consultation fees: ₹\(Int(fee)) / hr"
+                return "₹\(Int(fee)) / hr"
             }
-            return "Consultation fees: --"
+            return "₹ -- / hr"
         }()
 
         let vm = AppointmentsView.UpcomingCardVM(
@@ -188,9 +188,9 @@ final class AppointmentsViewController: UIViewController {
 
             let feeText: String = {
                 if let fee = item.fee {
-                    return "Consultation fees: ₹\(Int(fee)) / hr"
+                    return "₹\(Int(fee)) / hr"
                 }
-                return "Consultation fees: --"
+                return "₹ -- / hr"
             }()
 
             return CompletedAppointmentVM(
