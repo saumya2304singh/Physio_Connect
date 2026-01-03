@@ -54,6 +54,15 @@ struct ExerciseProgressUpsert: Encodable {
     let notes: String?
 }
 
+struct ExerciseProgressRow: Decodable {
+    let exercise_id: UUID
+    let program_id: UUID?
+    let progress_date: String?
+    let is_completed: Bool?
+    let watched_seconds: Int?
+    let pain_level: Int?
+ }
+
 final class VideosModel {
     private let client = SupabaseManager.shared.client
 
@@ -137,5 +146,19 @@ final class VideosModel {
             .from("exercise_progress")
             .upsert(payload, onConflict: "customer_id,exercise_id,progress_date")
             .execute()
+    }
+
+    func fetchProgress(programID: UUID) async throws -> [ExerciseProgressRow] {
+        let session = try await client.auth.session
+        let customerID = session.user.id.uuidString
+
+        let rows: [ExerciseProgressRow] = try await client
+            .from("exercise_progress")
+            .select("exercise_id, program_id, progress_date, is_completed, watched_seconds, pain_level")
+            .eq("customer_id", value: customerID)
+            .eq("program_id", value: programID.uuidString)
+            .execute()
+            .value
+        return rows
     }
 }

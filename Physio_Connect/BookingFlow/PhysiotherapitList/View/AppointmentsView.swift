@@ -52,8 +52,18 @@ final class AppointmentsView: UIView {
         titleLabel.text = "Appointments"
 
         segmented.selectedSegmentIndex = 0
-        segmented.backgroundColor = UIColor.black.withAlphaComponent(0.08)
-        segmented.selectedSegmentTintColor = UIColor(hex: "A9C2F7")
+        segmented.selectedSegmentTintColor = UIColor(hex: "1E6EF7")
+        segmented.backgroundColor = .white
+        segmented.layer.cornerRadius = 16
+        segmented.layer.masksToBounds = true
+        segmented.setTitleTextAttributes(
+            [.foregroundColor: UIColor.white, .font: UIFont.systemFont(ofSize: 14, weight: .semibold)],
+            for: .selected
+        )
+        segmented.setTitleTextAttributes(
+            [.foregroundColor: UIColor.black.withAlphaComponent(0.65), .font: UIFont.systemFont(ofSize: 14, weight: .semibold)],
+            for: .normal
+        )
 
         upcomingCard.isHidden = false
         bookCard.isHidden = false
@@ -139,7 +149,7 @@ final class AppointmentsView: UIView {
             segmented.topAnchor.constraint(equalTo: topBar.bottomAnchor, constant: 10),
             segmented.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 16),
             segmented.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -16),
-            segmented.heightAnchor.constraint(equalToConstant: 38),
+            segmented.heightAnchor.constraint(equalToConstant: 44),
 
             scrollView.topAnchor.constraint(equalTo: segmented.bottomAnchor, constant: 14),
             scrollView.leadingAnchor.constraint(equalTo: leadingAnchor),

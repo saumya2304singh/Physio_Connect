@@ -10,8 +10,19 @@ import AVKit
 
 final class ExerciseDetailViewController: UIViewController {
 
+    struct NextUpItem {
+        let title: String
+        let subtitle: String
+        let durationSeconds: Int?
+        let videoPath: String
+        let thumbnailPath: String?
+        let programID: UUID?
+        let exerciseID: UUID
+    }
+
     private let videosModel = VideosModel()
 
+    private let headerTitleText: String
     private let titleText: String
     private let subtitleText: String
     private let descriptionText: String?
@@ -23,21 +34,14 @@ final class ExerciseDetailViewController: UIViewController {
     private let sets: Int?
     private let reps: Int?
     private let hold: Int?
+    private let nextUpItems: [NextUpItem]
 
-    private let scroll = UIScrollView()
-    private let content = UIStackView()
+    private let detailView = ExerciseDetailView()
+    private var isCompleted = false
+    private var isScaleVisible = false
 
-    private let headerTitle = UILabel()
-    private let videoCard = UIView()
-    private let thumbnailImageView = UIImageView()
-    private let playButton = UIButton(type: .system)
-    private let metaTitle = UILabel()
-    private let metaSub = UILabel()
-    private let metaDesc = UILabel()
-    private let metaExtra = UILabel()
-    private let completeButton = UIButton(type: .system)
-
-    init(titleText: String,
+    init(headerTitleText: String,
+         titleText: String,
          subtitle: String,
          descriptionText: String?,
          durationSeconds: Int?,
@@ -47,7 +51,9 @@ final class ExerciseDetailViewController: UIViewController {
          exerciseID: UUID,
          sets: Int?,
          reps: Int?,
-         hold: Int?) {
+         hold: Int?,
+         nextUpItems: [NextUpItem]) {
+        self.headerTitleText = headerTitleText
         self.titleText = titleText
         self.subtitleText = subtitle
         self.descriptionText = descriptionText
@@ -59,6 +65,7 @@ final class ExerciseDetailViewController: UIViewController {
         self.sets = sets
         self.reps = reps
         self.hold = hold
+        self.nextUpItems = nextUpItems
         super.init(nibName: nil, bundle: nil)
     }
 
@@ -66,124 +73,45 @@ final class ExerciseDetailViewController: UIViewController {
         fatalError("init(coder:) has not been implemented")
     }
 
+    override func loadView() {
+        view = detailView
+    }
+
     override func viewDidLoad() {
         super.viewDidLoad()
-        view.backgroundColor = UIColor(hex: "E3F0FF")
-        navigationItem.titleView = nil
-        buildUI()
+        navigationController?.setNavigationBarHidden(true, animated: false)
+
+        detailView.configure(with: ExerciseDetailView.ViewModel(
+            headerTitle: headerTitleText,
+            title: titleText,
+            durationMinutes: (durationSeconds ?? 0) / 60,
+            description: descriptionText ?? "Follow the guided video and maintain controlled movement throughout."
+        ))
+
+        detailView.nextUpCollection.dataSource = self
+        detailView.nextUpCollection.delegate = self
+        detailView.nextUpCollection.register(NextUpCell.self, forCellWithReuseIdentifier: NextUpCell.reuseID)
+
+        detailView.backButton.addTarget(self, action: #selector(backTapped), for: .touchUpInside)
+        detailView.playButton.addTarget(self, action: #selector(playTapped), for: .touchUpInside)
+        detailView.completeButton.addTarget(self, action: #selector(toggleCompleted), for: .touchUpInside)
+        detailView.painScaleToggle.addTarget(self, action: #selector(toggleScale), for: .touchUpInside)
+        detailView.painSlider.addTarget(self, action: #selector(painChanged), for: .valueChanged)
+        detailView.painSlider.addTarget(self, action: #selector(painTouchDown), for: .touchDown)
+        detailView.painSlider.addTarget(self, action: #selector(painTouchUp), for: [.touchUpInside, .touchUpOutside, .touchCancel])
+        detailView.notesTextView.delegate = self
+        detailView.saveButton.addTarget(self, action: #selector(saveTapped), for: .touchUpInside)
+        detailView.continueButton.addTarget(self, action: #selector(continueTapped), for: .touchUpInside)
+
+        detailView.setScaleVisible(false)
+        isScaleVisible = false
+        detailView.setNextUpVisible(!nextUpItems.isEmpty)
+
         loadThumbnail()
     }
 
-    private func buildUI() {
-        scroll.translatesAutoresizingMaskIntoConstraints = false
-        content.translatesAutoresizingMaskIntoConstraints = false
-        content.axis = .vertical
-        content.spacing = 14
-
-        headerTitle.translatesAutoresizingMaskIntoConstraints = false
-        headerTitle.text = "Video"
-        headerTitle.font = .boldSystemFont(ofSize: 20)
-        headerTitle.textColor = .black
-        view.addSubview(headerTitle)
-        view.addSubview(scroll)
-        scroll.addSubview(content)
-
-        NSLayoutConstraint.activate([
-            headerTitle.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 12),
-            headerTitle.centerXAnchor.constraint(equalTo: view.centerXAnchor),
-
-            scroll.topAnchor.constraint(equalTo: headerTitle.bottomAnchor, constant: 12),
-            scroll.leadingAnchor.constraint(equalTo: view.leadingAnchor),
-            scroll.trailingAnchor.constraint(equalTo: view.trailingAnchor),
-            scroll.bottomAnchor.constraint(equalTo: view.bottomAnchor),
-
-            content.topAnchor.constraint(equalTo: scroll.topAnchor, constant: 16),
-            content.leadingAnchor.constraint(equalTo: scroll.leadingAnchor, constant: 16),
-            content.trailingAnchor.constraint(equalTo: scroll.trailingAnchor, constant: -16),
-            content.bottomAnchor.constraint(equalTo: scroll.bottomAnchor, constant: -16),
-            content.widthAnchor.constraint(equalTo: scroll.widthAnchor, constant: -32)
-        ])
-
-        videoCard.translatesAutoresizingMaskIntoConstraints = false
-        videoCard.backgroundColor = .white
-        videoCard.layer.cornerRadius = 24
-        videoCard.layer.shadowColor = UIColor.black.cgColor
-        videoCard.layer.shadowOpacity = 0.08
-        videoCard.layer.shadowRadius = 12
-        videoCard.layer.shadowOffset = CGSize(width: 0, height: 8)
-
-        thumbnailImageView.translatesAutoresizingMaskIntoConstraints = false
-        thumbnailImageView.contentMode = .scaleAspectFill
-        thumbnailImageView.clipsToBounds = true
-        thumbnailImageView.layer.cornerRadius = 24
-        thumbnailImageView.backgroundColor = UIColor(hex: "E3F0FF")
-
-        playButton.translatesAutoresizingMaskIntoConstraints = false
-        playButton.setImage(UIImage(systemName: "play.fill"), for: .normal)
-        playButton.tintColor = UIColor(hex: "1E6EF7")
-        playButton.backgroundColor = .white
-        playButton.layer.cornerRadius = 28
-        playButton.layer.shadowColor = UIColor.black.cgColor
-        playButton.layer.shadowOpacity = 0.12
-        playButton.layer.shadowRadius = 10
-        playButton.layer.shadowOffset = CGSize(width: 0, height: 6)
-        playButton.addTarget(self, action: #selector(playTapped), for: .touchUpInside)
-
-        videoCard.addSubview(thumbnailImageView)
-        videoCard.addSubview(playButton)
-        NSLayoutConstraint.activate([
-            videoCard.heightAnchor.constraint(equalToConstant: 220),
-            thumbnailImageView.topAnchor.constraint(equalTo: videoCard.topAnchor),
-            thumbnailImageView.leadingAnchor.constraint(equalTo: videoCard.leadingAnchor),
-            thumbnailImageView.trailingAnchor.constraint(equalTo: videoCard.trailingAnchor),
-            thumbnailImageView.bottomAnchor.constraint(equalTo: videoCard.bottomAnchor),
-            playButton.centerXAnchor.constraint(equalTo: videoCard.centerXAnchor),
-            playButton.centerYAnchor.constraint(equalTo: videoCard.centerYAnchor),
-            playButton.widthAnchor.constraint(equalToConstant: 56),
-            playButton.heightAnchor.constraint(equalToConstant: 56)
-        ])
-
-        metaTitle.font = .systemFont(ofSize: 22, weight: .bold)
-        metaTitle.textColor = .black
-        metaTitle.numberOfLines = 0
-        metaTitle.text = titleText
-
-        metaSub.font = .systemFont(ofSize: 14, weight: .semibold)
-        metaSub.textColor = .darkGray
-        metaSub.numberOfLines = 0
-        metaSub.text = subtitleText
-
-        metaDesc.font = .systemFont(ofSize: 14, weight: .regular)
-        metaDesc.textColor = .black
-        metaDesc.numberOfLines = 0
-        metaDesc.text = descriptionText ?? "Follow the guided video and maintain controlled movement throughout."
-
-        let mins = max(1, (durationSeconds ?? 0) / 60)
-        var extras = ["Duration: \(mins) min"]
-        if let sets { extras.append("Sets: \(sets)") }
-        if let reps { extras.append("Reps: \(reps)") }
-        if let hold { extras.append("Hold: \(hold)s") }
-
-        metaExtra.font = .systemFont(ofSize: 13, weight: .semibold)
-        metaExtra.textColor = UIColor(hex: "1E6EF7")
-        metaExtra.numberOfLines = 0
-        metaExtra.text = extras.joined(separator: " - ")
-
-        completeButton.translatesAutoresizingMaskIntoConstraints = false
-        completeButton.setTitle("Mark as Completed", for: .normal)
-        completeButton.titleLabel?.font = .systemFont(ofSize: 16, weight: .bold)
-        completeButton.backgroundColor = UIColor(hex: "1E6EF7")
-        completeButton.setTitleColor(.white, for: .normal)
-        completeButton.layer.cornerRadius = 16
-        completeButton.contentEdgeInsets = UIEdgeInsets(top: 14, left: 16, bottom: 14, right: 16)
-        completeButton.addTarget(self, action: #selector(completeTapped), for: .touchUpInside)
-
-        content.addArrangedSubview(videoCard)
-        content.addArrangedSubview(metaTitle)
-        content.addArrangedSubview(metaSub)
-        content.addArrangedSubview(metaExtra)
-        content.addArrangedSubview(metaDesc)
-        content.addArrangedSubview(completeButton)
+    @objc private func backTapped() {
+        navigationController?.popViewController(animated: true)
     }
 
     @objc private func playTapped() {
@@ -193,9 +121,7 @@ final class ExerciseDetailViewController: UIViewController {
                 let player = AVPlayer(url: url)
                 let vc = AVPlayerViewController()
                 vc.player = player
-                present(vc, animated: true) {
-                    player.play()
-                }
+                present(vc, animated: true) { player.play() }
             } catch {
                 showError("Video error", error.localizedDescription)
             }
@@ -207,51 +133,56 @@ final class ExerciseDetailViewController: UIViewController {
         Task {
             do {
                 let url = try await videosModel.signedThumbnailURL(path: thumbnailPath)
-                await MainActor.run {
-                    self.thumbnailImageView.image = UIImage(systemName: "photo")
-                    let task = URLSession.shared.dataTask(with: url) { [weak self] data, _, _ in
-                        guard let self, let data, let image = UIImage(data: data) else { return }
-                        DispatchQueue.main.async {
-                            self.thumbnailImageView.image = image
-                        }
-                    }
-                    task.resume()
+                let task = URLSession.shared.dataTask(with: url) { [weak self] data, _, _ in
+                    guard let self, let data, let image = UIImage(data: data) else { return }
+                    DispatchQueue.main.async { self.detailView.setThumbnailImage(image) }
                 }
+                task.resume()
             } catch {
                 return
             }
         }
     }
 
-    @objc private func completeTapped() {
-        let ac = UIAlertController(title: "Log Pain (optional)",
-                                   message: "How was your pain during the exercise? (0-10)",
-                                   preferredStyle: .alert)
-        ac.addTextField { tf in
-            tf.placeholder = "Pain level (0-10)"
-            tf.keyboardType = .numberPad
-        }
-        ac.addAction(UIAlertAction(title: "Skip", style: .cancel) { [weak self] _ in
-            self?.saveProgress(pain: nil)
-        })
-        ac.addAction(UIAlertAction(title: "Save", style: .default) { [weak self] _ in
-            let t = ac.textFields?.first?.text ?? ""
-            let pain = Int(t)
-            self?.saveProgress(pain: pain)
-        })
-        present(ac, animated: true)
+    @objc private func toggleCompleted() {
+        isCompleted.toggle()
+        let imageName = isCompleted ? "checkmark.circle.fill" : "circle"
+        detailView.completeButton.setImage(UIImage(systemName: imageName), for: .normal)
+        detailView.completeButton.tintColor = isCompleted ? UIColor(hex: "22C55E") : UIColor(hex: "94A3B8")
     }
 
-    private func saveProgress(pain: Int?) {
+    @objc private func toggleScale() {
+        isScaleVisible.toggle()
+        detailView.setScaleVisible(isScaleVisible)
+    }
+
+    @objc private func painChanged() {
+        let value = Int(detailView.painSlider.value.rounded())
+        detailView.updatePainUI(value: value)
+    }
+
+    @objc private func painTouchDown() {
+        detailView.scroll.isScrollEnabled = false
+    }
+
+    @objc private func painTouchUp() {
+        detailView.scroll.isScrollEnabled = true
+    }
+
+    @objc private func saveTapped() {
+        let painValue = Int(detailView.painSlider.value.rounded())
+        let notes = detailView.notesTextView.text.trimmingCharacters(in: .whitespacesAndNewlines)
+        let payloadNotes = notes.isEmpty ? nil : notes
+
         Task {
             do {
                 try await videosModel.upsertProgress(
                     exerciseID: exerciseID,
                     programID: programID,
-                    isCompleted: true,
+                    isCompleted: isCompleted,
                     watchedSeconds: durationSeconds ?? 0,
-                    painLevel: pain,
-                    notes: nil
+                    painLevel: painValue,
+                    notes: payloadNotes
                 )
                 let done = UIAlertController(title: "Saved", message: "Progress updated.", preferredStyle: .alert)
                 done.addAction(UIAlertAction(title: "OK", style: .default))
@@ -262,9 +193,191 @@ final class ExerciseDetailViewController: UIViewController {
         }
     }
 
+    @objc private func continueTapped() {
+        guard let first = nextUpItems.first else { return }
+        let vc = ExerciseDetailViewController(
+            headerTitleText: headerTitleText,
+            titleText: first.title,
+            subtitle: first.subtitle,
+            descriptionText: descriptionText,
+            durationSeconds: first.durationSeconds,
+            videoPath: first.videoPath,
+            thumbnailPath: first.thumbnailPath,
+            programID: first.programID,
+            exerciseID: first.exerciseID,
+            sets: nil,
+            reps: nil,
+            hold: nil,
+            nextUpItems: Array(nextUpItems.dropFirst())
+        )
+        vc.hidesBottomBarWhenPushed = true
+        navigationController?.pushViewController(vc, animated: true)
+    }
+
     private func showError(_ title: String, _ message: String) {
         let ac = UIAlertController(title: title, message: message, preferredStyle: .alert)
         ac.addAction(UIAlertAction(title: "OK", style: .default))
         present(ac, animated: true)
+    }
+}
+
+extension ExerciseDetailViewController: UITextViewDelegate {
+    func textViewDidChange(_ textView: UITextView) {
+        let isEmpty = textView.text.isEmpty
+        for subview in textView.subviews {
+            if let label = subview as? UILabel {
+                label.isHidden = !isEmpty
+            }
+        }
+    }
+}
+
+extension ExerciseDetailViewController: UICollectionViewDataSource, UICollectionViewDelegateFlowLayout {
+    func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
+        return nextUpItems.count
+    }
+
+    func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
+        let cell = collectionView.dequeueReusableCell(withReuseIdentifier: NextUpCell.reuseID, for: indexPath) as! NextUpCell
+        let item = nextUpItems[indexPath.item]
+        cell.configure(title: item.title, subtitle: item.subtitle)
+        if let path = item.thumbnailPath {
+            Task {
+                if let url = try? await videosModel.signedThumbnailURL(path: path) {
+                    let task = URLSession.shared.dataTask(with: url) { data, _, _ in
+                        guard let data, let image = UIImage(data: data) else { return }
+                        DispatchQueue.main.async { cell.setImage(image) }
+                    }
+                    task.resume()
+                }
+            }
+        }
+        return cell
+    }
+
+    func collectionView(_ collectionView: UICollectionView, layout collectionViewLayout: UICollectionViewLayout, sizeForItemAt indexPath: IndexPath) -> CGSize {
+        return CGSize(width: 130, height: 150)
+    }
+
+    func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
+        let item = nextUpItems[indexPath.item]
+        let vc = ExerciseDetailViewController(
+            headerTitleText: headerTitleText,
+            titleText: item.title,
+            subtitle: item.subtitle,
+            descriptionText: descriptionText,
+            durationSeconds: item.durationSeconds,
+            videoPath: item.videoPath,
+            thumbnailPath: item.thumbnailPath,
+            programID: item.programID,
+            exerciseID: item.exerciseID,
+            sets: nil,
+            reps: nil,
+            hold: nil,
+            nextUpItems: Array(nextUpItems.dropFirst(indexPath.item + 1))
+        )
+        vc.hidesBottomBarWhenPushed = true
+        navigationController?.pushViewController(vc, animated: true)
+    }
+}
+
+final class NextUpCell: UICollectionViewCell {
+    static let reuseID = "NextUpCell"
+
+    private let card = UIView()
+    private let imageView = UIImageView()
+    private let playIcon = UIImageView()
+    private let titleLabel = UILabel()
+    private let subtitleLabel = UILabel()
+
+    override init(frame: CGRect) {
+        super.init(frame: frame)
+        build()
+    }
+
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
+
+    override func prepareForReuse() {
+        super.prepareForReuse()
+        imageView.image = nil
+        titleLabel.text = nil
+        subtitleLabel.text = nil
+    }
+
+    func configure(title: String, subtitle: String) {
+        titleLabel.text = title
+        subtitleLabel.text = subtitle
+    }
+
+    func setImage(_ image: UIImage) {
+        imageView.image = image
+    }
+
+    private func build() {
+        contentView.backgroundColor = .clear
+
+        card.translatesAutoresizingMaskIntoConstraints = false
+        card.backgroundColor = .white
+        card.layer.cornerRadius = 16
+        card.layer.shadowColor = UIColor.black.cgColor
+        card.layer.shadowOpacity = 0.06
+        card.layer.shadowRadius = 8
+        card.layer.shadowOffset = CGSize(width: 0, height: 4)
+
+        imageView.translatesAutoresizingMaskIntoConstraints = false
+        imageView.contentMode = .scaleAspectFill
+        imageView.layer.cornerRadius = 12
+        imageView.clipsToBounds = true
+        imageView.backgroundColor = UIColor(hex: "E3F0FF")
+
+        playIcon.translatesAutoresizingMaskIntoConstraints = false
+        playIcon.image = UIImage(systemName: "play.fill")
+        playIcon.tintColor = UIColor(hex: "1E6EF7")
+        playIcon.backgroundColor = .white
+        playIcon.layer.cornerRadius = 16
+        playIcon.layer.masksToBounds = true
+
+        titleLabel.translatesAutoresizingMaskIntoConstraints = false
+        titleLabel.font = .systemFont(ofSize: 12, weight: .bold)
+        titleLabel.textColor = UIColor(hex: "1E2A44")
+        titleLabel.numberOfLines = 2
+
+        subtitleLabel.translatesAutoresizingMaskIntoConstraints = false
+        subtitleLabel.font = .systemFont(ofSize: 11, weight: .regular)
+        subtitleLabel.textColor = UIColor.black.withAlphaComponent(0.6)
+        subtitleLabel.numberOfLines = 2
+
+        contentView.addSubview(card)
+        card.addSubview(imageView)
+        card.addSubview(playIcon)
+        card.addSubview(titleLabel)
+        card.addSubview(subtitleLabel)
+
+        NSLayoutConstraint.activate([
+            card.topAnchor.constraint(equalTo: contentView.topAnchor),
+            card.leadingAnchor.constraint(equalTo: contentView.leadingAnchor),
+            card.trailingAnchor.constraint(equalTo: contentView.trailingAnchor),
+            card.bottomAnchor.constraint(equalTo: contentView.bottomAnchor),
+
+            imageView.topAnchor.constraint(equalTo: card.topAnchor, constant: 10),
+            imageView.leadingAnchor.constraint(equalTo: card.leadingAnchor, constant: 10),
+            imageView.trailingAnchor.constraint(equalTo: card.trailingAnchor, constant: -10),
+            imageView.heightAnchor.constraint(equalToConstant: 76),
+
+            playIcon.centerXAnchor.constraint(equalTo: imageView.centerXAnchor),
+            playIcon.centerYAnchor.constraint(equalTo: imageView.centerYAnchor),
+            playIcon.widthAnchor.constraint(equalToConstant: 32),
+            playIcon.heightAnchor.constraint(equalToConstant: 32),
+
+            titleLabel.topAnchor.constraint(equalTo: imageView.bottomAnchor, constant: 8),
+            titleLabel.leadingAnchor.constraint(equalTo: imageView.leadingAnchor),
+            titleLabel.trailingAnchor.constraint(equalTo: imageView.trailingAnchor),
+
+            subtitleLabel.topAnchor.constraint(equalTo: titleLabel.bottomAnchor, constant: 4),
+            subtitleLabel.leadingAnchor.constraint(equalTo: titleLabel.leadingAnchor),
+            subtitleLabel.trailingAnchor.constraint(equalTo: titleLabel.trailingAnchor)
+        ])
     }
 }

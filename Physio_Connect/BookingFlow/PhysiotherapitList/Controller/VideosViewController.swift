@@ -17,6 +17,20 @@ final class VideosViewController: UIViewController, UITableViewDataSource, UITab
     private var isRefreshing = false
     private let filterOptions = ["All", "Neck", "Back", "Shoulders", "Knees"]
     private var selectedFilterIndex = 0
+    private let daySubtitles = [
+        "Foundation & Assessment",
+        "Building Stability",
+        "Progressive Strengthening",
+        "Mobility & Flow",
+        "Control & Balance"
+    ]
+    private let itemsPerDay = 2
+
+    private var programSections: [ProgramDaySection] = []
+    private var completedExerciseIDs: Set<UUID> = []
+    private var programTitle: String?
+    private var programHeaderView: UIView?
+    private var programFooterView: UIView?
 
     private var isProgramTab: Bool { videosView.segmented.selectedSegmentIndex == 1 }
     private var filteredFreeExercises: [ExerciseVideoRow] {
@@ -32,15 +46,17 @@ final class VideosViewController: UIViewController, UITableViewDataSource, UITab
 
     override func viewDidLoad() {
         super.viewDidLoad()
-        title = "Videos"
-        navigationController?.navigationBar.prefersLargeTitles = true
+        navigationController?.setNavigationBarHidden(true, animated: false)
 
         videosView.tableView.dataSource = self
         videosView.tableView.delegate = self
         videosView.searchBar.delegate = self
         videosView.tableView.register(ExerciseCell.self, forCellReuseIdentifier: ExerciseCell.reuseID)
+        videosView.tableView.register(ProgramExerciseCell.self, forCellReuseIdentifier: ProgramExerciseCell.reuseID)
         videosView.tableView.rowHeight = UITableView.automaticDimension
         videosView.tableView.estimatedRowHeight = 300
+        videosView.tableView.contentInset = UIEdgeInsets(top: 0, left: 0, bottom: 110, right: 0)
+        videosView.tableView.scrollIndicatorInsets = UIEdgeInsets(top: 0, left: 0, bottom: 110, right: 0)
         videosView.filterCollectionView.dataSource = self
         videosView.filterCollectionView.delegate = self
         videosView.filterCollectionView.register(ExerciseFilterChipCell.self, forCellWithReuseIdentifier: ExerciseFilterChipCell.reuseID)
@@ -50,6 +66,7 @@ final class VideosViewController: UIViewController, UITableViewDataSource, UITab
         videosView.segmented.addTarget(self, action: #selector(tabChanged), for: .valueChanged)
         videosView.redeemButton.addTarget(self, action: #selector(redeemTapped), for: .touchUpInside)
         videosView.setRefreshTarget(self, action: #selector(refreshPulled))
+        videosView.profileButton.addTarget(self, action: #selector(profileTapped), for: .touchUpInside)
 
         Task { await reload() }
     }
@@ -59,12 +76,30 @@ final class VideosViewController: UIViewController, UITableViewDataSource, UITab
         Task { await reload() }
     }
 
+    override func viewDidLayoutSubviews() {
+        super.viewDidLayoutSubviews()
+        updateHeaderLayout()
+        updateFooterLayout()
+    }
+
+    override func viewDidAppear(_ animated: Bool) {
+        super.viewDidAppear(animated)
+        updateHeaderLayout()
+        updateFooterLayout()
+    }
+
     @objc private func tabChanged() {
         Task { await reload() }
     }
 
     @objc private func refreshPulled() {
         Task { await reload() }
+    }
+
+    @objc private func profileTapped() {
+        let vc = ProfileViewController()
+        vc.hidesBottomBarWhenPushed = true
+        navigationController?.pushViewController(vc, animated: true)
     }
 
     private func reload() async {
@@ -80,23 +115,69 @@ final class VideosViewController: UIViewController, UITableViewDataSource, UITab
 
         do {
             if isProgramTab {
-                videosView.searchBar.isHidden = true
-                videosView.filterCollectionView.isHidden = true
+                videosView.setProgramMode(true)
                 let rows = try await model.fetchMyProgramExercises()
                 programExercises = rows
+                programTitle = rows.first?.program_title
+                completedExerciseIDs = []
+                programSections = []
+                if rows.isEmpty {
+                    await MainActor.run {
+                        self.programHeaderView = nil
+                        self.programFooterView = nil
+                        self.videosView.tableView.tableHeaderView = nil
+                        self.videosView.tableView.tableFooterView = nil
+                    }
+                } else if let programID = rows.first?.program_id {
+                    let progressRows = try await model.fetchProgress(programID: programID)
+                    completedExerciseIDs = Set(progressRows.filter { $0.is_completed == true }.map { $0.exercise_id })
+                    programSections = buildProgramSections(rows)
+                    let totalCount = rows.count
+                    let completedCount = rows.filter { completedExerciseIDs.contains($0.exercise_id) }.count
+                    let weeklyMinutes = computeWeeklyMinutes(from: progressRows)
+                    let adherencePercent = totalCount == 0 ? 0 : Int(Double(completedCount) / Double(totalCount) * 100.0)
+                    let series = buildSeries(from: progressRows)
+                    let completedDays = programSections.filter { isDayComplete($0) }.count
+                    await MainActor.run {
+                        self.applyProgramHeader(
+                            programTitle: self.programTitle ?? "Your Recovery Program",
+                            adherencePercent: adherencePercent,
+                            completedCount: completedCount,
+                            totalCount: totalCount,
+                            weeklyMinutes: weeklyMinutes,
+                            painSeries: series.pain,
+                            adherenceSeries: series.adherence
+                        )
+                        self.applyProgramFooter(completedDays: completedDays, totalDays: self.programSections.count)
+                    }
+                } else {
+                    await MainActor.run {
+                        self.programHeaderView = nil
+                        self.programFooterView = nil
+                        self.videosView.tableView.tableHeaderView = nil
+                        self.videosView.tableView.tableFooterView = nil
+                    }
+                }
                 await MainActor.run {
                     self.videosView.showEmptyState(rows.isEmpty)
                     self.videosView.tableView.reloadData()
+                    self.updateHeaderLayout()
                 }
             } else {
-                videosView.searchBar.isHidden = false
-                videosView.filterCollectionView.isHidden = false
+                videosView.setProgramMode(false)
+                await MainActor.run {
+                    self.programHeaderView = nil
+                    self.programFooterView = nil
+                    self.videosView.tableView.tableHeaderView = nil
+                    self.videosView.tableView.tableFooterView = nil
+                }
                 let rows = try await model.fetchFreeExercises(search: videosView.searchBar.text)
                 freeExercises = rows
                 await MainActor.run {
                     self.videosView.showEmptyState(false)
                     self.videosView.filterCollectionView.reloadData()
                     self.videosView.tableView.reloadData()
+                    self.updateHeaderLayout()
                 }
             }
         } catch {
@@ -148,26 +229,43 @@ final class VideosViewController: UIViewController, UITableViewDataSource, UITab
         }
     }
 
+    func numberOfSections(in tableView: UITableView) -> Int {
+        isProgramTab ? programSections.count : 1
+    }
+
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        isProgramTab ? programExercises.count : filteredFreeExercises.count
+        if isProgramTab {
+            guard programSections.indices.contains(section) else { return 0 }
+            return programSections[section].items.count
+        }
+        return filteredFreeExercises.count
     }
 
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
-        let cell = tableView.dequeueReusableCell(withIdentifier: ExerciseCell.reuseID, for: indexPath) as! ExerciseCell
-        cell.selectionStyle = .none
-
         if isProgramTab {
-            let row = programExercises[indexPath.row]
+            guard programSections.indices.contains(indexPath.section),
+                  programSections[indexPath.section].items.indices.contains(indexPath.row)
+            else {
+                return UITableViewCell()
+            }
+            let cell = tableView.dequeueReusableCell(withIdentifier: ProgramExerciseCell.reuseID, for: indexPath) as! ProgramExerciseCell
+            cell.selectionStyle = .none
+            let row = programSections[indexPath.section].items[indexPath.row]
+            let completed = completedExerciseIDs.contains(row.exercise_id)
+            let locked = isDayLocked(indexPath.section)
             cell.configure(
                 title: row.title,
-                subtitle: "\(row.target_area ?? "General") - \(row.purpose ?? "Program")",
-                description: row.description,
+                subtitle: row.target_area ?? "General",
                 durationSeconds: row.duration_seconds,
-                badgeText: row.difficulty ?? "Program",
+                completed: completed,
+                locked: locked,
                 thumbnailPath: row.thumbnail_path
             )
             loadThumbnail(for: row.thumbnail_path, in: cell)
+            return cell
         } else {
+            let cell = tableView.dequeueReusableCell(withIdentifier: ExerciseCell.reuseID, for: indexPath) as! ExerciseCell
+            cell.selectionStyle = .none
             let row = filteredFreeExercises[indexPath.row]
             cell.configure(
                 title: row.title,
@@ -178,15 +276,20 @@ final class VideosViewController: UIViewController, UITableViewDataSource, UITab
                 thumbnailPath: row.thumbnail_path
             )
             loadThumbnail(for: row.thumbnail_path, in: cell)
+            return cell
         }
-
-        return cell
     }
 
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         if isProgramTab {
-            let r = programExercises[indexPath.row]
+            guard programSections.indices.contains(indexPath.section),
+                  programSections[indexPath.section].items.indices.contains(indexPath.row)
+            else { return }
+            if isDayLocked(indexPath.section) { return }
+            let r = programSections[indexPath.section].items[indexPath.row]
+            let nextUp = buildNextUpItems(currentID: r.exercise_id)
             let vc = ExerciseDetailViewController(
+                headerTitleText: r.target_area ?? "Exercise",
                 titleText: r.title,
                 subtitle: "\(r.target_area ?? "General") - \(r.purpose ?? "Program")",
                 descriptionText: r.description,
@@ -197,12 +300,15 @@ final class VideosViewController: UIViewController, UITableViewDataSource, UITab
                 exerciseID: r.exercise_id,
                 sets: r.sets,
                 reps: r.reps,
-                hold: r.hold_seconds
+                hold: r.hold_seconds,
+                nextUpItems: nextUp
             )
+            vc.hidesBottomBarWhenPushed = true
             navigationController?.pushViewController(vc, animated: true)
         } else {
             let r = filteredFreeExercises[indexPath.row]
             let vc = ExerciseDetailViewController(
+                headerTitleText: r.target_area ?? "Exercise",
                 titleText: r.title,
                 subtitle: "\(r.target_area ?? "General") - \(r.purpose ?? "Free")",
                 descriptionText: r.description,
@@ -213,10 +319,60 @@ final class VideosViewController: UIViewController, UITableViewDataSource, UITab
                 exerciseID: r.id,
                 sets: nil,
                 reps: nil,
-                hold: nil
+                hold: nil,
+                nextUpItems: []
             )
+            vc.hidesBottomBarWhenPushed = true
             navigationController?.pushViewController(vc, animated: true)
         }
+    }
+
+    private func buildNextUpItems(currentID: UUID) -> [ExerciseDetailViewController.NextUpItem] {
+        let sorted = programExercises.sorted { ($0.sort_order ?? 0) < ($1.sort_order ?? 0) }
+        guard let currentIndex = sorted.firstIndex(where: { $0.exercise_id == currentID }) else { return [] }
+        let tail = sorted.dropFirst(currentIndex + 1)
+        let nextRows = Array(tail.prefix(3))
+        return nextRows.map { row in
+            ExerciseDetailViewController.NextUpItem(
+                title: row.title,
+                subtitle: "\(row.target_area ?? "General")",
+                durationSeconds: row.duration_seconds,
+                videoPath: row.video_path,
+                thumbnailPath: row.thumbnail_path,
+                programID: row.program_id,
+                exerciseID: row.exercise_id
+            )
+        }
+    }
+
+    func tableView(_ tableView: UITableView, heightForHeaderInSection section: Int) -> CGFloat {
+        isProgramTab ? 52 : 0
+    }
+
+    func tableView(_ tableView: UITableView, viewForHeaderInSection section: Int) -> UIView? {
+        guard isProgramTab, programSections.indices.contains(section) else { return nil }
+        let header = ProgramDayHeaderView()
+        let sectionData = programSections[section]
+        let completedCount = sectionData.items.filter { completedExerciseIDs.contains($0.exercise_id) }.count
+        let isComplete = completedCount == sectionData.items.count && sectionData.items.count > 0
+        header.configure(
+            day: sectionData.day,
+            title: sectionData.title,
+            subtitle: sectionData.subtitle,
+            completedCount: completedCount,
+            totalCount: sectionData.items.count,
+            isComplete: isComplete
+        )
+        let container = UIView()
+        header.translatesAutoresizingMaskIntoConstraints = false
+        container.addSubview(header)
+        NSLayoutConstraint.activate([
+            header.leadingAnchor.constraint(equalTo: container.leadingAnchor, constant: 8),
+            header.trailingAnchor.constraint(equalTo: container.trailingAnchor, constant: -8),
+            header.topAnchor.constraint(equalTo: container.topAnchor),
+            header.bottomAnchor.constraint(equalTo: container.bottomAnchor)
+        ])
+        return container
     }
 
     func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
@@ -260,6 +416,212 @@ final class VideosViewController: UIViewController, UITableViewDataSource, UITab
                 return
             }
         }
+    }
+
+    private func loadThumbnail(for path: String?, in cell: ProgramExerciseCell) {
+        guard let path else { return }
+        Task { [weak self, weak cell] in
+            guard let self, let cell else { return }
+            do {
+                let url = try await self.model.signedThumbnailURL(path: path)
+                await MainActor.run {
+                    if cell.thumbnailPath == path {
+                        cell.setThumbnail(url: url)
+                    }
+                }
+            } catch {
+                return
+            }
+        }
+    }
+
+    private func buildProgramSections(_ rows: [MyProgramExerciseRow]) -> [ProgramDaySection] {
+        var sections: [ProgramDaySection] = []
+        for (index, row) in rows.enumerated() {
+            let day = (index / itemsPerDay) + 1
+            if sections.last?.day != day {
+                let subtitle = daySubtitles.indices.contains(day - 1) ? daySubtitles[day - 1] : "Recovery Focus"
+                sections.append(ProgramDaySection(day: day, title: "Day \(day)", subtitle: subtitle, items: []))
+            }
+            sections[sections.count - 1].items.append(row)
+        }
+        return sections
+    }
+
+    private func isDayComplete(_ section: ProgramDaySection) -> Bool {
+        let completedCount = section.items.filter { completedExerciseIDs.contains($0.exercise_id) }.count
+        return completedCount == section.items.count && section.items.count > 0
+    }
+
+    private func isDayLocked(_ sectionIndex: Int) -> Bool {
+        guard sectionIndex > 0 else { return false }
+        let previousSection = programSections[sectionIndex - 1]
+        return !isDayComplete(previousSection)
+    }
+
+    private func applyProgramHeader(programTitle: String,
+                                    adherencePercent: Int,
+                                    completedCount: Int,
+                                    totalCount: Int,
+                                    weeklyMinutes: Int,
+                                    painSeries: [Int],
+                                    adherenceSeries: [Int]) {
+        let header = UIView()
+        header.backgroundColor = .clear
+
+        let stack = UIStackView()
+        stack.axis = .vertical
+        stack.spacing = 16
+        stack.translatesAutoresizingMaskIntoConstraints = false
+
+        let summaryView = ProgramSummaryView()
+        summaryView.configure(
+            programTitle: programTitle,
+            subtitle: "Prescribed by your physiotherapist",
+            adherenceText: "\(adherencePercent)%",
+            completedText: "\(completedCount)/\(totalCount)",
+            timeText: "\(weeklyMinutes)m"
+        )
+        summaryView.heightAnchor.constraint(greaterThanOrEqualToConstant: 180).isActive = true
+
+        let trendsView = ProgramTrendsView()
+        let highlightText = "Your pain levels have decreased and adherence is improving this week."
+        trendsView.configure(painSeries: painSeries, adherenceSeries: adherenceSeries, highlightText: highlightText)
+        trendsView.heightAnchor.constraint(greaterThanOrEqualToConstant: 360).isActive = true
+
+        stack.addArrangedSubview(summaryView)
+        stack.addArrangedSubview(trendsView)
+
+        header.addSubview(stack)
+        NSLayoutConstraint.activate([
+            stack.topAnchor.constraint(equalTo: header.topAnchor, constant: 12),
+            stack.leadingAnchor.constraint(equalTo: header.leadingAnchor, constant: 8),
+            stack.trailingAnchor.constraint(equalTo: header.trailingAnchor, constant: -8),
+            stack.bottomAnchor.constraint(equalTo: header.bottomAnchor, constant: -8)
+        ])
+
+        programHeaderView = header
+        setTableHeaderView(header)
+        updateHeaderLayout()
+    }
+
+    private func applyProgramFooter(completedDays: Int, totalDays: Int) {
+        let footerContainer = UIView()
+        footerContainer.backgroundColor = .clear
+
+        let progressView = ProgramOverallProgressView()
+        progressView.configure(completedDays: completedDays, totalDays: totalDays)
+        progressView.translatesAutoresizingMaskIntoConstraints = false
+        footerContainer.addSubview(progressView)
+
+        NSLayoutConstraint.activate([
+            progressView.topAnchor.constraint(equalTo: footerContainer.topAnchor, constant: 12),
+            progressView.leadingAnchor.constraint(equalTo: footerContainer.leadingAnchor),
+            progressView.trailingAnchor.constraint(equalTo: footerContainer.trailingAnchor),
+            progressView.bottomAnchor.constraint(equalTo: footerContainer.bottomAnchor, constant: -24)
+        ])
+
+        programFooterView = footerContainer
+        setTableFooterView(footerContainer)
+        updateFooterLayout()
+    }
+
+    private func setTableHeaderView(_ header: UIView) {
+        let width = videosView.tableView.bounds.width > 0 ? videosView.tableView.bounds.width : view.bounds.width
+        header.bounds.size.width = width
+        header.bounds.size.height = 1
+        videosView.tableView.layoutIfNeeded()
+        header.setNeedsLayout()
+        header.layoutIfNeeded()
+
+        let targetSize = CGSize(width: width, height: UIView.layoutFittingCompressedSize.height)
+        let height = header.systemLayoutSizeFitting(
+            targetSize,
+            withHorizontalFittingPriority: .required,
+            verticalFittingPriority: .fittingSizeLevel
+        ).height
+
+        header.frame = CGRect(x: 0, y: 0, width: width, height: height)
+        videosView.tableView.tableHeaderView = header
+    }
+
+    private func updateHeaderLayout() {
+        guard let header = programHeaderView else { return }
+        let width = videosView.tableView.bounds.width > 0 ? videosView.tableView.bounds.width : view.bounds.width
+        guard width > 0 else { return }
+        setTableHeaderView(header)
+    }
+
+    private func setTableFooterView(_ footer: UIView) {
+        let width = videosView.tableView.bounds.width > 0 ? videosView.tableView.bounds.width : view.bounds.width
+        footer.bounds.size.width = width
+        footer.bounds.size.height = 1
+        videosView.tableView.layoutIfNeeded()
+        footer.setNeedsLayout()
+        footer.layoutIfNeeded()
+
+        let targetSize = CGSize(width: width, height: UIView.layoutFittingCompressedSize.height)
+        let height = footer.systemLayoutSizeFitting(
+            targetSize,
+            withHorizontalFittingPriority: .required,
+            verticalFittingPriority: .fittingSizeLevel
+        ).height
+
+        footer.frame = CGRect(x: 0, y: 0, width: width, height: height)
+        videosView.tableView.tableFooterView = footer
+    }
+
+    private func updateFooterLayout() {
+        guard let footer = programFooterView else { return }
+        let width = videosView.tableView.bounds.width > 0 ? videosView.tableView.bounds.width : view.bounds.width
+        guard width > 0 else { return }
+        setTableFooterView(footer)
+    }
+
+    private func computeWeeklyMinutes(from rows: [ExerciseProgressRow]) -> Int {
+        let df = DateFormatter()
+        df.dateFormat = "yyyy-MM-dd"
+        let now = Date()
+        let calendar = Calendar.current
+        let weekAgo = calendar.date(byAdding: .day, value: -6, to: now) ?? now
+        let totalSeconds = rows.compactMap { row -> Int? in
+            guard let dateString = row.progress_date, let date = df.date(from: dateString) else { return nil }
+            guard date >= weekAgo else { return nil }
+            return row.watched_seconds
+        }.reduce(0, +)
+        return max(1, totalSeconds / 60)
+    }
+
+    private func buildSeries(from rows: [ExerciseProgressRow]) -> (pain: [Int], adherence: [Int]) {
+        let df = DateFormatter()
+        df.dateFormat = "yyyy-MM-dd"
+        let calendar = Calendar.current
+        let today = calendar.startOfDay(for: Date())
+        var painSeries: [Int] = []
+        var adherenceSeries: [Int] = []
+
+        for i in (0...6).reversed() {
+            guard let day = calendar.date(byAdding: .day, value: -i, to: today) else { continue }
+            let dayString = df.string(from: day)
+            let dayRows = rows.filter { $0.progress_date == dayString }
+            let painAvg: Int = {
+                let pains = dayRows.compactMap { $0.pain_level }
+                guard !pains.isEmpty else { return 0 }
+                return Int(Double(pains.reduce(0, +)) / Double(pains.count))
+            }()
+            let completed = dayRows.filter { $0.is_completed == true }.count
+            let adherence = min(100, Int((Double(completed) / Double(max(itemsPerDay, 1))) * 100.0))
+            painSeries.append(painAvg)
+            adherenceSeries.append(adherence)
+        }
+        return (painSeries, adherenceSeries)
+    }
+
+    private struct ProgramDaySection {
+        let day: Int
+        let title: String
+        let subtitle: String
+        var items: [MyProgramExerciseRow]
     }
 
     private func showError(_ title: String, _ message: String) {
