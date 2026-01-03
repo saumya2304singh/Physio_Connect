@@ -67,6 +67,10 @@ struct ProfileViewData {
 final class ProfileModel {
     private let client = SupabaseManager.shared.client
 
+    func hasActiveSession() async -> Bool {
+        (try? await client.auth.session) != nil
+    }
+
     func fetchCurrentProfile() async throws -> ProfileViewData {
         let session = try await client.auth.session
         let userID = session.user.id.uuidString

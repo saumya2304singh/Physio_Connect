@@ -14,6 +14,7 @@ final class ProfileView: UIView {
     var onPrivacyTapped: (() -> Void)?
     var onTermsTapped: (() -> Void)?
     var onSignOut: (() -> Void)?
+    var onLogin: (() -> Void)?
     var onNotificationsChanged: ((Bool) -> Void)?
     var onRefresh: (() -> Void)?
 
@@ -41,7 +42,9 @@ final class ProfileView: UIView {
     private let privacyButton = ProfileActionRowButton(title: "Privacy Policy")
     private let termsButton = ProfileActionRowButton(title: "Terms of Service")
 
+    private let authStack = UIStackView()
     private let signOutButton = UIButton(type: .system)
+    private let loginButton = UIButton(type: .system)
 
     override init(frame: CGRect) {
         super.init(frame: frame)
@@ -54,6 +57,7 @@ final class ProfileView: UIView {
     }
 
     func apply(_ data: ProfileViewData) {
+        setLoggedIn(true)
         nameLabel.text = data.name
         emailRow.setValue(data.email)
         phoneRow.setValue(data.phone)
@@ -61,6 +65,17 @@ final class ProfileView: UIView {
         dobRow.setValue(data.dateOfBirth)
         locationRow.setValue(data.location)
         notificationRow.setOn(data.notificationsEnabled)
+    }
+
+    func applyLoggedOut() {
+        setLoggedIn(false)
+        nameLabel.text = "Guest"
+        emailRow.setValue("—")
+        phoneRow.setValue("—")
+        genderRow.setValue("—")
+        dobRow.setValue("—")
+        locationRow.setValue("—")
+        notificationRow.setOn(false)
     }
 
     func setRefreshing(_ isRefreshing: Bool) {
@@ -266,7 +281,25 @@ final class ProfileView: UIView {
         signOutButton.heightAnchor.constraint(equalToConstant: 52).isActive = true
         signOutButton.addTarget(self, action: #selector(signOutTapped), for: .touchUpInside)
 
-        stackView.addArrangedSubview(signOutButton)
+        loginButton.setTitle("Log In", for: .normal)
+        loginButton.setTitleColor(.white, for: .normal)
+        loginButton.titleLabel?.font = .systemFont(ofSize: 16, weight: .bold)
+        loginButton.backgroundColor = UIColor(hex: "1E6EF7")
+        loginButton.layer.cornerRadius = 16
+        loginButton.layer.shadowColor = UIColor.black.cgColor
+        loginButton.layer.shadowOpacity = 0.05
+        loginButton.layer.shadowRadius = 10
+        loginButton.layer.shadowOffset = CGSize(width: 0, height: 6)
+        loginButton.heightAnchor.constraint(equalToConstant: 52).isActive = true
+        loginButton.addTarget(self, action: #selector(loginTapped), for: .touchUpInside)
+
+        authStack.axis = .vertical
+        authStack.spacing = 12
+        authStack.addArrangedSubview(signOutButton)
+        authStack.addArrangedSubview(loginButton)
+        stackView.addArrangedSubview(authStack)
+
+        setLoggedIn(true)
     }
 
     private func makeCardView() -> UIView {
@@ -333,8 +366,20 @@ final class ProfileView: UIView {
         onSignOut?()
     }
 
+    @objc private func loginTapped() {
+        onLogin?()
+    }
+
     @objc private func refreshPulled() {
         onRefresh?()
+    }
+
+    private func setLoggedIn(_ loggedIn: Bool) {
+        signOutButton.isHidden = !loggedIn
+        loginButton.isHidden = loggedIn
+        editButton.isHidden = !loggedIn
+        notificationRow.isUserInteractionEnabled = loggedIn
+        notificationRow.alpha = loggedIn ? 1.0 : 0.5
     }
 }
 

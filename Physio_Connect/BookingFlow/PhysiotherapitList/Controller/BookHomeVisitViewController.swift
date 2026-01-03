@@ -255,6 +255,9 @@ final class BookHomeVisitViewController: UIViewController {
             // After signup, go back to payment screen (same draft)
             self.navigationController?.popViewController(animated: true)
         }
+        attachLogin(to: vc) { [weak self] in
+            self?.navigationController?.popViewController(animated: true)
+        }
 
         navigationController?.pushViewController(vc, animated: true)
     }
@@ -351,6 +354,9 @@ final class BookHomeVisitViewController: UIViewController {
             guard let self else { return }
             self.finalizeBookingAfterPayment(draft)
         }
+        attachLogin(to: vc) { [weak self] in
+            self?.finalizeBookingAfterPayment(draft)
+        }
 
         navigationController?.pushViewController(vc, animated: true)
     }
@@ -434,13 +440,27 @@ final class BookHomeVisitViewController: UIViewController {
         vc.onSignupComplete = {
             onComplete()
         }
-
-        vc.onLoginTapped = { [weak self] in
-            // You can push your Login screen here if you have one
-            self?.showAlert("Login", "Hook your Login screen here.")
+        attachLogin(to: vc) {
+            onComplete()
         }
 
         navigationController?.pushViewController(vc, animated: true)
+    }
+
+    private func attachLogin(to signupVC: CreateAccountViewController, onAuthComplete: @escaping () -> Void) {
+        signupVC.onLoginTapped = { [weak self] in
+            guard let self else { return }
+            let loginVC = LoginViewController()
+            loginVC.onLoginSuccess = { [weak self] in
+                self?.navigationController?.popViewController(animated: true)
+                onAuthComplete()
+            }
+            loginVC.onSignupTapped = { [weak self] in
+                self?.navigationController?.popViewController(animated: true)
+            }
+            loginVC.hidesBottomBarWhenPushed = true
+            self.navigationController?.pushViewController(loginVC, animated: true)
+        }
     }
 
     // MARK: - Retry booking after signup

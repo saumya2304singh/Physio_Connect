@@ -59,6 +59,10 @@ final class ProfileViewController: UIViewController {
             self?.signOut()
         }
 
+        profileView.onLogin = { [weak self] in
+            self?.showLogin()
+        }
+
         profileView.onNotificationsChanged = { [weak self] isOn in
             Task { await self?.model.updateNotifications(enabled: isOn) }
         }
@@ -83,6 +87,14 @@ final class ProfileViewController: UIViewController {
             }
         }
 
+        let hasSession = await model.hasActiveSession()
+        guard hasSession else {
+            await MainActor.run {
+                self.profileView.applyLoggedOut()
+            }
+            return
+        }
+
         do {
             let data = try await model.fetchCurrentProfile()
             await MainActor.run {
@@ -100,7 +112,7 @@ final class ProfileViewController: UIViewController {
             do {
                 try await model.signOut()
                 await MainActor.run {
-                    self.navigationController?.popToRootViewController(animated: true)
+                    self.profileView.applyLoggedOut()
                 }
             } catch {
                 await MainActor.run {
@@ -108,6 +120,39 @@ final class ProfileViewController: UIViewController {
                 }
             }
         }
+    }
+
+    private func showLogin() {
+        let vc = LoginViewController()
+        vc.onLoginSuccess = { [weak self] in
+            self?.navigationController?.popViewController(animated: true)
+            Task { await self?.refreshProfile() }
+        }
+        vc.onSignupTapped = { [weak self] in
+            self?.showSignup()
+        }
+        vc.hidesBottomBarWhenPushed = true
+        navigationController?.pushViewController(vc, animated: true)
+    }
+
+    private func showSignup() {
+        let signupDraft = AppointmentDraft(
+            dateText: "—",
+            timeText: "—",
+            therapistName: "Physiotherapist",
+            addressText: "—"
+        )
+        let model = CreateAccountModel(appointment: signupDraft)
+        let vc = CreateAccountViewController(model: model)
+        vc.onSignupComplete = { [weak self] in
+            self?.navigationController?.popViewController(animated: true)
+            Task { await self?.refreshProfile() }
+        }
+        vc.onLoginTapped = { [weak self] in
+            self?.showLogin()
+        }
+        vc.hidesBottomBarWhenPushed = true
+        navigationController?.pushViewController(vc, animated: true)
     }
 
     private func showAlert(title: String, message: String) {

@@ -61,7 +61,7 @@ final class VideosViewController: UIViewController, UITableViewDataSource, UITab
         videosView.filterCollectionView.delegate = self
         videosView.filterCollectionView.register(ExerciseFilterChipCell.self, forCellWithReuseIdentifier: ExerciseFilterChipCell.reuseID)
         videosView.filterCollectionView.allowsMultipleSelection = false
-        videosView.filterCollectionView.selectItem(at: IndexPath(item: 0, section: 0), animated: false, scrollPosition: [])
+        videosView.filterCollectionView.selectItem(at: IndexPath(item: selectedFilterIndex, section: 0), animated: false, scrollPosition: [])
 
         videosView.segmented.addTarget(self, action: #selector(tabChanged), for: .valueChanged)
         videosView.redeemButton.addTarget(self, action: #selector(redeemTapped), for: .touchUpInside)
@@ -176,6 +176,11 @@ final class VideosViewController: UIViewController, UITableViewDataSource, UITab
                 await MainActor.run {
                     self.videosView.showEmptyState(false)
                     self.videosView.filterCollectionView.reloadData()
+                    self.videosView.filterCollectionView.selectItem(
+                        at: IndexPath(item: self.selectedFilterIndex, section: 0),
+                        animated: false,
+                        scrollPosition: []
+                    )
                     self.videosView.tableView.reloadData()
                     self.updateHeaderLayout()
                 }
@@ -387,9 +392,18 @@ final class VideosViewController: UIViewController, UITableViewDataSource, UITab
     }
 
     func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
+        let previousIndex = selectedFilterIndex
         selectedFilterIndex = indexPath.item
-        collectionView.reloadData()
+        collectionView.selectItem(at: indexPath, animated: true, scrollPosition: .centeredHorizontally)
+        collectionView.reloadItems(at: [
+            IndexPath(item: previousIndex, section: 0),
+            indexPath
+        ])
         videosView.tableView.reloadData()
+    }
+
+    func collectionView(_ collectionView: UICollectionView, didDeselectItemAt indexPath: IndexPath) {
+        collectionView.reloadItems(at: [indexPath])
     }
 
     func collectionView(_ collectionView: UICollectionView,
