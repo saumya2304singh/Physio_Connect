@@ -22,13 +22,9 @@ final class ExerciseFilterChipCell: UICollectionViewCell {
         fatalError("init(coder:) has not been implemented")
     }
 
-    override var isSelected: Bool {
-        didSet { applySelectionState() }
-    }
-
-    func configure(title: String) {
+    func configure(title: String, isSelected: Bool) {
         titleLabel.text = title
-        applySelectionState()
+        applySelectionState(isSelected)
     }
 
     private func build() {
@@ -53,13 +49,17 @@ final class ExerciseFilterChipCell: UICollectionViewCell {
         ])
     }
 
-    private func applySelectionState() {
-        if isSelected {
+    private func applySelectionState(_ selected: Bool) {
+        if selected {
             contentView.backgroundColor = UIColor(hex: "1E6EF7")
             titleLabel.textColor = .white
         } else {
             contentView.backgroundColor = .white
             titleLabel.textColor = UIColor.black.withAlphaComponent(0.7)
         }
+    }
+
+    override var isSelected: Bool {
+        didSet { applySelectionState(isSelected) }
     }
 }

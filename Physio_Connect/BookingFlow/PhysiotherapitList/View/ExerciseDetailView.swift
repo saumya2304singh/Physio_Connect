@@ -420,7 +420,6 @@ final class ExerciseDetailView: UIView, UIGestureRecognizerDelegate {
         painScaleTrack.addGestureRecognizer(painTrackPan)
         painScaleTrack.addGestureRecognizer(painTrackTap)
         scroll.panGestureRecognizer.require(toFail: painTrackPan)
-
         let gradient = CAGradientLayer()
         gradient.colors = [UIColor(hex: "22C55E").cgColor, UIColor(hex: "F59E0B").cgColor, UIColor(hex: "EF4444").cgColor]
         gradient.startPoint = CGPoint(x: 0, y: 0.5)
@@ -434,11 +433,6 @@ final class ExerciseDetailView: UIView, UIGestureRecognizerDelegate {
         painSlider.value = 6
         painSlider.isContinuous = true
         painSlider.isUserInteractionEnabled = true
-        painSlider.minimumTrackTintColor = .clear
-        painSlider.maximumTrackTintColor = .clear
-        let thumbConfig = UIImage.SymbolConfiguration(pointSize: 18, weight: .bold)
-        painSlider.setThumbImage(UIImage(systemName: "circle.fill", withConfiguration: thumbConfig), for: .normal)
-        painSlider.tintColor = UIColor(hex: "F59E0B")
 
         painMinLabel.translatesAutoresizingMaskIntoConstraints = false
         painMinLabel.text = "No Pain"
@@ -562,6 +556,7 @@ final class ExerciseDetailView: UIView, UIGestureRecognizerDelegate {
 
         painMinBottomConstraint = painMaxLabel.bottomAnchor.constraint(equalTo: painCard.bottomAnchor, constant: -16)
         painMinBottomConstraint?.isActive = true
+
     }
 
     private func buildNotesCard() {

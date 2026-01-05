@@ -386,24 +386,22 @@ final class VideosViewController: UIViewController, UITableViewDataSource, UITab
 
     func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
         let cell = collectionView.dequeueReusableCell(withReuseIdentifier: ExerciseFilterChipCell.reuseID, for: indexPath) as! ExerciseFilterChipCell
-        cell.configure(title: filterOptions[indexPath.item])
-        cell.isSelected = indexPath.item == selectedFilterIndex
+        cell.configure(title: filterOptions[indexPath.item],
+                       isSelected: indexPath.item == selectedFilterIndex)
         return cell
     }
 
     func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
         let previousIndex = selectedFilterIndex
+        guard previousIndex != indexPath.item else { return }
         selectedFilterIndex = indexPath.item
-        collectionView.selectItem(at: indexPath, animated: true, scrollPosition: .centeredHorizontally)
-        collectionView.reloadItems(at: [
-            IndexPath(item: previousIndex, section: 0),
-            indexPath
-        ])
+        var reloadItems: [IndexPath] = [indexPath]
+        if previousIndex >= 0 && previousIndex < filterOptions.count {
+            reloadItems.append(IndexPath(item: previousIndex, section: 0))
+        }
+        collectionView.reloadItems(at: reloadItems)
+        collectionView.selectItem(at: indexPath, animated: false, scrollPosition: [])
         videosView.tableView.reloadData()
-    }
-
-    func collectionView(_ collectionView: UICollectionView, didDeselectItemAt indexPath: IndexPath) {
-        collectionView.reloadItems(at: [indexPath])
     }
 
     func collectionView(_ collectionView: UICollectionView,
