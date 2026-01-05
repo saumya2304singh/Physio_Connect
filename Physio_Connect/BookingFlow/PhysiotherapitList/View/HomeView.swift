@@ -44,7 +44,8 @@ final class HomeView: UIView {
         locationLabel.textColor = UIColor.black.withAlphaComponent(0.7)
         locationLabel.translatesAutoresizingMaskIntoConstraints = false
 
-        profileButton.setImage(UIImage(systemName: "person.circle"), for: .normal)
+        let profileConfig = UIImage.SymbolConfiguration(pointSize: 22, weight: .regular)
+        profileButton.setImage(UIImage(systemName: "person.circle", withConfiguration: profileConfig), for: .normal)
         profileButton.tintColor = UIColor.black.withAlphaComponent(0.7)
         profileButton.translatesAutoresizingMaskIntoConstraints = false
 
@@ -82,8 +83,8 @@ final class HomeView: UIView {
 
             profileButton.trailingAnchor.constraint(equalTo: topBar.trailingAnchor),
             profileButton.centerYAnchor.constraint(equalTo: topBar.centerYAnchor),
-            profileButton.widthAnchor.constraint(equalToConstant: 34),
-            profileButton.heightAnchor.constraint(equalToConstant: 34),
+            profileButton.widthAnchor.constraint(equalToConstant: 40),
+            profileButton.heightAnchor.constraint(equalToConstant: 40),
 
             // Title
             titleLabel.topAnchor.constraint(equalTo: topBar.bottomAnchor, constant: 10),

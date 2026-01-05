@@ -15,6 +15,7 @@ final class AppointmentsViewController: UIViewController {
     private var currentUpcoming: UpcomingAppointment?
     private var isCancelling = false
     private var isRefreshing = false
+    private var upcomingTimer: Timer?
 
     override func loadView() { view = apptView }
 
@@ -30,6 +31,12 @@ final class AppointmentsViewController: UIViewController {
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
         Task { await refreshAll() }
+    }
+
+    override func viewWillDisappear(_ animated: Bool) {
+        super.viewWillDisappear(animated)
+        upcomingTimer?.invalidate()
+        upcomingTimer = nil
     }
 
     private func bind() {
@@ -126,8 +133,15 @@ final class AppointmentsViewController: UIViewController {
     // MARK: - Mapping to your View VMs
 
     private func applyUpcoming(_ appt: UpcomingAppointment?) {
+        upcomingTimer?.invalidate()
+        upcomingTimer = nil
         guard let appt else {
             apptView.setUpcoming(nil)   // hides the card ✅
+            return
+        }
+
+        guard appt.startTime > Date() else {
+            apptView.setUpcoming(nil)
             return
         }
 
@@ -168,6 +182,13 @@ final class AppointmentsViewController: UIViewController {
         )
 
         apptView.setUpcoming(vm)
+
+        let interval = appt.startTime.timeIntervalSinceNow
+        if interval > 0 {
+            upcomingTimer = Timer.scheduledTimer(withTimeInterval: interval, repeats: false) { [weak self] _ in
+                Task { await self?.refreshAll() }
+            }
+        }
     }
 
 

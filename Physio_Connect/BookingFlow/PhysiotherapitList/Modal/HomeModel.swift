@@ -43,6 +43,10 @@ final class HomeModel {
             }
         }
 
+        let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        let nowIso = formatter.string(from: Date())
+
         let rows: [ApptJoinRow] = try await SupabaseManager.shared.client
             .from("appointments")
             .select("""
@@ -64,12 +68,14 @@ final class HomeModel {
             """)
             .eq("customer_id", value: userId.uuidString)
             .eq("status", value: "booked")
+            .gt("physio_availability_slots.start_time", value: nowIso)
             .order("created_at", ascending: false)
             .limit(1)
             .execute()
             .value
 
         guard let r = rows.first else { return nil }
+        guard r.physio_availability_slots.start_time > Date() else { return nil }
         let specialization = r.physiotherapists.physio_specializations?
             .compactMap { $0.specializations?.name }
             .first ?? "Physiotherapist Specialist"

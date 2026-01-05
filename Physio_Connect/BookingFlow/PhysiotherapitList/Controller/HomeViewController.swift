@@ -11,6 +11,8 @@ final class HomeViewController: UIViewController {
 
     private let homeView = HomeView()
     private let model = HomeModel()
+    private var currentUpcoming: HomeUpcomingAppointment?
+    private var upcomingTimer: Timer?
 
     override func loadView() { view = homeView }
 
@@ -41,17 +43,45 @@ final class HomeViewController: UIViewController {
         Task { await refreshCards() }
     }
 
+    override func viewWillDisappear(_ animated: Bool) {
+        super.viewWillDisappear(animated)
+        upcomingTimer?.invalidate()
+        upcomingTimer = nil
+    }
+
     private func refreshCards() async {
         do {
             let upcoming = try await model.fetchUpcomingAppointment()
             await MainActor.run {
-                self.homeView.setUpcoming(upcoming)
+                self.applyUpcoming(upcoming)
             }
         } catch {
             await MainActor.run {
-                self.homeView.setUpcoming(nil)
+                self.applyUpcoming(nil)
             }
             print("❌ Home refresh error:", error)
+        }
+    }
+
+    private func applyUpcoming(_ appt: HomeUpcomingAppointment?) {
+        upcomingTimer?.invalidate()
+        upcomingTimer = nil
+        currentUpcoming = nil
+
+        guard let appt, appt.startTime > Date() else {
+            homeView.setUpcoming(nil)
+            return
+        }
+
+        currentUpcoming = appt
+        homeView.setUpcoming(appt)
+
+        let interval = appt.startTime.timeIntervalSinceNow
+        guard interval > 0 else { return }
+        upcomingTimer = Timer.scheduledTimer(withTimeInterval: interval, repeats: false) { [weak self] _ in
+            guard let self else { return }
+            self.currentUpcoming = nil
+            self.homeView.setUpcoming(nil)
         }
     }
 

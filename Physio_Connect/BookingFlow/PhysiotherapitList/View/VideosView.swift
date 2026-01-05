@@ -79,7 +79,8 @@ final class VideosView: UIView {
         titleLabel.textAlignment = .center
 
         profileButton.translatesAutoresizingMaskIntoConstraints = false
-        profileButton.setImage(UIImage(systemName: "person.circle"), for: .normal)
+        let profileConfig = UIImage.SymbolConfiguration(pointSize: 22, weight: .regular)
+        profileButton.setImage(UIImage(systemName: "person.circle", withConfiguration: profileConfig), for: .normal)
         profileButton.tintColor = UIColor.black.withAlphaComponent(0.65)
 
         segmented.selectedSegmentIndex = 0
@@ -169,8 +170,8 @@ final class VideosView: UIView {
 
             profileButton.trailingAnchor.constraint(equalTo: topBar.trailingAnchor),
             profileButton.centerYAnchor.constraint(equalTo: topBar.centerYAnchor),
-            profileButton.widthAnchor.constraint(equalToConstant: 34),
-            profileButton.heightAnchor.constraint(equalToConstant: 34),
+            profileButton.widthAnchor.constraint(equalToConstant: 40),
+            profileButton.heightAnchor.constraint(equalToConstant: 40),
 
             segmented.topAnchor.constraint(equalTo: topBar.bottomAnchor, constant: 10),
             segmented.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 16),
