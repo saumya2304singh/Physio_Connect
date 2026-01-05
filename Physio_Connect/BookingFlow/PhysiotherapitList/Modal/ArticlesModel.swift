@@ -39,11 +39,31 @@ final class ArticlesModel {
         if let url = URL(string: pathOrUrl), url.scheme?.hasPrefix("http") == true {
             return url
         }
-        let normalized = pathOrUrl.trimmingCharacters(in: .whitespacesAndNewlines)
+        let normalized = normalizeImagePath(pathOrUrl)
+        do {
+            return try await client.storage
+                .from(imageBucket)
+                .createSignedURL(path: normalized, expiresIn: 3600)
+        } catch {
+            if let base = Bundle.main.object(forInfoDictionaryKey: "SUPABASE_URL") as? String,
+               let url = URL(string: "\(base)/storage/v1/object/public/\(imageBucket)/\(normalized)") {
+                return url
+            }
+            throw error
+        }
+    }
+
+    private func normalizeImagePath(_ raw: String) -> String {
+        let trimmed = raw.trimmingCharacters(in: .whitespacesAndNewlines)
             .trimmingCharacters(in: CharacterSet(charactersIn: "/"))
-        return try await client.storage
-            .from(imageBucket)
-            .createSignedURL(path: normalized, expiresIn: 3600)
+        let publicPrefix = "/storage/v1/object/public/\(imageBucket)/"
+        if let range = trimmed.range(of: publicPrefix) {
+            return String(trimmed[range.upperBound...])
+        }
+        if let range = trimmed.range(of: "\(imageBucket)/") {
+            return String(trimmed[range.upperBound...])
+        }
+        return trimmed
     }
 
     func fetchArticles(search: String?, category: String?, sort: ArticleSort) async throws -> [ArticleRow] {
