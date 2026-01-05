@@ -19,9 +19,11 @@ final class AppointmentsModel {
         let session = try await client.auth.session
         let userID = session.user.id.uuidString
 
-        let nowISO = ISO8601DateFormatter().string(from: Date())
+        let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        let nowISO = formatter.string(from: Date())
 
-        var rows: [AppointmentJoinedRow] = try await client
+        let rows: [AppointmentJoinedRow] = try await client
             .from("appointments")
             .select("""
                 id,
@@ -53,43 +55,10 @@ final class AppointmentsModel {
             .execute()
             .value
 
-        if rows.isEmpty {
-            rows = try await client
-                .from("appointments")
-                .select("""
-                    id,
-                    status,
-                    address_text,
-                    created_at,
-                    physio_id,
-                    slot:physio_availability_slots!appointments_slot_id_fkey(
-                        start_time
-                    ),
-                    physio:physiotherapists!appointments_physio_id_fkey(
-                        id,
-                        name,
-                        avg_rating,
-                        reviews_count,
-                        location_text,
-                        consultation_fee,
-                        physio_specializations(
-                            specializations(name)
-                        )
-                    )
-                """)
-                .eq("customer_id", value: userID)
-                .or("status.eq.booked,status.eq.confirmed")
-                .order("start_time", ascending: false, referencedTable: "physio_availability_slots")
-                .limit(1)
-                .execute()
-                .value
-        }
-
         guard let first = rows.first,
               let physio = first.physio
         else { return nil }
-        let startTime = first.slot?.start_time ?? first.created_at
-        guard startTime > Date() else { return nil }
+        guard let startTime = first.slot?.start_time, startTime > Date() else { return nil }
 
         return UpcomingAppointment(
             appointmentID: first.id,
@@ -117,7 +86,6 @@ final class AppointmentsModel {
     func fetchPastAppointments() async throws -> [PastAppointment] {
         let session = try await client.auth.session
         let userID = session.user.id.uuidString
-        let nowISO = ISO8601DateFormatter().string(from: Date())
 
         // We'll do 2 queries (super safe with your current codebase),
         // then merge + sort desc by time.
@@ -141,33 +109,19 @@ final class AppointmentsModel {
             .execute()
             .value
 
-        async let overdueRows: [AppointmentJoinedRow] = client
-            .from("appointments")
-            .select(joinSelect)
-            .eq("customer_id", value: userID)
-            .or("status.eq.booked,status.eq.confirmed")
-            .lt("physio_availability_slots.start_time", value: nowISO)
-            .order("start_time", ascending: false, referencedTable: "physio_availability_slots")
-            .execute()
-            .value
-
         let completed = try await completedRows
         let cancelled = try await cancelledRows
-        let overdue = try await overdueRows
-        let merged = completed + cancelled + overdue
+        let merged = completed + cancelled
 
         // map -> view models
         let mapped: [PastAppointment] = merged.compactMap { row in
             guard let physio = row.physio else { return nil }
             let startTime = row.slot?.start_time ?? row.created_at
-            let status = ["booked", "confirmed"].contains(row.status.lowercased())
-            ? "completed"
-            : row.status
             return PastAppointment(
                 appointmentID: row.id,
                 physioID: physio.id,
                 physioName: physio.name,
-                status: status, // "completed" | "cancelled"
+                status: row.status, // "completed" | "cancelled"
                 startTime: startTime,
                 specialization: physio.primarySpecialization ?? "Healthcare Professional",
                 rating: physio.avg_rating,
@@ -175,15 +129,6 @@ final class AppointmentsModel {
                 locationText: physio.location_text,
                 fee: physio.consultation_fee
             )
-        }
-
-        if !overdue.isEmpty {
-            let overdueIDs = overdue.map { $0.id.uuidString }
-            _ = try await client
-                .from("appointments")
-                .update(["status": "completed"])
-                .in("id", values: overdueIDs)
-                .execute()
         }
 
         return mapped.sorted { $0.startTime > $1.startTime }

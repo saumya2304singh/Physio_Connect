@@ -162,10 +162,7 @@ final class AppointmentsView: UIView {
             contentStack.trailingAnchor.constraint(equalTo: scrollView.contentLayoutGuide.trailingAnchor, constant: -16),
             contentStack.bottomAnchor.constraint(equalTo: scrollView.contentLayoutGuide.bottomAnchor, constant: -16),
 
-            contentStack.widthAnchor.constraint(equalTo: scrollView.frameLayoutGuide.widthAnchor, constant: -32),
-
-            // completed list gets enough space
-            completedList.heightAnchor.constraint(greaterThanOrEqualToConstant: 520)
+            contentStack.widthAnchor.constraint(equalTo: scrollView.frameLayoutGuide.widthAnchor, constant: -32)
         ])
     }
 
@@ -496,6 +493,7 @@ final class CompletedAppointmentsListView: UIView, UITableViewDataSource, UITabl
 
     private let table = UITableView(frame: .zero, style: .plain)
     private var items: [CompletedAppointmentVM] = []
+    private var heightConstraint: NSLayoutConstraint?
 
     override init(frame: CGRect) {
         super.init(frame: frame)
@@ -522,11 +520,16 @@ final class CompletedAppointmentsListView: UIView, UITableViewDataSource, UITabl
             table.trailingAnchor.constraint(equalTo: trailingAnchor),
             table.bottomAnchor.constraint(equalTo: bottomAnchor)
         ])
+
+        heightConstraint = heightAnchor.constraint(equalToConstant: 0)
+        heightConstraint?.isActive = true
     }
 
     func set(items: [CompletedAppointmentVM]) {
         self.items = items
         table.reloadData()
+        let rowHeight: CGFloat = 250
+        heightConstraint?.constant = rowHeight * CGFloat(items.count)
     }
 
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int { items.count }

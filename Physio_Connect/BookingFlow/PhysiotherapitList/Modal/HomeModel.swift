@@ -67,7 +67,7 @@ final class HomeModel {
                 physio_availability_slots(start_time,end_time)
             """)
             .eq("customer_id", value: userId.uuidString)
-            .eq("status", value: "booked")
+            .or("status.eq.booked,status.eq.confirmed")
             .gt("physio_availability_slots.start_time", value: nowIso)
             .order("created_at", ascending: false)
             .limit(1)
@@ -75,6 +75,7 @@ final class HomeModel {
             .value
 
         guard let r = rows.first else { return nil }
+        guard r.physio_availability_slots.start_time > Date() else { return nil }
         guard r.physio_availability_slots.start_time > Date() else { return nil }
         let specialization = r.physiotherapists.physio_specializations?
             .compactMap { $0.specializations?.name }
