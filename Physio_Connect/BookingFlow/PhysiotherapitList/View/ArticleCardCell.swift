@@ -34,6 +34,7 @@ final class ArticleCardCell: UITableViewCell {
     var onBookmarkTapped: (() -> Void)?
     var onReadTapped: (() -> Void)?
     private var isBookmarked = false
+    var coverImagePath: String?
 
     override init(style: UITableViewCell.CellStyle, reuseIdentifier: String?) {
         super.init(style: style, reuseIdentifier: reuseIdentifier)
@@ -54,6 +55,7 @@ final class ArticleCardCell: UITableViewCell {
         summaryLabel.text = nil
         setTags([])
         setBookmarked(false)
+        coverImagePath = nil
     }
 
     private func build() {
@@ -248,6 +250,16 @@ final class ArticleCardCell: UITableViewCell {
         let config = UIImage.SymbolConfiguration(pointSize: 16, weight: .semibold)
         bookmarkButton.setImage(UIImage(systemName: imageName, withConfiguration: config), for: .normal)
         bookmarkButton.tintColor = bookmarked ? UIColor(hex: "1E6EF7") : UIColor.black.withAlphaComponent(0.6)
+    }
+
+    func setCoverImage(_ image: UIImage?) {
+        if let image {
+            coverImageView.image = image
+            coverImageView.tintColor = .clear
+        } else {
+            coverImageView.image = UIImage(systemName: "photo")
+            coverImageView.tintColor = UIColor.black.withAlphaComponent(0.15)
+        }
     }
 
     private func setTags(_ tags: [String]) {

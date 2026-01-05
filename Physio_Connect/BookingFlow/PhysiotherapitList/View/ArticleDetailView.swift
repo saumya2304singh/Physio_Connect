@@ -62,6 +62,16 @@ final class ArticleDetailView: UIView {
         setUserRating(currentUserRating)
     }
 
+    func setCoverImage(_ image: UIImage?) {
+        if let image {
+            coverImageView.image = image
+            coverImageView.tintColor = .clear
+        } else {
+            coverImageView.image = UIImage(systemName: "photo")
+            coverImageView.tintColor = UIColor.black.withAlphaComponent(0.15)
+        }
+    }
+
     private func build() {
         topBar.translatesAutoresizingMaskIntoConstraints = false
 

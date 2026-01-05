@@ -15,8 +15,10 @@ final class ArticlesView: UIView {
     let filterButton = UIButton(type: .system)
 
     let searchBar = UISearchBar()
+    private let segmentScrollView = UIScrollView()
     let segmentStack = UIStackView()
     let segmentButtons: [UIButton] = [
+        UIButton(type: .system),
         UIButton(type: .system),
         UIButton(type: .system),
         UIButton(type: .system)
@@ -47,6 +49,10 @@ final class ArticlesView: UIView {
         for (idx, button) in segmentButtons.enumerated() {
             applySegmentStyle(button, selected: idx == index)
         }
+    }
+
+    func setBookmarksVisible(_ visible: Bool) {
+        segmentButtons[3].isHidden = !visible
     }
 
     func updateResults(count: Int) {
@@ -101,17 +107,22 @@ final class ArticlesView: UIView {
         searchBar.searchTextField.layer.cornerRadius = 16
         searchBar.searchTextField.layer.masksToBounds = true
 
+        segmentScrollView.translatesAutoresizingMaskIntoConstraints = false
+        segmentScrollView.showsHorizontalScrollIndicator = false
+        segmentScrollView.alwaysBounceHorizontal = true
+
         segmentStack.axis = .horizontal
         segmentStack.spacing = 10
         segmentStack.translatesAutoresizingMaskIntoConstraints = false
 
-        let segmentTitles = ["All", "For You", "Top Rated"]
-        let segmentIcons = ["drop.fill", "sparkles", "star.fill"]
+        let segmentTitles = ["All", "For You", "Top Rated", "Bookmarks"]
+        let segmentIcons = ["drop.fill", "sparkles", "star.fill", "bookmark.fill"]
         for (index, button) in segmentButtons.enumerated() {
             configureSegmentButton(button, title: segmentTitles[index], icon: segmentIcons[index])
             segmentStack.addArrangedSubview(button)
         }
         setSegmentSelection(0)
+        setBookmarksVisible(false)
 
         resultsLabel.translatesAutoresizingMaskIntoConstraints = false
         resultsLabel.font = .systemFont(ofSize: 14, weight: .medium)
@@ -133,7 +144,8 @@ final class ArticlesView: UIView {
         topBar.addSubview(filterButton)
 
         addSubview(searchBar)
-        addSubview(segmentStack)
+        addSubview(segmentScrollView)
+        segmentScrollView.addSubview(segmentStack)
         addSubview(resultsLabel)
         addSubview(filterCollectionView)
         addSubview(tableView)
@@ -161,11 +173,18 @@ final class ArticlesView: UIView {
             searchBar.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 16),
             searchBar.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -16),
 
-            segmentStack.topAnchor.constraint(equalTo: searchBar.bottomAnchor, constant: 12),
-            segmentStack.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 16),
-            segmentStack.trailingAnchor.constraint(lessThanOrEqualTo: trailingAnchor, constant: -16),
+            segmentScrollView.topAnchor.constraint(equalTo: searchBar.bottomAnchor, constant: 12),
+            segmentScrollView.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 16),
+            segmentScrollView.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -16),
+            segmentScrollView.heightAnchor.constraint(equalToConstant: 44),
 
-            resultsLabel.topAnchor.constraint(equalTo: segmentStack.bottomAnchor, constant: 12),
+            segmentStack.topAnchor.constraint(equalTo: segmentScrollView.contentLayoutGuide.topAnchor),
+            segmentStack.bottomAnchor.constraint(equalTo: segmentScrollView.contentLayoutGuide.bottomAnchor),
+            segmentStack.leadingAnchor.constraint(equalTo: segmentScrollView.contentLayoutGuide.leadingAnchor),
+            segmentStack.trailingAnchor.constraint(equalTo: segmentScrollView.contentLayoutGuide.trailingAnchor),
+            segmentStack.heightAnchor.constraint(equalTo: segmentScrollView.frameLayoutGuide.heightAnchor),
+
+            resultsLabel.topAnchor.constraint(equalTo: segmentScrollView.bottomAnchor, constant: 12),
             resultsLabel.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 16),
             resultsLabel.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -16),
 

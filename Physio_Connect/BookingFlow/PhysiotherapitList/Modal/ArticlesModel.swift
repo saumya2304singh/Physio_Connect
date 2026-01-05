@@ -16,6 +16,7 @@ struct ArticleRow: Decodable {
     let source_name: String?
     let source_url: String?
     let image_url: String?
+    let image_path: String?
     let published_at: String?
     let rating: Double?
     let views_count: Int?
@@ -32,6 +33,18 @@ enum ArticleSort {
 
 final class ArticlesModel {
     private let client = SupabaseManager.shared.client
+    private let imageBucket = "article_images"
+
+    func signedImageURL(pathOrUrl: String) async throws -> URL {
+        if let url = URL(string: pathOrUrl), url.scheme?.hasPrefix("http") == true {
+            return url
+        }
+        let normalized = pathOrUrl.trimmingCharacters(in: .whitespacesAndNewlines)
+            .trimmingCharacters(in: CharacterSet(charactersIn: "/"))
+        return try await client.storage
+            .from(imageBucket)
+            .createSignedURL(path: normalized, expiresIn: 3600)
+    }
 
     func fetchArticles(search: String?, category: String?, sort: ArticleSort) async throws -> [ArticleRow] {
         var query: PostgrestFilterBuilder = client

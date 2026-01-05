@@ -13,6 +13,7 @@ final class ArticlesViewController: UIViewController, UITableViewDataSource, UIT
     private let model = ArticlesModel()
 
     private var articles: [ArticleRow] = []
+    private var bookmarkedArticles: [UUID: ArticleRow] = [:]
     private var isRefreshing = false
     private var bookmarkedIDs: Set<UUID> = []
 
@@ -49,6 +50,7 @@ final class ArticlesViewController: UIViewController, UITableViewDataSource, UIT
         }
 
         articlesView.filterCollectionView.selectItem(at: IndexPath(item: selectedFilterIndex, section: 0), animated: false, scrollPosition: [])
+        updateBookmarksVisibility()
         Task { await reload() }
     }
 
@@ -97,15 +99,24 @@ final class ArticlesViewController: UIViewController, UITableViewDataSource, UIT
         }
 
         do {
-            let rows = try await model.fetchArticles(
-                search: articlesView.searchBar.text,
-                category: currentCategory(),
-                sort: currentSort()
-            )
-            await MainActor.run {
-                self.articles = rows
-                self.articlesView.updateResults(count: rows.count)
-                self.articlesView.tableView.reloadData()
+            if selectedSegmentIndex == 3 {
+                await MainActor.run {
+                    let rows = self.filteredBookmarks()
+                    self.articles = rows
+                    self.articlesView.updateResults(count: rows.count)
+                    self.articlesView.tableView.reloadData()
+                }
+            } else {
+                let rows = try await model.fetchArticles(
+                    search: articlesView.searchBar.text,
+                    category: currentCategory(),
+                    sort: currentSort()
+                )
+                await MainActor.run {
+                    self.articles = rows
+                    self.articlesView.updateResults(count: rows.count)
+                    self.articlesView.tableView.reloadData()
+                }
             }
         } catch {
             await MainActor.run { self.showError("Articles Error", error.localizedDescription) }
@@ -125,6 +136,10 @@ final class ArticlesViewController: UIViewController, UITableViewDataSource, UIT
         let article = articles[indexPath.row]
         cell.configure(with: article)
         cell.setBookmarked(bookmarkedIDs.contains(article.id))
+        let path = article.image_path ?? article.image_url
+        cell.coverImagePath = path
+        cell.setCoverImage(nil)
+        loadCoverImage(for: path, in: cell)
         cell.onBookmarkTapped = { [weak self] in
             self?.toggleBookmark(for: article, at: indexPath)
         }
@@ -196,14 +211,51 @@ final class ArticlesViewController: UIViewController, UITableViewDataSource, UIT
     private func toggleBookmark(for article: ArticleRow, at indexPath: IndexPath) {
         if bookmarkedIDs.contains(article.id) {
             bookmarkedIDs.remove(article.id)
+            bookmarkedArticles.removeValue(forKey: article.id)
         } else {
             bookmarkedIDs.insert(article.id)
+            bookmarkedArticles[article.id] = article
         }
         let isBookmarked = bookmarkedIDs.contains(article.id)
         if let cell = articlesView.tableView.cellForRow(at: indexPath) as? ArticleCardCell {
             cell.setBookmarked(isBookmarked)
         }
+        updateBookmarksVisibility()
+        if selectedSegmentIndex == 3 {
+            let rows = filteredBookmarks()
+            articles = rows
+            articlesView.updateResults(count: rows.count)
+            articlesView.tableView.reloadData()
+        }
         showBookmarkToast(isBookmarked)
+    }
+
+    private func updateBookmarksVisibility() {
+        let hasBookmarks = !bookmarkedIDs.isEmpty
+        articlesView.setBookmarksVisible(hasBookmarks)
+        if !hasBookmarks, selectedSegmentIndex == 3 {
+            selectedSegmentIndex = 0
+            articlesView.setSegmentSelection(0)
+            Task { await reload() }
+        }
+    }
+
+    private func filteredBookmarks() -> [ArticleRow] {
+        let search = articlesView.searchBar.text?.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        let category = currentCategory()
+
+        return bookmarkedArticles.values.filter { article in
+            let matchesSearch: Bool = {
+                guard let search, !search.isEmpty else { return true }
+                return article.title.lowercased().contains(search)
+            }()
+            let matchesCategory: Bool = {
+                guard let category else { return true }
+                return article.tags?.contains(category) ?? false
+            }()
+            return matchesSearch && matchesCategory
+        }
+        .sorted { ($0.published_at ?? "") > ($1.published_at ?? "") }
     }
 
     private func openDetail(for article: ArticleRow) {
@@ -216,6 +268,25 @@ final class ArticlesViewController: UIViewController, UITableViewDataSource, UIT
         }
         vc.hidesBottomBarWhenPushed = true
         navigationController?.pushViewController(vc, animated: true)
+    }
+
+    private func loadCoverImage(for path: String?, in cell: ArticleCardCell) {
+        guard let path else { return }
+        Task { [weak self, weak cell] in
+            guard let self, let cell else { return }
+            do {
+                let url = try await self.model.signedImageURL(pathOrUrl: path)
+                let (data, _) = try await URLSession.shared.data(from: url)
+                let image = UIImage(data: data)
+                await MainActor.run {
+                    if cell.coverImagePath == path {
+                        cell.setCoverImage(image)
+                    }
+                }
+            } catch {
+                return
+            }
+        }
     }
 
     private func showError(_ title: String, _ message: String) {

@@ -29,6 +29,7 @@ final class ArticleDetailViewController: UIViewController {
         super.viewDidLoad()
         navigationController?.setNavigationBarHidden(true, animated: false)
         detailView.configure(with: article)
+        loadCoverImage(for: article)
         detailView.backButton.addTarget(self, action: #selector(backTapped), for: .touchUpInside)
         detailView.shareButton.addTarget(self, action: #selector(shareTapped), for: .touchUpInside)
         detailView.onRatingSelected = { [weak self] rating in
@@ -60,6 +61,7 @@ final class ArticleDetailViewController: UIViewController {
             await MainActor.run {
                 self.article = refreshed
                 self.detailView.configure(with: refreshed)
+                self.loadCoverImage(for: refreshed)
                 self.onArticleUpdated?(refreshed)
                 self.showToast("Thanks!", "Your rating was saved.")
             }
@@ -75,6 +77,7 @@ final class ArticleDetailViewController: UIViewController {
             await MainActor.run {
                 self.article = refreshed
                 self.detailView.configure(with: refreshed)
+                self.loadCoverImage(for: refreshed)
                 self.onArticleUpdated?(refreshed)
             }
         } catch {
@@ -87,6 +90,28 @@ final class ArticleDetailViewController: UIViewController {
         present(ac, animated: true)
         DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
             ac.dismiss(animated: true)
+        }
+    }
+
+    private func loadCoverImage(for article: ArticleRow) {
+        let path = article.image_path ?? article.image_url
+        guard let path else {
+            detailView.setCoverImage(nil)
+            return
+        }
+        Task {
+            do {
+                let url = try await model.signedImageURL(pathOrUrl: path)
+                let (data, _) = try await URLSession.shared.data(from: url)
+                let image = UIImage(data: data)
+                await MainActor.run {
+                    self.detailView.setCoverImage(image)
+                }
+            } catch {
+                await MainActor.run {
+                    self.detailView.setCoverImage(nil)
+                }
+            }
         }
     }
 }
