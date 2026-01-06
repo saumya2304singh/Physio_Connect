@@ -201,6 +201,11 @@ final class ExerciseDetailView: UIView, UIGestureRecognizerDelegate {
         continueButton.isHidden = !visible
     }
 
+    func setContinueEnabled(_ enabled: Bool) {
+        continueButton.isEnabled = enabled
+        continueButton.alpha = enabled ? 1.0 : 0.5
+    }
+
     private func build() {
         scroll.translatesAutoresizingMaskIntoConstraints = false
         scroll.showsVerticalScrollIndicator = false

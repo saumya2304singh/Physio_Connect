@@ -10,6 +10,8 @@ import AVKit
 
 final class ExerciseDetailViewController: UIViewController {
 
+    static let progressUpdatedNotification = Notification.Name("exerciseProgressUpdated")
+
     struct NextUpItem {
         let title: String
         let subtitle: String
@@ -18,6 +20,7 @@ final class ExerciseDetailViewController: UIViewController {
         let thumbnailPath: String?
         let programID: UUID?
         let exerciseID: UUID
+        let locked: Bool
     }
 
     private let videosModel = VideosModel()
@@ -41,6 +44,7 @@ final class ExerciseDetailViewController: UIViewController {
     private var isScaleVisible = false
     private var hasSavedFeedback = false
     private var isSaving = false
+    private var isSavingCompletion = false
 
     init(headerTitleText: String,
          titleText: String,
@@ -108,6 +112,8 @@ final class ExerciseDetailViewController: UIViewController {
         detailView.setScaleVisible(false)
         isScaleVisible = false
         detailView.setNextUpVisible(!nextUpItems.isEmpty)
+        let isNextLocked = nextUpItems.first?.locked ?? false
+        detailView.setContinueEnabled(!isNextLocked)
         detailView.setCompletedState(false, locked: false)
         detailView.setFeedbackVisible(false)
 
@@ -116,6 +122,14 @@ final class ExerciseDetailViewController: UIViewController {
     }
 
     @objc private func backTapped() {
+        if isCompleted {
+            NotificationCenter.default.post(
+                name: ExerciseDetailViewController.progressUpdatedNotification,
+                object: nil,
+                userInfo: ["exerciseID": exerciseID, "programID": programID as Any]
+            )
+            Task { await saveCompletionProgress() }
+        }
         navigationController?.popViewController(animated: true)
     }
 
@@ -187,6 +201,9 @@ final class ExerciseDetailViewController: UIViewController {
         isCompleted.toggle()
         detailView.setCompletedState(isCompleted, locked: false)
         detailView.setFeedbackVisible(isCompleted)
+        if isCompleted {
+            Task { await saveCompletionProgress() }
+        }
     }
 
     @objc private func toggleScale() {
@@ -235,6 +252,11 @@ final class ExerciseDetailViewController: UIViewController {
                 detailView.setCompletedState(true, locked: true)
                 detailView.saveButton.isEnabled = true
                 isSaving = false
+                NotificationCenter.default.post(
+                    name: ExerciseDetailViewController.progressUpdatedNotification,
+                    object: nil,
+                    userInfo: ["exerciseID": self.exerciseID, "programID": self.programID as Any]
+                )
             } catch {
                 detailView.saveButton.isEnabled = true
                 isSaving = false
@@ -245,6 +267,10 @@ final class ExerciseDetailViewController: UIViewController {
 
     @objc private func continueTapped() {
         guard let first = nextUpItems.first else { return }
+        if first.locked {
+            showError("Locked", "Complete the current day to unlock this exercise.")
+            return
+        }
         let vc = ExerciseDetailViewController(
             headerTitleText: headerTitleText,
             titleText: first.title,
@@ -269,6 +295,29 @@ final class ExerciseDetailViewController: UIViewController {
         ac.addAction(UIAlertAction(title: "OK", style: .default))
         present(ac, animated: true)
     }
+
+    private func saveCompletionProgress() async {
+        guard !isSavingCompletion else { return }
+        isSavingCompletion = true
+        defer { isSavingCompletion = false }
+        do {
+            try await videosModel.upsertProgress(
+                exerciseID: exerciseID,
+                programID: programID,
+                isCompleted: true,
+                watchedSeconds: durationSeconds ?? 0,
+                painLevel: nil,
+                notes: nil
+            )
+            NotificationCenter.default.post(
+                name: ExerciseDetailViewController.progressUpdatedNotification,
+                object: nil,
+                userInfo: ["exerciseID": exerciseID, "programID": programID as Any]
+            )
+        } catch {
+            return
+        }
+    }
 }
 
 extension ExerciseDetailViewController: UITextViewDelegate {
@@ -290,7 +339,7 @@ extension ExerciseDetailViewController: UICollectionViewDataSource, UICollection
     func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
         let cell = collectionView.dequeueReusableCell(withReuseIdentifier: NextUpCell.reuseID, for: indexPath) as! NextUpCell
         let item = nextUpItems[indexPath.item]
-        cell.configure(title: item.title, subtitle: item.subtitle)
+        cell.configure(title: item.title, subtitle: item.subtitle, locked: item.locked)
         if let path = item.thumbnailPath {
             Task {
                 if let url = try? await videosModel.signedThumbnailURL(path: path) {
@@ -311,6 +360,7 @@ extension ExerciseDetailViewController: UICollectionViewDataSource, UICollection
 
     func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
         let item = nextUpItems[indexPath.item]
+        if item.locked { return }
         let vc = ExerciseDetailViewController(
             headerTitleText: headerTitleText,
             titleText: item.title,
@@ -354,11 +404,29 @@ final class NextUpCell: UICollectionViewCell {
         imageView.image = nil
         titleLabel.text = nil
         subtitleLabel.text = nil
+        playIcon.image = UIImage(systemName: "play.fill")
+        playIcon.tintColor = UIColor(hex: "1E6EF7")
+        imageView.alpha = 1
+        titleLabel.textColor = UIColor(hex: "1E2A44")
+        subtitleLabel.textColor = UIColor.black.withAlphaComponent(0.6)
     }
 
-    func configure(title: String, subtitle: String) {
+    func configure(title: String, subtitle: String, locked: Bool) {
         titleLabel.text = title
         subtitleLabel.text = subtitle
+        if locked {
+            playIcon.image = UIImage(systemName: "lock.fill")
+            playIcon.tintColor = UIColor.black.withAlphaComponent(0.35)
+            imageView.alpha = 0.5
+            titleLabel.textColor = UIColor.black.withAlphaComponent(0.5)
+            subtitleLabel.textColor = UIColor.black.withAlphaComponent(0.35)
+        } else {
+            playIcon.image = UIImage(systemName: "play.fill")
+            playIcon.tintColor = UIColor(hex: "1E6EF7")
+            imageView.alpha = 1
+            titleLabel.textColor = UIColor(hex: "1E2A44")
+            subtitleLabel.textColor = UIColor.black.withAlphaComponent(0.6)
+        }
     }
 
     func setImage(_ image: UIImage) {

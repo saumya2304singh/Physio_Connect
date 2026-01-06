@@ -27,7 +27,9 @@ final class VideosViewController: UIViewController, UITableViewDataSource, UITab
     private let itemsPerDay = 2
 
     private var programSections: [ProgramDaySection] = []
-    private var completedExerciseIDs: Set<UUID> = []
+    private var completedRowKeys: Set<String> = []
+    private var completedCounts: [UUID: Int] = [:]
+    private var pendingCompletedCounts: [UUID: Int] = [:]
     private var programTitle: String?
     private var programHeaderView: UIView?
     private var programFooterView: UIView?
@@ -67,6 +69,12 @@ final class VideosViewController: UIViewController, UITableViewDataSource, UITab
         videosView.redeemButton.addTarget(self, action: #selector(redeemTapped), for: .touchUpInside)
         videosView.setRefreshTarget(self, action: #selector(refreshPulled))
         videosView.profileButton.addTarget(self, action: #selector(profileTapped), for: .touchUpInside)
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(handleProgressUpdate(_:)),
+            name: ExerciseDetailViewController.progressUpdatedNotification,
+            object: nil
+        )
 
         Task { await reload() }
     }
@@ -88,6 +96,10 @@ final class VideosViewController: UIViewController, UITableViewDataSource, UITab
         updateFooterLayout()
     }
 
+    deinit {
+        NotificationCenter.default.removeObserver(self)
+    }
+
     @objc private func tabChanged() {
         Task { await reload() }
     }
@@ -100,6 +112,19 @@ final class VideosViewController: UIViewController, UITableViewDataSource, UITab
         let vc = ProfileViewController()
         vc.hidesBottomBarWhenPushed = true
         navigationController?.pushViewController(vc, animated: true)
+    }
+
+    @objc private func handleProgressUpdate(_ notification: Notification) {
+        guard let exerciseID = notification.userInfo?["exerciseID"] as? UUID else { return }
+        pendingCompletedCounts[exerciseID, default: 0] += 1
+        completedCounts[exerciseID, default: 0] += 1
+        rebuildCompletedRowKeys()
+        videosView.tableView.reloadData()
+        if isProgramTab {
+            let completedDays = programSections.filter { isDayComplete($0) }.count
+            applyProgramFooter(completedDays: completedDays, totalDays: programSections.count)
+            updateFooterLayout()
+        }
     }
 
     private func reload() async {
@@ -119,9 +144,10 @@ final class VideosViewController: UIViewController, UITableViewDataSource, UITab
                 let rows = try await model.fetchMyProgramExercises()
                 programExercises = rows
                 programTitle = rows.first?.program_title
-                completedExerciseIDs = []
                 programSections = []
                 if rows.isEmpty {
+                    completedRowKeys = []
+                    completedCounts = [:]
                     await MainActor.run {
                         self.programHeaderView = nil
                         self.programFooterView = nil
@@ -130,10 +156,25 @@ final class VideosViewController: UIViewController, UITableViewDataSource, UITab
                     }
                 } else if let programID = rows.first?.program_id {
                     let progressRows = try await model.fetchProgress(programID: programID)
-                    completedExerciseIDs = Set(progressRows.filter { $0.is_completed == true }.map { $0.exercise_id })
+                    let fetchedCounts = Dictionary(grouping: progressRows.filter { $0.is_completed == true }, by: { $0.exercise_id })
+                        .mapValues { $0.count }
+                    var mergedCounts = fetchedCounts
+                    for (id, count) in pendingCompletedCounts {
+                        mergedCounts[id, default: 0] += count
+                    }
+                    completedCounts = mergedCounts
+                    var remainingPending: [UUID: Int] = [:]
+                    for (id, pendingCount) in pendingCompletedCounts {
+                        let fetchedCount = fetchedCounts[id] ?? 0
+                        if pendingCount > fetchedCount {
+                            remainingPending[id] = pendingCount - fetchedCount
+                        }
+                    }
+                    pendingCompletedCounts = remainingPending
                     programSections = buildProgramSections(rows)
+                    rebuildCompletedRowKeys()
                     let totalCount = rows.count
-                    let completedCount = rows.filter { completedExerciseIDs.contains($0.exercise_id) }.count
+                    let completedCount = rows.filter { completedRowKeys.contains(rowKey(for: $0)) }.count
                     let weeklyMinutes = computeWeeklyMinutes(from: progressRows)
                     let adherencePercent = totalCount == 0 ? 0 : Int(Double(completedCount) / Double(totalCount) * 100.0)
                     let series = buildSeries(from: progressRows)
@@ -256,7 +297,7 @@ final class VideosViewController: UIViewController, UITableViewDataSource, UITab
             let cell = tableView.dequeueReusableCell(withIdentifier: ProgramExerciseCell.reuseID, for: indexPath) as! ProgramExerciseCell
             cell.selectionStyle = .none
             let row = programSections[indexPath.section].items[indexPath.row]
-            let completed = completedExerciseIDs.contains(row.exercise_id)
+            let completed = completedRowKeys.contains(rowKey(for: row))
             let locked = isDayLocked(indexPath.section)
             cell.configure(
                 title: row.title,
@@ -338,14 +379,17 @@ final class VideosViewController: UIViewController, UITableViewDataSource, UITab
         let tail = sorted.dropFirst(currentIndex + 1)
         let nextRows = Array(tail.prefix(3))
         return nextRows.map { row in
-            ExerciseDetailViewController.NextUpItem(
+            let sectionIndex = sectionIndex(for: row.exercise_id)
+            let locked = sectionIndex.map { isDayLocked($0) } ?? false
+            return ExerciseDetailViewController.NextUpItem(
                 title: row.title,
                 subtitle: "\(row.target_area ?? "General")",
                 durationSeconds: row.duration_seconds,
                 videoPath: row.video_path,
                 thumbnailPath: row.thumbnail_path,
                 programID: row.program_id,
-                exerciseID: row.exercise_id
+                exerciseID: row.exercise_id,
+                locked: locked
             )
         }
     }
@@ -358,7 +402,7 @@ final class VideosViewController: UIViewController, UITableViewDataSource, UITab
         guard isProgramTab, programSections.indices.contains(section) else { return nil }
         let header = ProgramDayHeaderView()
         let sectionData = programSections[section]
-        let completedCount = sectionData.items.filter { completedExerciseIDs.contains($0.exercise_id) }.count
+        let completedCount = sectionData.items.filter { completedRowKeys.contains(rowKey(for: $0)) }.count
         let isComplete = completedCount == sectionData.items.count && sectionData.items.count > 0
         header.configure(
             day: sectionData.day,
@@ -461,7 +505,7 @@ final class VideosViewController: UIViewController, UITableViewDataSource, UITab
     }
 
     private func isDayComplete(_ section: ProgramDaySection) -> Bool {
-        let completedCount = section.items.filter { completedExerciseIDs.contains($0.exercise_id) }.count
+        let completedCount = section.items.filter { completedRowKeys.contains(rowKey(for: $0)) }.count
         return completedCount == section.items.count && section.items.count > 0
     }
 
@@ -469,6 +513,36 @@ final class VideosViewController: UIViewController, UITableViewDataSource, UITab
         guard sectionIndex > 0 else { return false }
         let previousSection = programSections[sectionIndex - 1]
         return !isDayComplete(previousSection)
+    }
+
+    private func sectionIndex(for exerciseID: UUID) -> Int? {
+        for (index, section) in programSections.enumerated() {
+            if section.items.contains(where: { $0.exercise_id == exerciseID }) {
+                return index
+            }
+        }
+        return nil
+    }
+
+    private func rowKey(for row: MyProgramExerciseRow) -> String {
+        let order = row.sort_order ?? 0
+        return "\(row.program_id.uuidString)-\(row.exercise_id.uuidString)-\(order)"
+    }
+
+    private func rebuildCompletedRowKeys() {
+        var counts = completedCounts
+        var keys: Set<String> = []
+        for section in programSections {
+            for row in section.items {
+                let id = row.exercise_id
+                let remaining = counts[id] ?? 0
+                if remaining > 0 {
+                    keys.insert(rowKey(for: row))
+                    counts[id] = remaining - 1
+                }
+            }
+        }
+        completedRowKeys = keys
     }
 
     private func applyProgramHeader(programTitle: String,
