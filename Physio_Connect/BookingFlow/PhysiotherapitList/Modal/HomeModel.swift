@@ -53,10 +53,6 @@ final class HomeModel {
             }
         }
 
-        let formatter = ISO8601DateFormatter()
-        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-        let nowIso = formatter.string(from: Date())
-
         let rows: [ApptJoinRow] = try await SupabaseManager.shared.client
             .from("appointments")
             .select("""
@@ -80,11 +76,9 @@ final class HomeModel {
             """)
             .eq("customer_id", value: userId.uuidString)
             .or("status.eq.booked,status.eq.confirmed")
-            .gt("physio_availability_slots.start_time", value: nowIso)
-            .order("start_time", ascending: true, referencedTable: "physio_availability_slots")
             .execute()
             .value
-        return rows.compactMap { r in
+        let mapped = rows.compactMap { r -> HomeUpcomingAppointment? in
             guard r.physio_availability_slots.start_time > Date() else { return nil }
             let specialization = r.physiotherapists.physio_specializations?
                 .compactMap { $0.specializations?.name }
@@ -118,6 +112,7 @@ final class HomeModel {
                 status: r.status
             )
         }
+        return mapped.sorted { $0.startTime < $1.startTime }
     }
 
     func fetchProgressSummary() async throws -> ProgressSummary {
