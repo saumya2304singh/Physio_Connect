@@ -12,6 +12,7 @@ final class ProfileViewController: UIViewController {
     private let profileView = ProfileView()
     private let model = ProfileModel()
     private var isRefreshing = false
+    private var currentProfile: ProfileViewData?
 
     override func loadView() { view = profileView }
 
@@ -44,7 +45,7 @@ final class ProfileViewController: UIViewController {
         }
 
         profileView.onEdit = { [weak self] in
-            self?.showAlert(title: "Edit Profile", message: "Editing profile details is coming soon.")
+            self?.openEditProfile()
         }
 
         profileView.onPrivacyTapped = { [weak self] in
@@ -98,6 +99,7 @@ final class ProfileViewController: UIViewController {
         do {
             let data = try await model.fetchCurrentProfile()
             await MainActor.run {
+                self.currentProfile = data
                 self.profileView.apply(data)
             }
         } catch {
@@ -159,5 +161,18 @@ final class ProfileViewController: UIViewController {
         let alert = UIAlertController(title: title, message: message, preferredStyle: .alert)
         alert.addAction(UIAlertAction(title: "OK", style: .default))
         present(alert, animated: true)
+    }
+
+    private func openEditProfile() {
+        guard let currentProfile else {
+            showAlert(title: "Edit Profile", message: "Profile data is still loading.")
+            return
+        }
+        let vc = EditProfileViewController(profile: currentProfile)
+        vc.onSave = { [weak self] in
+            Task { await self?.refreshProfile() }
+        }
+        vc.hidesBottomBarWhenPushed = true
+        navigationController?.pushViewController(vc, animated: true)
     }
 }

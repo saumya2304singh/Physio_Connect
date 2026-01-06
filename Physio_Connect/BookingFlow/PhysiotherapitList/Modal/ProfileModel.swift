@@ -107,7 +107,49 @@ final class ProfileModel {
         }
     }
 
+    struct ProfileUpdateInput {
+        let name: String
+        let phone: String
+        let gender: String
+        let dateOfBirth: String
+        let location: String
+    }
+
+    func updateProfile(_ input: ProfileUpdateInput) async throws {
+        let session = try await client.auth.session
+        let userID = session.user.id.uuidString
+
+        struct UpdatePayload: Encodable {
+            let full_name: String?
+            let phone: String?
+            let gender: String?
+            let date_of_birth: String?
+            let location: String?
+        }
+
+        let payload = UpdatePayload(
+            full_name: input.name.trimmingCharacters(in: .whitespacesAndNewlines).nilIfEmpty,
+            phone: input.phone.trimmingCharacters(in: .whitespacesAndNewlines).nilIfEmpty,
+            gender: input.gender.trimmingCharacters(in: .whitespacesAndNewlines).nilIfEmpty,
+            date_of_birth: input.dateOfBirth.trimmingCharacters(in: .whitespacesAndNewlines).nilIfEmpty,
+            location: input.location.trimmingCharacters(in: .whitespacesAndNewlines).nilIfEmpty
+        )
+
+        _ = try await client
+            .from("customers")
+            .update(payload)
+            .eq("id", value: userID)
+            .execute()
+    }
+
     func signOut() async throws {
         try await client.auth.signOut()
+    }
+}
+
+private extension String {
+    var nilIfEmpty: String? {
+        let trimmed = trimmingCharacters(in: .whitespacesAndNewlines)
+        return trimmed.isEmpty ? nil : trimmed
     }
 }

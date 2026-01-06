@@ -52,7 +52,7 @@ final class HomeView: UIView {
 
     override func layoutSubviews() {
         super.layoutSubviews()
-        let bottomInset: CGFloat = 110
+        let bottomInset: CGFloat = 64
         scrollView.contentInset = UIEdgeInsets(top: 0, left: 0, bottom: bottomInset, right: 0)
         scrollView.scrollIndicatorInsets = UIEdgeInsets(top: 0, left: 0, bottom: bottomInset, right: 0)
     }
@@ -63,7 +63,7 @@ final class HomeView: UIView {
         addSubview(scrollView)
         scrollView.addSubview(contentView)
 
-        locationIcon.image = UIImage(systemName: "mappin.and.ellipse")
+        locationIcon.image = UIImage(systemName: "location")
         locationIcon.tintColor = UIColor(hex: "1E6EF7")
         locationIcon.translatesAutoresizingMaskIntoConstraints = false
 
