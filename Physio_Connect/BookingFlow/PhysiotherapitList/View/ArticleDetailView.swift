@@ -37,7 +37,7 @@ final class ArticleDetailView: UIView {
 
     override init(frame: CGRect) {
         super.init(frame: frame)
-        backgroundColor = UIColor(hex: "F2F6FB")
+        backgroundColor = UIColor(hex: "E3F0FF")
         build()
     }
 
@@ -99,7 +99,9 @@ final class ArticleDetailView: UIView {
         shareButton.tintColor = UIColor(hex: "1E6EF7")
 
         scrollView.translatesAutoresizingMaskIntoConstraints = false
+        scrollView.backgroundColor = UIColor(hex: "E3F0FF")
         contentView.translatesAutoresizingMaskIntoConstraints = false
+        contentView.backgroundColor = UIColor(hex: "E3F0FF")
 
         coverImageView.translatesAutoresizingMaskIntoConstraints = false
         coverImageView.backgroundColor = UIColor(hex: "E9EEF7")

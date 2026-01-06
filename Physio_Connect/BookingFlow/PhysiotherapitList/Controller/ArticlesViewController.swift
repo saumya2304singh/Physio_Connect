@@ -40,8 +40,6 @@ final class ArticlesViewController: UIViewController, UITableViewDataSource, UIT
         articlesView.tableView.contentInset = UIEdgeInsets(top: 0, left: 0, bottom: 110, right: 0)
         articlesView.tableView.scrollIndicatorInsets = UIEdgeInsets(top: 0, left: 0, bottom: 110, right: 0)
 
-        articlesView.backButton.addTarget(self, action: #selector(backTapped), for: .touchUpInside)
-        articlesView.filterButton.addTarget(self, action: #selector(filterTapped), for: .touchUpInside)
         articlesView.setRefreshTarget(self, action: #selector(refreshPulled))
 
         for (index, button) in articlesView.segmentButtons.enumerated() {
@@ -52,16 +50,6 @@ final class ArticlesViewController: UIViewController, UITableViewDataSource, UIT
         articlesView.filterCollectionView.selectItem(at: IndexPath(item: selectedFilterIndex, section: 0), animated: false, scrollPosition: [])
         updateBookmarksVisibility()
         Task { await reload() }
-    }
-
-    @objc private func backTapped() {
-        navigationController?.popViewController(animated: true)
-    }
-
-    @objc private func filterTapped() {
-        let ac = UIAlertController(title: "Filters", message: "Add advanced filters here.", preferredStyle: .actionSheet)
-        ac.addAction(UIAlertAction(title: "Close", style: .cancel))
-        present(ac, animated: true)
     }
 
     @objc private func segmentTapped(_ sender: UIButton) {

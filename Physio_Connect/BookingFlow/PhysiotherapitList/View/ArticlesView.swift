@@ -10,9 +10,7 @@ import UIKit
 final class ArticlesView: UIView {
 
     private let topBar = UIView()
-    let backButton = UIButton(type: .system)
     let titleLabel = UILabel()
-    let filterButton = UIButton(type: .system)
 
     let searchBar = UISearchBar()
     private let segmentScrollView = UIScrollView()
@@ -37,7 +35,7 @@ final class ArticlesView: UIView {
         layout.minimumLineSpacing = 10
         filterCollectionView = UICollectionView(frame: .zero, collectionViewLayout: layout)
         super.init(frame: frame)
-        backgroundColor = UIColor(hex: "F2F6FB")
+        backgroundColor = UIColor(hex: "E3F0FF")
         build()
     }
 
@@ -76,28 +74,10 @@ final class ArticlesView: UIView {
     private func build() {
         topBar.translatesAutoresizingMaskIntoConstraints = false
 
-        backButton.translatesAutoresizingMaskIntoConstraints = false
-        backButton.backgroundColor = .white
-        backButton.layer.cornerRadius = 20
-        backButton.layer.shadowColor = UIColor.black.cgColor
-        backButton.layer.shadowOpacity = 0.08
-        backButton.layer.shadowRadius = 6
-        backButton.layer.shadowOffset = CGSize(width: 0, height: 4)
-        let backConfig = UIImage.SymbolConfiguration(pointSize: 16, weight: .semibold)
-        backButton.setImage(UIImage(systemName: "chevron.left", withConfiguration: backConfig), for: .normal)
-        backButton.tintColor = UIColor.black.withAlphaComponent(0.7)
-
         titleLabel.translatesAutoresizingMaskIntoConstraints = false
-        titleLabel.text = "Articles & Resources"
+        titleLabel.text = "Articles"
         titleLabel.font = .boldSystemFont(ofSize: 20)
         titleLabel.textColor = .black
-
-        filterButton.translatesAutoresizingMaskIntoConstraints = false
-        filterButton.backgroundColor = UIColor(hex: "E8F7FF")
-        filterButton.layer.cornerRadius = 20
-        let filterConfig = UIImage.SymbolConfiguration(pointSize: 18, weight: .semibold)
-        filterButton.setImage(UIImage(systemName: "line.3.horizontal.decrease.circle", withConfiguration: filterConfig), for: .normal)
-        filterButton.tintColor = UIColor(hex: "1E6EF7")
 
         searchBar.placeholder = "Search articles, topics, conditions..."
         searchBar.searchBarStyle = .minimal
@@ -139,9 +119,7 @@ final class ArticlesView: UIView {
         tableView.refreshControl = refreshControl
 
         addSubview(topBar)
-        topBar.addSubview(backButton)
         topBar.addSubview(titleLabel)
-        topBar.addSubview(filterButton)
 
         addSubview(searchBar)
         addSubview(segmentScrollView)
@@ -156,18 +134,10 @@ final class ArticlesView: UIView {
             topBar.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -16),
             topBar.heightAnchor.constraint(equalToConstant: 44),
 
-            backButton.leadingAnchor.constraint(equalTo: topBar.leadingAnchor),
-            backButton.centerYAnchor.constraint(equalTo: topBar.centerYAnchor),
-            backButton.widthAnchor.constraint(equalToConstant: 40),
-            backButton.heightAnchor.constraint(equalToConstant: 40),
-
             titleLabel.centerXAnchor.constraint(equalTo: topBar.centerXAnchor),
             titleLabel.centerYAnchor.constraint(equalTo: topBar.centerYAnchor),
-
-            filterButton.trailingAnchor.constraint(equalTo: topBar.trailingAnchor),
-            filterButton.centerYAnchor.constraint(equalTo: topBar.centerYAnchor),
-            filterButton.widthAnchor.constraint(equalToConstant: 40),
-            filterButton.heightAnchor.constraint(equalToConstant: 40),
+            titleLabel.leadingAnchor.constraint(greaterThanOrEqualTo: topBar.leadingAnchor, constant: 16),
+            titleLabel.trailingAnchor.constraint(lessThanOrEqualTo: topBar.trailingAnchor, constant: -16),
 
             searchBar.topAnchor.constraint(equalTo: topBar.bottomAnchor, constant: 10),
             searchBar.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 16),
