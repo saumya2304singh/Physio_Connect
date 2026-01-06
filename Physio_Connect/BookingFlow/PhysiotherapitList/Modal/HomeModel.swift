@@ -16,7 +16,7 @@ final class HomeModel {
         let averagePain: Double
     }
 
-    func fetchUpcomingAppointment() async throws -> HomeUpcomingAppointment? {
+    func fetchUpcomingAppointments() async throws -> [HomeUpcomingAppointment] {
 
         let session = try await SupabaseManager.shared.client.auth.session
         let userId = session.user.id
@@ -81,45 +81,43 @@ final class HomeModel {
             .eq("customer_id", value: userId.uuidString)
             .or("status.eq.booked,status.eq.confirmed")
             .gt("physio_availability_slots.start_time", value: nowIso)
-            .order("created_at", ascending: false)
-            .limit(1)
+            .order("start_time", ascending: true, referencedTable: "physio_availability_slots")
             .execute()
             .value
+        return rows.compactMap { r in
+            guard r.physio_availability_slots.start_time > Date() else { return nil }
+            let specialization = r.physiotherapists.physio_specializations?
+                .compactMap { $0.specializations?.name }
+                .first ?? "Physiotherapist Specialist"
+            let feeText: String
+            if let fee = r.physiotherapists.consultation_fee {
+                feeText = "₹\(Int(fee))/hr"
+            } else {
+                feeText = "TBD"
+            }
+            let ratingText: String
+            if let avg = r.physiotherapists.avg_rating, let count = r.physiotherapists.reviews_count {
+                ratingText = "⭐️ \(String(format: "%.1f", avg)) | \(count) reviews"
+            } else {
+                ratingText = "N/A"
+            }
 
-        guard let r = rows.first else { return nil }
-        guard r.physio_availability_slots.start_time > Date() else { return nil }
-        guard r.physio_availability_slots.start_time > Date() else { return nil }
-        let specialization = r.physiotherapists.physio_specializations?
-            .compactMap { $0.specializations?.name }
-            .first ?? "Physiotherapist Specialist"
-        let feeText: String
-        if let fee = r.physiotherapists.consultation_fee {
-            feeText = "₹\(Int(fee))/hr"
-        } else {
-            feeText = "TBD"
+            return HomeUpcomingAppointment(
+                appointmentID: r.id,
+                physioID: r.physio_id,
+                physioName: r.physiotherapists.name,
+                serviceMode: r.service_mode,
+                specializationText: specialization,
+                consultationFeeText: feeText,
+                ratingText: ratingText,
+                profileImagePath: r.physiotherapists.profile_image_path,
+                profileImageVersion: r.physiotherapists.updated_at,
+                startTime: r.physio_availability_slots.start_time,
+                endTime: r.physio_availability_slots.end_time,
+                address: r.address_text ?? "",
+                status: r.status
+            )
         }
-        let ratingText: String
-        if let avg = r.physiotherapists.avg_rating, let count = r.physiotherapists.reviews_count {
-            ratingText = "⭐️ \(String(format: "%.1f", avg)) | \(count) reviews"
-        } else {
-            ratingText = "N/A"
-        }
-
-        return HomeUpcomingAppointment(
-            appointmentID: r.id,
-            physioID: r.physio_id,
-            physioName: r.physiotherapists.name,
-            serviceMode: r.service_mode,
-            specializationText: specialization,
-            consultationFeeText: feeText,
-            ratingText: ratingText,
-            profileImagePath: r.physiotherapists.profile_image_path,
-            profileImageVersion: r.physiotherapists.updated_at,
-            startTime: r.physio_availability_slots.start_time,
-            endTime: r.physio_availability_slots.end_time,
-            address: r.address_text ?? "",
-            status: r.status
-        )
     }
 
     func fetchProgressSummary() async throws -> ProgressSummary {

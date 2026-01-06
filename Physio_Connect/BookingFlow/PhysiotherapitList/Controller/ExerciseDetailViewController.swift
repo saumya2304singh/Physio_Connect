@@ -39,6 +39,8 @@ final class ExerciseDetailViewController: UIViewController {
     private let detailView = ExerciseDetailView()
     private var isCompleted = false
     private var isScaleVisible = false
+    private var hasSavedFeedback = false
+    private var isSaving = false
 
     init(headerTitleText: String,
          titleText: String,
@@ -106,8 +108,11 @@ final class ExerciseDetailViewController: UIViewController {
         detailView.setScaleVisible(false)
         isScaleVisible = false
         detailView.setNextUpVisible(!nextUpItems.isEmpty)
+        detailView.setCompletedState(false, locked: false)
+        detailView.setFeedbackVisible(false)
 
         loadThumbnail()
+        loadProgressState()
     }
 
     @objc private func backTapped() {
@@ -144,11 +149,44 @@ final class ExerciseDetailViewController: UIViewController {
         }
     }
 
+    private func loadProgressState() {
+        Task {
+            do {
+                let progress = try await videosModel.fetchProgressForExercise(exerciseID: exerciseID, programID: programID)
+                await MainActor.run {
+                    if let progress {
+                        let savedPain = progress.pain_level
+                        hasSavedFeedback = savedPain != nil
+                        if savedPain != nil {
+                            isCompleted = true
+                        } else {
+                            isCompleted = progress.is_completed ?? false
+                        }
+
+                        if let pain = savedPain {
+                            detailView.painSlider.value = Float(pain)
+                            detailView.updatePainUI(value: pain)
+                        }
+
+                        if let notes = progress.notes, !notes.isEmpty {
+                            detailView.notesTextView.text = notes
+                            textViewDidChange(detailView.notesTextView)
+                        }
+                    }
+                    detailView.setCompletedState(isCompleted, locked: hasSavedFeedback)
+                    detailView.setFeedbackVisible(isCompleted && !hasSavedFeedback)
+                }
+            } catch {
+                return
+            }
+        }
+    }
+
     @objc private func toggleCompleted() {
+        if hasSavedFeedback { return }
         isCompleted.toggle()
-        let imageName = isCompleted ? "checkmark.circle.fill" : "circle"
-        detailView.completeButton.setImage(UIImage(systemName: imageName), for: .normal)
-        detailView.completeButton.tintColor = isCompleted ? UIColor(hex: "22C55E") : UIColor(hex: "94A3B8")
+        detailView.setCompletedState(isCompleted, locked: false)
+        detailView.setFeedbackVisible(isCompleted)
     }
 
     @objc private func toggleScale() {
@@ -170,6 +208,10 @@ final class ExerciseDetailViewController: UIViewController {
     }
 
     @objc private func saveTapped() {
+        if isSaving { return }
+        guard isCompleted else { return }
+        isSaving = true
+        detailView.saveButton.isEnabled = false
         let painValue = Int(detailView.painSlider.value.rounded())
         let notes = detailView.notesTextView.text.trimmingCharacters(in: .whitespacesAndNewlines)
         let payloadNotes = notes.isEmpty ? nil : notes
@@ -184,10 +226,18 @@ final class ExerciseDetailViewController: UIViewController {
                     painLevel: painValue,
                     notes: payloadNotes
                 )
+                hasSavedFeedback = true
+                isCompleted = true
                 let done = UIAlertController(title: "Saved", message: "Progress updated.", preferredStyle: .alert)
                 done.addAction(UIAlertAction(title: "OK", style: .default))
                 present(done, animated: true)
+                detailView.setFeedbackVisible(false)
+                detailView.setCompletedState(true, locked: true)
+                detailView.saveButton.isEnabled = true
+                isSaving = false
             } catch {
+                detailView.saveButton.isEnabled = true
+                isSaving = false
                 showError("Save failed", error.localizedDescription)
             }
         }

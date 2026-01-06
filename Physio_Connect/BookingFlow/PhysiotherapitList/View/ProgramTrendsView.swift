@@ -15,8 +15,14 @@ final class ProgramTrendsView: UIView {
     private let painLegend = LegendDotView(text: "Pain Level", color: UIColor(hex: "F97316"))
     private let adherenceLegend = LegendDotView(text: "Adherence", color: UIColor(hex: "3B82F6"))
 
+    private let yAxisLeft = UIStackView()
+    private let yAxisRight = UIStackView()
+    private let chartContainer = UIView()
+    private let xAxisStack = UIStackView()
+
     private let chartView = TrendChartView()
     private var chartHeightConstraint: NSLayoutConstraint?
+    private let chartInset: CGFloat = 10
     override init(frame: CGRect) {
         super.init(frame: frame)
         build()
@@ -28,10 +34,11 @@ final class ProgramTrendsView: UIView {
 
     func configure(painSeries: [Int], adherenceSeries: [Int]) {
         chartView.setData(pain: painSeries, adherence: adherenceSeries)
+        updateXAxisLabels(count: max(painSeries.count, adherenceSeries.count))
     }
 
     private func build() {
-        backgroundColor = .white
+        backgroundColor = UIColor(hex: "EAF2FF")
         layer.cornerRadius = 22
         layer.shadowColor = UIColor.black.cgColor
         layer.shadowOpacity = 0.06
@@ -54,12 +61,43 @@ final class ProgramTrendsView: UIView {
         legendStack.addArrangedSubview(painLegend)
         legendStack.addArrangedSubview(adherenceLegend)
 
+        yAxisLeft.translatesAutoresizingMaskIntoConstraints = false
+        yAxisLeft.axis = .vertical
+        yAxisLeft.alignment = .leading
+        yAxisLeft.distribution = .equalSpacing
+        ["10", "5", "0"].forEach { text in
+            let label = axisLabel(text)
+            yAxisLeft.addArrangedSubview(label)
+        }
+
+        yAxisRight.translatesAutoresizingMaskIntoConstraints = false
+        yAxisRight.axis = .vertical
+        yAxisRight.alignment = .trailing
+        yAxisRight.distribution = .equalSpacing
+        ["100", "50", "0"].forEach { text in
+            let label = axisLabel(text)
+            yAxisRight.addArrangedSubview(label)
+        }
+
+        chartContainer.translatesAutoresizingMaskIntoConstraints = false
+        chartContainer.backgroundColor = .clear
+        chartContainer.layer.cornerRadius = 12
+
         chartView.translatesAutoresizingMaskIntoConstraints = false
+
+        xAxisStack.translatesAutoresizingMaskIntoConstraints = false
+        xAxisStack.axis = .horizontal
+        xAxisStack.distribution = .equalSpacing
 
         addSubview(titleLabel)
         addSubview(subtitleLabel)
         addSubview(legendStack)
-        addSubview(chartView)
+        addSubview(yAxisLeft)
+        addSubview(yAxisRight)
+        addSubview(chartContainer)
+        addSubview(xAxisStack)
+
+        chartContainer.addSubview(chartView)
 
         NSLayoutConstraint.activate([
             titleLabel.topAnchor.constraint(equalTo: topAnchor, constant: 18),
@@ -73,15 +111,48 @@ final class ProgramTrendsView: UIView {
             legendStack.topAnchor.constraint(equalTo: subtitleLabel.bottomAnchor, constant: 12),
             legendStack.leadingAnchor.constraint(equalTo: titleLabel.leadingAnchor),
 
-            chartView.topAnchor.constraint(equalTo: legendStack.bottomAnchor, constant: 12),
-            chartView.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 12),
-            chartView.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -12),
-            chartView.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -16)
+            chartContainer.topAnchor.constraint(equalTo: legendStack.bottomAnchor, constant: 12),
+            yAxisLeft.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 16),
+            yAxisRight.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -16),
+            chartContainer.leadingAnchor.constraint(equalTo: yAxisLeft.trailingAnchor, constant: 10),
+            chartContainer.trailingAnchor.constraint(equalTo: yAxisRight.leadingAnchor, constant: -10),
+            chartContainer.heightAnchor.constraint(equalToConstant: 140),
+
+            chartView.topAnchor.constraint(equalTo: chartContainer.topAnchor),
+            chartView.leadingAnchor.constraint(equalTo: chartContainer.leadingAnchor),
+            chartView.trailingAnchor.constraint(equalTo: chartContainer.trailingAnchor),
+            chartView.bottomAnchor.constraint(equalTo: chartContainer.bottomAnchor),
+
+            xAxisStack.topAnchor.constraint(equalTo: chartContainer.bottomAnchor, constant: 6),
+            xAxisStack.leadingAnchor.constraint(equalTo: chartContainer.leadingAnchor),
+            xAxisStack.trailingAnchor.constraint(equalTo: chartContainer.trailingAnchor),
+            xAxisStack.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -16)
         ])
 
-        chartHeightConstraint = chartView.heightAnchor.constraint(equalTo: chartView.widthAnchor, multiplier: 0.55)
-        chartHeightConstraint?.priority = .required
-        chartHeightConstraint?.isActive = true
+        NSLayoutConstraint.activate([
+            yAxisLeft.topAnchor.constraint(equalTo: chartContainer.topAnchor, constant: chartInset),
+            yAxisLeft.bottomAnchor.constraint(equalTo: chartContainer.bottomAnchor, constant: -chartInset),
+            yAxisRight.topAnchor.constraint(equalTo: chartContainer.topAnchor, constant: chartInset),
+            yAxisRight.bottomAnchor.constraint(equalTo: chartContainer.bottomAnchor, constant: -chartInset)
+        ])
+    }
+
+    private func updateXAxisLabels(count: Int) {
+        xAxisStack.arrangedSubviews.forEach { $0.removeFromSuperview() }
+        let total = max(count, 1)
+        for i in 1...total {
+            let label = axisLabel("W\(i)")
+            label.font = .systemFont(ofSize: 11, weight: .medium)
+            xAxisStack.addArrangedSubview(label)
+        }
+    }
+
+    private func axisLabel(_ text: String) -> UILabel {
+        let label = UILabel()
+        label.text = text
+        label.font = .systemFont(ofSize: 12, weight: .medium)
+        label.textColor = UIColor.black.withAlphaComponent(0.4)
+        return label
     }
 }
 
@@ -144,6 +215,7 @@ private final class TrendChartView: UIView {
     private let indicatorDotAdherence = CAShapeLayer()
     private let valueLabel = UILabel()
     private var indicatorIndex: Int?
+    private let chartInset: CGFloat = 10
 
     override init(frame: CGRect) {
         super.init(frame: frame)
@@ -169,7 +241,7 @@ private final class TrendChartView: UIView {
     }
 
     private func setupLayers() {
-        gridLayer.strokeColor = UIColor.black.withAlphaComponent(0.05).cgColor
+        gridLayer.strokeColor = UIColor.black.withAlphaComponent(0.35).cgColor
         gridLayer.lineWidth = 0.8
         gridLayer.lineDashPattern = [2, 4]
         gridLayer.fillColor = UIColor.clear.cgColor
@@ -252,13 +324,13 @@ private final class TrendChartView: UIView {
     private func updateChart() {
         guard pain.count == adherence.count, pain.count >= 2 else { return }
 
-        let inset: CGFloat = 16
-        let chartRect = bounds.insetBy(dx: inset, dy: inset)
+        let chartRect = bounds.insetBy(dx: chartInset, dy: chartInset)
         let stepX = chartRect.width / CGFloat(max(pain.count - 1, 1))
 
         let gridPath = UIBezierPath()
-        for i in 0..<4 {
-            let y = chartRect.minY + (CGFloat(i) * chartRect.height / 3)
+        let gridRows = 3
+        for i in 0..<gridRows {
+            let y = chartRect.minY + (chartRect.height / CGFloat(gridRows - 1)) * CGFloat(i)
             gridPath.move(to: CGPoint(x: chartRect.minX, y: y))
             gridPath.addLine(to: CGPoint(x: chartRect.maxX, y: y))
         }
@@ -292,12 +364,14 @@ private final class TrendChartView: UIView {
         valueLabels = []
         if let lastIndex = painPoints.indices.last {
             let painLabel = makeValueLabel(text: "\(pain[lastIndex])", color: UIColor(hex: "F97316"))
-            painLabel.frame = CGRect(x: painPoints[lastIndex].x - 10, y: painPoints[lastIndex].y - 20, width: 22, height: 14)
+            let painY = max(painPoints[lastIndex].y - 24, 2)
+            painLabel.frame = CGRect(x: painPoints[lastIndex].x - 10, y: painY, width: 22, height: 14)
             addSubview(painLabel)
             valueLabels.append(painLabel)
 
             let adhLabel = makeValueLabel(text: "\(adherence[lastIndex])", color: UIColor(hex: "3B82F6"))
-            adhLabel.frame = CGRect(x: adherencePoints[lastIndex].x - 14, y: adherencePoints[lastIndex].y - 20, width: 28, height: 14)
+            let adhY = max(adherencePoints[lastIndex].y - 24, 2)
+            adhLabel.frame = CGRect(x: adherencePoints[lastIndex].x - 14, y: adhY, width: 28, height: 14)
             addSubview(adhLabel)
             valueLabels.append(adhLabel)
         }
@@ -305,6 +379,8 @@ private final class TrendChartView: UIView {
         if let index = indicatorIndex, index < painPoints.count {
             updateIndicator(at: index, painPoints: painPoints, adherencePoints: adherencePoints, chartRect: chartRect)
         }
+
+        animateLines()
     }
 
     private func makeValueLabel(text: String, color: UIColor) -> UILabel {
@@ -314,6 +390,28 @@ private final class TrendChartView: UIView {
         label.textAlignment = .center
         label.text = text
         return label
+    }
+
+    private func animateLines() {
+        [painLine, adherenceLine, painFill, adherenceFill].forEach { $0.removeAllAnimations() }
+
+        let lineAnim = CABasicAnimation(keyPath: "strokeEnd")
+        lineAnim.fromValue = 0
+        lineAnim.toValue = 1
+        lineAnim.duration = 0.6
+        lineAnim.timingFunction = CAMediaTimingFunction(name: .easeInEaseOut)
+
+        painLine.add(lineAnim, forKey: "stroke")
+        adherenceLine.add(lineAnim, forKey: "stroke")
+
+        let fillAnim = CABasicAnimation(keyPath: "opacity")
+        fillAnim.fromValue = 0
+        fillAnim.toValue = 1
+        fillAnim.duration = 0.6
+        fillAnim.timingFunction = CAMediaTimingFunction(name: .easeInEaseOut)
+
+        painFill.add(fillAnim, forKey: "fill")
+        adherenceFill.add(fillAnim, forKey: "fill")
     }
 
     private func pointsFor(series: [Int], maxValue: Int, rect: CGRect, stepX: CGFloat) -> [CGPoint] {
@@ -394,8 +492,7 @@ private final class TrendChartView: UIView {
 
     private func updateIndicator(at location: CGPoint) {
         guard pain.count == adherence.count, pain.count >= 2 else { return }
-        let inset: CGFloat = 16
-        let chartRect = bounds.insetBy(dx: inset, dy: inset)
+        let chartRect = bounds.insetBy(dx: chartInset, dy: chartInset)
         guard bounds.contains(location) else { return }
         let stepX = chartRect.width / CGFloat(max(pain.count - 1, 1))
         let clampedX = min(max(location.x, chartRect.minX), chartRect.maxX)

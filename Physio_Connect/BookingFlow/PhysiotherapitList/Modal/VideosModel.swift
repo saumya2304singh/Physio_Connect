@@ -61,6 +61,7 @@ struct ExerciseProgressRow: Decodable {
     let is_completed: Bool?
     let watched_seconds: Int?
     let pain_level: Int?
+    let notes: String?
  }
 
 final class VideosModel {
@@ -154,11 +155,33 @@ final class VideosModel {
 
         let rows: [ExerciseProgressRow] = try await client
             .from("exercise_progress")
-            .select("exercise_id, program_id, progress_date, is_completed, watched_seconds, pain_level")
+            .select("exercise_id, program_id, progress_date, is_completed, watched_seconds, pain_level, notes")
             .eq("customer_id", value: customerID)
             .eq("program_id", value: programID.uuidString)
             .execute()
             .value
         return rows
+    }
+
+    func fetchProgressForExercise(exerciseID: UUID, programID: UUID?) async throws -> ExerciseProgressRow? {
+        let session = try await client.auth.session
+        let customerID = session.user.id.uuidString
+
+        var query = client
+            .from("exercise_progress")
+            .select("exercise_id, program_id, progress_date, is_completed, watched_seconds, pain_level, notes")
+            .eq("customer_id", value: customerID)
+            .eq("exercise_id", value: exerciseID.uuidString)
+
+        if let programID {
+            query = query.eq("program_id", value: programID.uuidString)
+        }
+
+        let rows: [ExerciseProgressRow] = try await query
+            .order("progress_date", ascending: false)
+            .limit(1)
+            .execute()
+            .value
+        return rows.first
     }
 }

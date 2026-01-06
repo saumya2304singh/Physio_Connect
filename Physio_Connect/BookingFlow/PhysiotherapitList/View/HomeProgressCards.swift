@@ -72,7 +72,7 @@ final class HomePainTrendCardView: UIView {
         yAxisStack.axis = .vertical
         yAxisStack.alignment = .leading
         yAxisStack.distribution = .equalSpacing
-        let yLabels = ["8", "4", "0"]
+        let yLabels = ["10", "5", "0"]
         yLabels.forEach {
             let label = UILabel()
             label.text = $0
@@ -198,7 +198,7 @@ final class HomeAdherenceCardView: UIView {
         yAxisStack.axis = .vertical
         yAxisStack.alignment = .leading
         yAxisStack.distribution = .equalSpacing
-        let yLabels = ["100", "25", "0"]
+        let yLabels = ["100", "50", "0"]
         yLabels.forEach {
             let label = UILabel()
             label.text = $0

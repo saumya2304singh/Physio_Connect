@@ -172,7 +172,7 @@ final class PhysiotherapistProfileView: UIView {
 
         // Avatar
         avatar.translatesAutoresizingMaskIntoConstraints = false
-        avatar.layer.cornerRadius = 26
+        avatar.layer.cornerRadius = 32
         avatar.clipsToBounds = true
         avatar.contentMode = .scaleAspectFill
         avatar.backgroundColor = UIColor.white.withAlphaComponent(0.2)
@@ -214,9 +214,9 @@ final class PhysiotherapistProfileView: UIView {
             backButton.heightAnchor.constraint(equalToConstant: 44),
 
             avatar.leadingAnchor.constraint(equalTo: backButton.trailingAnchor, constant: 12),
-            avatar.centerYAnchor.constraint(equalTo: backButton.centerYAnchor),
-            avatar.widthAnchor.constraint(equalToConstant: 52),
-            avatar.heightAnchor.constraint(equalToConstant: 52),
+            avatar.centerYAnchor.constraint(equalTo: ratingLabel.centerYAnchor),
+            avatar.widthAnchor.constraint(equalToConstant: 64),
+            avatar.heightAnchor.constraint(equalToConstant: 64),
 
             onlineDot.widthAnchor.constraint(equalToConstant: 16),
             onlineDot.heightAnchor.constraint(equalToConstant: 16),

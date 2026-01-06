@@ -75,11 +75,11 @@ final class HomeCardsCarouselView: UIView, UICollectionViewDataSource, UICollect
     }
 
     // MARK: - Public update
-    func setUpcoming(_ appt: HomeUpcomingAppointment?) {
-        if let appt {
-            cards = [.upcoming(appt), .book]
-        } else {
+    func setUpcoming(_ appts: [HomeUpcomingAppointment]) {
+        if appts.isEmpty {
             cards = [.book]
+        } else {
+            cards = appts.map { .upcoming($0) } + [.book]
         }
 
         pageControl.numberOfPages = cards.count

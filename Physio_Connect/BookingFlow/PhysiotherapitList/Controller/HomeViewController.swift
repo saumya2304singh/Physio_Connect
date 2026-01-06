@@ -14,7 +14,7 @@ final class HomeViewController: UIViewController, UICollectionViewDataSource, UI
     private let videosModel = VideosModel()
     private let articlesModel = ArticlesModel()
     private let locationService = LocationService.shared
-    private var currentUpcoming: HomeUpcomingAppointment?
+    private var upcomingAppointments: [HomeUpcomingAppointment] = []
     private var upcomingTimer: Timer?
     private var freeVideos: [ExerciseVideoRow] = []
     private var thumbnailImages: [UUID: UIImage] = [:]
@@ -79,7 +79,7 @@ final class HomeViewController: UIViewController, UICollectionViewDataSource, UI
 
     private func refreshCards() async {
         do {
-            let upcoming = try await model.fetchUpcomingAppointment()
+            let upcoming = try await model.fetchUpcomingAppointments()
             let videos = try await videosModel.fetchFreeExercises(search: nil)
             let progress = try await model.fetchProgressSummary()
             let fetchedArticles = try await articlesModel.fetchArticles(search: nil, category: nil, sort: selectedArticlesSort)
@@ -115,7 +115,7 @@ final class HomeViewController: UIViewController, UICollectionViewDataSource, UI
             loadArticleImages(for: Array(fetchedArticles.prefix(4)))
         } catch {
             await MainActor.run {
-                self.applyUpcoming(nil)
+                self.applyUpcoming([])
                 self.homeView.setUpNextVisible(false)
             }
             print("❌ Home refresh error:", error)
@@ -150,25 +150,19 @@ final class HomeViewController: UIViewController, UICollectionViewDataSource, UI
         return rows.last
     }
 
-    private func applyUpcoming(_ appt: HomeUpcomingAppointment?) {
+    private func applyUpcoming(_ appts: [HomeUpcomingAppointment]) {
         upcomingTimer?.invalidate()
         upcomingTimer = nil
-        currentUpcoming = nil
+        upcomingAppointments = appts.filter { $0.startTime > Date() }
+        homeView.setUpcoming(upcomingAppointments)
 
-        guard let appt, appt.startTime > Date() else {
-            homeView.setUpcoming(nil)
-            return
-        }
-
-        currentUpcoming = appt
-        homeView.setUpcoming(appt)
-
-        let interval = appt.startTime.timeIntervalSinceNow
-        guard interval > 0 else { return }
-        upcomingTimer = Timer.scheduledTimer(withTimeInterval: interval, repeats: false) { [weak self] _ in
-            guard let self else { return }
-            self.currentUpcoming = nil
-            self.homeView.setUpcoming(nil)
+        if let nextDate = upcomingAppointments.map(\.startTime).min() {
+            let interval = nextDate.timeIntervalSinceNow
+            guard interval > 0 else { return }
+            upcomingTimer = Timer.scheduledTimer(withTimeInterval: interval, repeats: false) { [weak self] _ in
+                guard let self else { return }
+                Task { await self.refreshCards() }
+            }
         }
     }
 

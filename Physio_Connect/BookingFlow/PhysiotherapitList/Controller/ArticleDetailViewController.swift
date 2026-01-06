@@ -13,6 +13,7 @@ final class ArticleDetailViewController: UIViewController {
     private var article: ArticleRow
     private let model = ArticlesModel()
     var onArticleUpdated: ((ArticleRow) -> Void)?
+    private var hasLoadedUserRating = false
 
     init(article: ArticleRow) {
         self.article = article
@@ -35,6 +36,7 @@ final class ArticleDetailViewController: UIViewController {
         detailView.onRatingSelected = { [weak self] rating in
             Task { await self?.submitRating(rating) }
         }
+        Task { await loadUserRating() }
     }
 
     override func viewDidAppear(_ animated: Bool) {
@@ -62,11 +64,27 @@ final class ArticleDetailViewController: UIViewController {
                 self.article = refreshed
                 self.detailView.configure(with: refreshed)
                 self.loadCoverImage(for: refreshed)
+                self.detailView.setUserRating(rating)
                 self.onArticleUpdated?(refreshed)
                 self.showToast("Thanks!", "Your rating was saved.")
             }
         } catch {
             await MainActor.run { self.showToast("Rating Error", error.localizedDescription) }
+        }
+    }
+
+    private func loadUserRating() async {
+        guard !hasLoadedUserRating else { return }
+        do {
+            let rating = try await model.fetchUserRating(articleID: article.id)
+            await MainActor.run {
+                if let rating {
+                    self.detailView.setUserRating(rating)
+                }
+                self.hasLoadedUserRating = true
+            }
+        } catch {
+            await MainActor.run { self.hasLoadedUserRating = true }
         }
     }
 

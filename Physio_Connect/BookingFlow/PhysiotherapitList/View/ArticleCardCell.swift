@@ -64,19 +64,21 @@ final class ArticleCardCell: UITableViewCell {
         contentView.backgroundColor = .clear
 
         card.translatesAutoresizingMaskIntoConstraints = false
-        card.backgroundColor = .white
-        card.layer.cornerRadius = 24
+        card.backgroundColor = UIColor(hex: "FDFEFF")
+        card.layer.cornerRadius = 22
         card.layer.shadowColor = UIColor.black.cgColor
-        card.layer.shadowOpacity = 0.08
-        card.layer.shadowRadius = 10
-        card.layer.shadowOffset = CGSize(width: 0, height: 6)
+        card.layer.shadowOpacity = 0.06
+        card.layer.shadowRadius = 12
+        card.layer.shadowOffset = CGSize(width: 0, height: 8)
         card.layer.borderWidth = 1
-        card.layer.borderColor = UIColor(hex: "E6EDF9").cgColor
+        card.layer.borderColor = UIColor(hex: "DDE9FF").cgColor
         contentView.addSubview(card)
 
         coverImageView.translatesAutoresizingMaskIntoConstraints = false
         coverImageView.contentMode = .scaleAspectFill
         coverImageView.clipsToBounds = true
+        coverImageView.layer.cornerRadius = 22
+        coverImageView.layer.maskedCorners = [.layerMinXMinYCorner, .layerMaxXMinYCorner]
         coverImageView.backgroundColor = UIColor(hex: "E9EEF7")
         coverImageView.image = UIImage(systemName: "photo")
         coverImageView.tintColor = UIColor.black.withAlphaComponent(0.15)
@@ -94,8 +96,12 @@ final class ArticleCardCell: UITableViewCell {
         card.addSubview(trendingPill)
 
         bookmarkButton.translatesAutoresizingMaskIntoConstraints = false
-        bookmarkButton.backgroundColor = .white
+        bookmarkButton.backgroundColor = UIColor.white.withAlphaComponent(0.95)
         bookmarkButton.layer.cornerRadius = 18
+        bookmarkButton.layer.shadowColor = UIColor.black.cgColor
+        bookmarkButton.layer.shadowOpacity = 0.08
+        bookmarkButton.layer.shadowRadius = 6
+        bookmarkButton.layer.shadowOffset = CGSize(width: 0, height: 3)
         let bookmarkConfig = UIImage.SymbolConfiguration(pointSize: 16, weight: .semibold)
         bookmarkButton.setImage(UIImage(systemName: "bookmark", withConfiguration: bookmarkConfig), for: .normal)
         bookmarkButton.tintColor = UIColor.black.withAlphaComponent(0.6)
@@ -103,27 +109,27 @@ final class ArticleCardCell: UITableViewCell {
         card.addSubview(bookmarkButton)
 
         sourcePill.translatesAutoresizingMaskIntoConstraints = false
-        sourcePill.backgroundColor = UIColor(hex: "EAF9F1")
+        sourcePill.backgroundColor = UIColor(hex: "E8F3FF")
         sourcePill.layer.cornerRadius = 14
         card.addSubview(sourcePill)
 
         sourceIcon.translatesAutoresizingMaskIntoConstraints = false
-        sourceIcon.image = UIImage(systemName: "checkmark.seal.fill")
-        sourceIcon.tintColor = UIColor(hex: "16A34A")
+        sourceIcon.image = UIImage(systemName: "newspaper.fill")
+        sourceIcon.tintColor = UIColor(hex: "1E6EF7")
 
         sourceLabel.translatesAutoresizingMaskIntoConstraints = false
         sourceLabel.font = .systemFont(ofSize: 13, weight: .semibold)
-        sourceLabel.textColor = UIColor(hex: "15803D")
+        sourceLabel.textColor = UIColor(hex: "1E6EF7")
 
         sourcePill.addSubview(sourceIcon)
         sourcePill.addSubview(sourceLabel)
 
         dateLabel.translatesAutoresizingMaskIntoConstraints = false
-        dateLabel.font = .systemFont(ofSize: 13, weight: .medium)
+        dateLabel.font = .systemFont(ofSize: 12, weight: .semibold)
         dateLabel.textColor = UIColor.black.withAlphaComponent(0.45)
 
         titleLabel.translatesAutoresizingMaskIntoConstraints = false
-        titleLabel.font = .systemFont(ofSize: 18, weight: .bold)
+        titleLabel.font = .systemFont(ofSize: 19, weight: .bold)
         titleLabel.textColor = .black
         titleLabel.numberOfLines = 0
 
@@ -142,18 +148,21 @@ final class ArticleCardCell: UITableViewCell {
         metaStack.spacing = 12
         metaStack.alignment = .center
 
-        ratingLabel.font = .systemFont(ofSize: 13, weight: .semibold)
+        ratingLabel.font = .systemFont(ofSize: 12, weight: .semibold)
         ratingLabel.textColor = UIColor.black.withAlphaComponent(0.6)
 
-        viewsLabel.font = .systemFont(ofSize: 13, weight: .semibold)
+        viewsLabel.font = .systemFont(ofSize: 12, weight: .semibold)
         viewsLabel.textColor = UIColor.black.withAlphaComponent(0.6)
 
-        timeLabel.font = .systemFont(ofSize: 13, weight: .semibold)
+        timeLabel.font = .systemFont(ofSize: 12, weight: .semibold)
         timeLabel.textColor = UIColor.black.withAlphaComponent(0.6)
 
         readButton.setTitle("Read", for: .normal)
-        readButton.titleLabel?.font = .systemFont(ofSize: 14, weight: .semibold)
-        readButton.setTitleColor(UIColor(hex: "1E6EF7"), for: .normal)
+        readButton.titleLabel?.font = .systemFont(ofSize: 13, weight: .bold)
+        readButton.setTitleColor(.white, for: .normal)
+        readButton.backgroundColor = UIColor(hex: "1E6EF7")
+        readButton.layer.cornerRadius = 14
+        readButton.contentEdgeInsets = UIEdgeInsets(top: 6, left: 12, bottom: 6, right: 12)
         readButton.addTarget(self, action: #selector(readTapped), for: .touchUpInside)
 
         let spacer = UIView()
@@ -172,15 +181,15 @@ final class ArticleCardCell: UITableViewCell {
         }
 
         NSLayoutConstraint.activate([
-            card.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 10),
-            card.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -10),
+            card.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 12),
+            card.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -12),
             card.leadingAnchor.constraint(equalTo: contentView.leadingAnchor),
             card.trailingAnchor.constraint(equalTo: contentView.trailingAnchor),
 
             coverImageView.topAnchor.constraint(equalTo: card.topAnchor),
             coverImageView.leadingAnchor.constraint(equalTo: card.leadingAnchor),
             coverImageView.trailingAnchor.constraint(equalTo: card.trailingAnchor),
-            coverImageView.heightAnchor.constraint(equalToConstant: 180),
+            coverImageView.heightAnchor.constraint(equalToConstant: 170),
 
             trendingPill.topAnchor.constraint(equalTo: coverImageView.topAnchor, constant: 12),
             trendingPill.leadingAnchor.constraint(equalTo: coverImageView.leadingAnchor, constant: 12),
@@ -293,8 +302,10 @@ private final class TagPillView: UIView {
 
     init(text: String) {
         super.init(frame: .zero)
-        backgroundColor = UIColor(hex: "E8F3FF")
+        backgroundColor = UIColor(hex: "F3F7FF")
         layer.cornerRadius = 14
+        layer.borderWidth = 1
+        layer.borderColor = UIColor(hex: "D9E6FF").cgColor
         label.translatesAutoresizingMaskIntoConstraints = false
         label.text = text
         label.font = .systemFont(ofSize: 12, weight: .semibold)

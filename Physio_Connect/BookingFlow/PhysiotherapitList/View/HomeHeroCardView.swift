@@ -56,6 +56,7 @@ final class HomeHeroCardView: UIView {
     private var contentTopToTopRowConstraint: NSLayoutConstraint?
     private var contentTopToContainerConstraint: NSLayoutConstraint?
     private var buttonTopConstraint: NSLayoutConstraint?
+    private var usesWhiteButton = false
 
     private var currentState: State = .bookHomeVisit
 
@@ -312,7 +313,7 @@ final class HomeHeroCardView: UIView {
     override func layoutSubviews() {
         super.layoutSubviews()
         applyButtonGradient()
-        if case .bookHomeVisit = currentState {
+        if backgroundGradient.superlayer != nil {
             backgroundGradient.frame = container.bounds
             backgroundGradient.cornerRadius = container.layer.cornerRadius
         }
@@ -321,7 +322,7 @@ final class HomeHeroCardView: UIView {
     private func applyButtonGradient() {
         gradientLayer?.removeFromSuperlayer()
 
-        if case .bookHomeVisit = currentState {
+        if usesWhiteButton {
             primaryButton.backgroundColor = .white
             primaryButton.layer.borderWidth = 0
             return
@@ -349,6 +350,7 @@ final class HomeHeroCardView: UIView {
         switch state {
 
         case .bookHomeVisit:
+            usesWhiteButton = true
             topRow.isHidden = true
             pill.isHidden = true
             setAvatarImage(nil, path: nil)
@@ -387,23 +389,40 @@ final class HomeHeroCardView: UIView {
             buttonChevron.isHidden = true
 
         case .upcoming(let appt):
+            usesWhiteButton = true
             topRow.isHidden = false
             pill.isHidden = false
             pillLabel.text = "Upcoming"
+            badgeIconWrap.isHidden = true
 
             nameLabel.text = appt.physioName
 
             subtitleLabel.text = appt.specializationText
-            nameLabel.textColor = .black
-            subtitleLabel.textColor = UIColor.black.withAlphaComponent(0.55)
+            nameLabel.textColor = .white
+            subtitleLabel.textColor = UIColor.white.withAlphaComponent(0.9)
             avatarWrap.isHidden = false
-            bubbleLarge.isHidden = true
-            bubbleSmall.isHidden = true
-            featureCircle.isHidden = true
-            backgroundGradient.removeFromSuperlayer()
-            container.backgroundColor = .white
+            bubbleLarge.isHidden = false
+            bubbleSmall.isHidden = false
+            featureCircle.isHidden = false
+            container.backgroundColor = .clear
+            backgroundGradient.colors = [
+                UIColor(hex: "19C5F7").cgColor,
+                UIColor(hex: "2C6BFF").cgColor
+            ]
+            backgroundGradient.startPoint = CGPoint(x: 0, y: 0.2)
+            backgroundGradient.endPoint = CGPoint(x: 1, y: 1)
+            if backgroundGradient.superlayer == nil {
+                container.layer.insertSublayer(backgroundGradient, at: 0)
+            }
 
+            pill.backgroundColor = UIColor(hex: "C7F5D7")
+            pillIcon.tintColor = UIColor(hex: "1C7B3B")
+            pillLabel.textColor = UIColor(hex: "1C7B3B")
 
+            dateRow.setStyle(iconColor: UIColor.white.withAlphaComponent(0.9),
+                             textColor: UIColor.white.withAlphaComponent(0.95))
+            timeRow.setStyle(iconColor: UIColor.white.withAlphaComponent(0.9),
+                             textColor: UIColor.white.withAlphaComponent(0.95))
             metaContainer.isHidden = false
             contentTopToContainerConstraint?.isActive = false
             contentTopToTopRowConstraint?.isActive = true
@@ -419,8 +438,12 @@ final class HomeHeroCardView: UIView {
             timeRow.setText(df2.string(from: appt.startTime))
 
             primaryButton.setTitle("View Details", for: .normal)
-            primaryButton.setTitleColor(.white, for: .normal)
-            buttonChevron.isHidden = false
+            primaryButton.setTitleColor(UIColor(hex: "1E6EF7"), for: .normal)
+            primaryButton.layer.shadowColor = UIColor.black.cgColor
+            primaryButton.layer.shadowOpacity = 0.12
+            primaryButton.layer.shadowRadius = 8
+            primaryButton.layer.shadowOffset = CGSize(width: 0, height: 4)
+            buttonChevron.isHidden = true
         }
 
         // ✅ Force refresh so button doesn’t get “stuck”
@@ -461,6 +484,11 @@ private final class MetaRow: UIView {
 
     func setText(_ text: String) {
         label.text = text
+    }
+
+    func setStyle(iconColor: UIColor, textColor: UIColor) {
+        iconView.tintColor = iconColor
+        label.textColor = textColor
     }
 
     private func build(icon: String, text: String) {

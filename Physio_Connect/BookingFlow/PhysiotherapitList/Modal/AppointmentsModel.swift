@@ -14,8 +14,8 @@ final class AppointmentsModel {
 
     // MARK: - Public API
 
-    /// Returns the nearest upcoming "booked" appointment (future) for current user
-    func fetchUpcomingAppointment() async throws -> UpcomingAppointment? {
+    /// Returns all upcoming "booked" appointments (future) for current user
+    func fetchUpcomingAppointments() async throws -> [UpcomingAppointment] {
         let session = try await client.auth.session
         let userID = session.user.id.uuidString
 
@@ -52,30 +52,28 @@ final class AppointmentsModel {
             .or("status.eq.booked,status.eq.confirmed")
             .gte("physio_availability_slots.start_time", value: nowISO) // future only (works with embedded)
             .order("start_time", ascending: true, referencedTable: "physio_availability_slots")
-
-            .limit(1)
             .execute()
             .value
+        let upcoming: [UpcomingAppointment] = rows.compactMap { row in
+            guard let physio = row.physio else { return nil }
+            guard let startTime = row.slot?.start_time, startTime > Date() else { return nil }
+            return UpcomingAppointment(
+                appointmentID: row.id,
+                physioID: physio.id,
+                physioName: physio.name,
+                startTime: startTime,
+                address: row.address_text ?? "",
+                specialization: physio.primarySpecialization ?? "Healthcare Professional",
+                profileImagePath: physio.profile_image_path,
+                profileImageVersion: physio.updated_at,
+                rating: physio.avg_rating,
+                reviewsCount: physio.reviews_count,
+                locationText: physio.location_text,
+                fee: physio.consultation_fee
+            )
+        }
 
-        guard let first = rows.first,
-              let physio = first.physio
-        else { return nil }
-        guard let startTime = first.slot?.start_time, startTime > Date() else { return nil }
-
-        return UpcomingAppointment(
-            appointmentID: first.id,
-            physioID: physio.id,
-            physioName: physio.name,
-            startTime: startTime,
-            address: first.address_text ?? "",
-            specialization: physio.primarySpecialization ?? "Healthcare Professional",
-            profileImagePath: physio.profile_image_path,
-            profileImageVersion: physio.updated_at,
-            rating: physio.avg_rating,
-            reviewsCount: physio.reviews_count,
-            locationText: physio.location_text,
-            fee: physio.consultation_fee
-        )
+        return upcoming
     }
 
     func cancelAppointment(appointmentID: UUID) async throws {

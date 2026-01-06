@@ -116,6 +116,24 @@ final class ArticlesModel {
             .execute()
     }
 
+    func fetchUserRating(articleID: UUID) async throws -> Int? {
+        let session = try await client.auth.session
+        let userID = session.user.id
+
+        struct RatingRow: Decodable { let rating: Int? }
+
+        let rows: [RatingRow] = try await client
+            .from("article_interactions")
+            .select("rating")
+            .eq("article_id", value: articleID.uuidString)
+            .eq("user_id", value: userID.uuidString)
+            .limit(1)
+            .execute()
+            .value
+
+        return rows.first?.rating
+    }
+
     func fetchArticle(id: UUID) async throws -> ArticleRow {
         let row: ArticleRow = try await client
             .from("articles_with_tags")

@@ -12,8 +12,7 @@ final class AppointmentsViewController: UIViewController {
     private let apptView = AppointmentsView()
     private let model = AppointmentsModel()
 
-    private var currentUpcoming: UpcomingAppointment?
-    private var lastUpcoming: UpcomingAppointment?
+    private var lastUpcoming: [UpcomingAppointment] = []
     private var lastPast: [PastAppointment] = []
     private var physioImages: [String: UIImage] = [:]
     private var isCancelling = false
@@ -50,36 +49,32 @@ final class AppointmentsViewController: UIViewController {
             self.navigationController?.pushViewController(vc, animated: true)
         }
 
-        apptView.onCancelTapped = { [weak self] in
+        apptView.onCancelTapped = { [weak self] vm in
             guard let self else { return }
-            guard let appt = self.currentUpcoming, !self.isCancelling else { return }
+            guard !self.isCancelling else { return }
             self.isCancelling = true
-            self.apptView.setCancelEnabled(false)
-            self.currentUpcoming = nil
-            self.apptView.setUpcoming(nil)
+            self.apptView.setCancelEnabled(false, appointmentID: vm.appointmentID)
             Task {
                 do {
-                    try await self.model.cancelAppointment(appointmentID: appt.appointmentID)
+                    try await self.model.cancelAppointment(appointmentID: vm.appointmentID)
                     await self.refreshAll()
                 } catch {
                     print("❌ Cancel failed:", error)
                     await MainActor.run {
                         self.isCancelling = false
-                        self.apptView.setCancelEnabled(true)
+                        self.apptView.setCancelEnabled(true, appointmentID: vm.appointmentID)
                     }
                 }
                 await MainActor.run {
                     self.isCancelling = false
-                    self.apptView.setCancelEnabled(true)
+                    self.apptView.setCancelEnabled(true, appointmentID: vm.appointmentID)
                 }
             }
         }
 
-        apptView.onRescheduleTapped = { [weak self] in
+        apptView.onRescheduleTapped = { [weak self] vm in
             guard let self else { return }
-            guard let physioID = self.currentUpcoming?.physioID else { return }
-
-            let vc = PhysiotherapistProfileViewController(physioID: physioID, preloadCard: nil, isReschedule: true)
+            let vc = PhysiotherapistProfileViewController(physioID: vm.physioID, preloadCard: nil, isReschedule: true)
             vc.hidesBottomBarWhenPushed = true
             self.navigationController?.pushViewController(vc, animated: true)
         }
@@ -112,14 +107,13 @@ final class AppointmentsViewController: UIViewController {
             }
         }
         do {
-            async let upcoming = model.fetchUpcomingAppointment()
+            async let upcoming = model.fetchUpcomingAppointments()
             async let past = model.fetchPastAppointments()
 
             let upcomingResult = try await upcoming
             let pastResult = try await past
 
             await MainActor.run {
-                self.currentUpcoming = upcomingResult
                 self.lastUpcoming = upcomingResult
                 self.lastPast = pastResult
                 self.applyUpcoming(upcomingResult)
@@ -128,8 +122,8 @@ final class AppointmentsViewController: UIViewController {
         } catch {
             print("❌ Appointments fetch error:", error)
             await MainActor.run {
-                self.currentUpcoming = nil
-                self.apptView.setUpcoming(nil)
+                self.lastUpcoming = []
+                self.apptView.setUpcoming([])
                 self.apptView.setCompleted([])
             }
         }
@@ -137,74 +131,70 @@ final class AppointmentsViewController: UIViewController {
 
     // MARK: - Mapping to your View VMs
 
-    private func applyUpcoming(_ appt: UpcomingAppointment?) {
+    private func applyUpcoming(_ appts: [UpcomingAppointment]) {
         upcomingTimer?.invalidate()
         upcomingTimer = nil
-        guard let appt else {
-            apptView.setUpcoming(nil)   // hides the card ✅
-            return
-        }
-
-        guard appt.startTime > Date() else {
-            apptView.setUpcoming(nil)
-            return
-        }
-
-        // ✅ If backend returned incomplete rows, hide card instead of showing an empty card
-        if appt.physioName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-            apptView.setUpcoming(nil)
-            return
-        }
 
         let df = DateFormatter()
         df.dateFormat = "MMMM d, yyyy - h:mm a"
 
-        let ratingText: String = {
-            let r = appt.rating ?? 0
-            let c = appt.reviewsCount ?? 0
-            return "⭐️ \(String(format: "%.1f", r))   ·   \(c) reviews"
-        }()
-
-        let distanceText = appt.locationText != nil
-        ? "📍 \(appt.locationText!)"
-        : "📍 Nearby"
-
-        let feeText: String = {
-            if let fee = appt.fee {
-                return "₹\(Int(fee)) / hr"
+        let vms: [AppointmentsView.UpcomingCardVM] = appts.compactMap { appt in
+            guard appt.startTime > Date() else { return nil }
+            if appt.physioName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                return nil
             }
-            return "₹ -- / hr"
-        }()
 
-        let cacheKey = physioImageKey(id: appt.physioID, version: appt.profileImageVersion)
-        let vm = AppointmentsView.UpcomingCardVM(
-            dateTimeText: df.string(from: appt.startTime),
-            physioName: appt.physioName,
-            ratingText: ratingText,
-            distanceText: distanceText,
-            specializationText: appt.specialization,
-            feeText: feeText,
-            image: physioImages[cacheKey]
-        )
+            let ratingText: String = {
+                let r = appt.rating ?? 0
+                let c = appt.reviewsCount ?? 0
+                return "⭐️ \(String(format: "%.1f", r))   ·   \(c) reviews"
+            }()
 
-        apptView.setUpcoming(vm)
+            let distanceText = appt.locationText != nil
+            ? "📍 \(appt.locationText!)"
+            : "📍 Nearby"
 
-        if physioImages[cacheKey] == nil,
-           let path = appt.profileImagePath,
-           let url = PhysioService.shared.profileImageURL(pathOrUrl: path, version: appt.profileImageVersion) {
+            let feeText: String = {
+                if let fee = appt.fee {
+                    return "₹\(Int(fee)) / hr"
+                }
+                return "₹ -- / hr"
+            }()
+
+            let cacheKey = physioImageKey(id: appt.physioID, version: appt.profileImageVersion)
+            return AppointmentsView.UpcomingCardVM(
+                appointmentID: appt.appointmentID,
+                physioID: appt.physioID,
+                dateTimeText: df.string(from: appt.startTime),
+                physioName: appt.physioName,
+                ratingText: ratingText,
+                distanceText: distanceText,
+                specializationText: appt.specialization,
+                feeText: feeText,
+                image: physioImages[cacheKey]
+            )
+        }
+
+        apptView.setUpcoming(vms)
+
+        for appt in appts {
+            let cacheKey = physioImageKey(id: appt.physioID, version: appt.profileImageVersion)
+            if physioImages[cacheKey] != nil { continue }
+            guard let path = appt.profileImagePath,
+                  let url = PhysioService.shared.profileImageURL(pathOrUrl: path, version: appt.profileImageVersion) else { continue }
             ImageLoader.shared.load(url) { [weak self] image in
                 guard let self, let image else { return }
                 self.physioImages[cacheKey] = image
-                if let latest = self.lastUpcoming, latest.physioID == appt.physioID {
-                    self.applyUpcoming(latest)
-                }
+                self.applyUpcoming(self.lastUpcoming)
             }
         }
 
-        let interval = appt.startTime.timeIntervalSinceNow
-        if interval > 0 {
-            upcomingTimer = Timer.scheduledTimer(withTimeInterval: interval, repeats: false) { [weak self] _ in
-                Task { await self?.refreshAll() }
+        if let nextDate = appts.map(\.startTime).min() {
+            let interval = nextDate.timeIntervalSinceNow
+            if interval > 0 {
+                upcomingTimer = Timer.scheduledTimer(withTimeInterval: interval, repeats: false) { [weak self] _ in
+                    Task { await self?.refreshAll() }
+                }
             }
         }
     }

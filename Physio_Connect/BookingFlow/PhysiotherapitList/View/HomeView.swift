@@ -232,8 +232,8 @@ final class HomeView: UIView {
         articlesHeightConstraint?.isActive = true
     }
 
-    func setUpcoming(_ appt: HomeUpcomingAppointment?) {
-        carousel.setUpcoming(appt)
+    func setUpcoming(_ appts: [HomeUpcomingAppointment]) {
+        carousel.setUpcoming(appts)
     }
 
     func setLocationText(_ text: String) {
