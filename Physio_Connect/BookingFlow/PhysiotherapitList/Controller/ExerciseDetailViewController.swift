@@ -20,6 +20,7 @@ final class ExerciseDetailViewController: UIViewController {
         let thumbnailPath: String?
         let programID: UUID?
         let exerciseID: UUID
+        let rowKey: String?
         let locked: Bool
     }
 
@@ -34,6 +35,7 @@ final class ExerciseDetailViewController: UIViewController {
     private let thumbnailPath: String?
     private let programID: UUID?
     private let exerciseID: UUID
+    private let rowKey: String?
     private let sets: Int?
     private let reps: Int?
     private let hold: Int?
@@ -55,6 +57,7 @@ final class ExerciseDetailViewController: UIViewController {
          thumbnailPath: String?,
          programID: UUID?,
          exerciseID: UUID,
+         rowKey: String?,
          sets: Int?,
          reps: Int?,
          hold: Int?,
@@ -68,6 +71,7 @@ final class ExerciseDetailViewController: UIViewController {
         self.thumbnailPath = thumbnailPath
         self.programID = programID
         self.exerciseID = exerciseID
+        self.rowKey = rowKey
         self.sets = sets
         self.reps = reps
         self.hold = hold
@@ -123,11 +127,7 @@ final class ExerciseDetailViewController: UIViewController {
 
     @objc private func backTapped() {
         if isCompleted {
-            NotificationCenter.default.post(
-                name: ExerciseDetailViewController.progressUpdatedNotification,
-                object: nil,
-                userInfo: ["exerciseID": exerciseID, "programID": programID as Any]
-            )
+            recordCompletionLocally()
             Task { await saveCompletionProgress() }
         }
         navigationController?.popViewController(animated: true)
@@ -202,6 +202,7 @@ final class ExerciseDetailViewController: UIViewController {
         detailView.setCompletedState(isCompleted, locked: false)
         detailView.setFeedbackVisible(isCompleted)
         if isCompleted {
+            recordCompletionLocally()
             Task { await saveCompletionProgress() }
         }
     }
@@ -252,11 +253,7 @@ final class ExerciseDetailViewController: UIViewController {
                 detailView.setCompletedState(true, locked: true)
                 detailView.saveButton.isEnabled = true
                 isSaving = false
-                NotificationCenter.default.post(
-                    name: ExerciseDetailViewController.progressUpdatedNotification,
-                    object: nil,
-                    userInfo: ["exerciseID": self.exerciseID, "programID": self.programID as Any]
-                )
+                recordCompletionLocally()
             } catch {
                 detailView.saveButton.isEnabled = true
                 isSaving = false
@@ -281,6 +278,7 @@ final class ExerciseDetailViewController: UIViewController {
             thumbnailPath: first.thumbnailPath,
             programID: first.programID,
             exerciseID: first.exerciseID,
+            rowKey: first.rowKey,
             sets: nil,
             reps: nil,
             hold: nil,
@@ -309,14 +307,21 @@ final class ExerciseDetailViewController: UIViewController {
                 painLevel: nil,
                 notes: nil
             )
-            NotificationCenter.default.post(
-                name: ExerciseDetailViewController.progressUpdatedNotification,
-                object: nil,
-                userInfo: ["exerciseID": exerciseID, "programID": programID as Any]
-            )
         } catch {
             return
         }
+    }
+
+    private func recordCompletionLocally() {
+        print("✅ Completed rowKey:", rowKey as Any, "programID:", programID as Any, "exerciseID:", exerciseID)
+        if let programID, let rowKey {
+            ProgramRowCompletionStore.add(rowKey: rowKey, programID: programID)
+        }
+        NotificationCenter.default.post(
+            name: ExerciseDetailViewController.progressUpdatedNotification,
+            object: nil,
+            userInfo: ["exerciseID": exerciseID, "programID": programID as Any, "rowKey": rowKey as Any]
+        )
     }
 }
 
@@ -371,6 +376,7 @@ extension ExerciseDetailViewController: UICollectionViewDataSource, UICollection
             thumbnailPath: item.thumbnailPath,
             programID: item.programID,
             exerciseID: item.exerciseID,
+            rowKey: item.rowKey,
             sets: nil,
             reps: nil,
             hold: nil,
