@@ -36,6 +36,7 @@ final class HomeHeroCardView: UIView {
     private let contentRow = UIStackView()
     private let avatarWrap = UIView()
     private let avatarIcon = UIImageView()
+    private var avatarImagePath: String?
 
     private let textStack = UIStackView()
     private let nameLabel = UILabel()
@@ -203,11 +204,13 @@ final class HomeHeroCardView: UIView {
         avatarWrap.translatesAutoresizingMaskIntoConstraints = false
         avatarWrap.backgroundColor = UIColor(hex: "1E6EF7").withAlphaComponent(0.16)
         avatarWrap.layer.cornerRadius = 30
+        avatarWrap.clipsToBounds = true
 
         avatarIcon.translatesAutoresizingMaskIntoConstraints = false
-        avatarIcon.image = UIImage(systemName: "stethoscope")
+        avatarIcon.image = UIImage(named: "doctor_placeholder") ?? UIImage(systemName: "person.fill")
         avatarIcon.tintColor = UIColor(hex: "1E6EF7")
-        avatarIcon.contentMode = .scaleAspectFit
+        avatarIcon.contentMode = .scaleAspectFill
+        avatarIcon.clipsToBounds = true
 
         avatarWrap.addSubview(avatarIcon)
 
@@ -215,10 +218,10 @@ final class HomeHeroCardView: UIView {
             avatarWrap.widthAnchor.constraint(equalToConstant: 60),
             avatarWrap.heightAnchor.constraint(equalToConstant: 60),
 
-            avatarIcon.centerXAnchor.constraint(equalTo: avatarWrap.centerXAnchor),
-            avatarIcon.centerYAnchor.constraint(equalTo: avatarWrap.centerYAnchor),
-            avatarIcon.widthAnchor.constraint(equalToConstant: 28),
-            avatarIcon.heightAnchor.constraint(equalToConstant: 28)
+            avatarIcon.topAnchor.constraint(equalTo: avatarWrap.topAnchor),
+            avatarIcon.leadingAnchor.constraint(equalTo: avatarWrap.leadingAnchor),
+            avatarIcon.trailingAnchor.constraint(equalTo: avatarWrap.trailingAnchor),
+            avatarIcon.bottomAnchor.constraint(equalTo: avatarWrap.bottomAnchor)
         ])
 
         textStack.axis = .vertical
@@ -348,6 +351,7 @@ final class HomeHeroCardView: UIView {
         case .bookHomeVisit:
             topRow.isHidden = true
             pill.isHidden = true
+            setAvatarImage(nil, path: nil)
 
             nameLabel.text = "Book Home Visits"
             subtitleLabel.text = "Get certified physiotherapy at your doorstep"
@@ -422,6 +426,21 @@ final class HomeHeroCardView: UIView {
         // ✅ Force refresh so button doesn’t get “stuck”
         setNeedsLayout()
         layoutIfNeeded()
+    }
+
+    func setAvatarImage(_ image: UIImage?, path: String?) {
+        avatarImagePath = path
+        if let image {
+            avatarIcon.image = image
+            avatarIcon.tintColor = .clear
+        } else {
+            avatarIcon.image = UIImage(named: "doctor_placeholder") ?? UIImage(systemName: "person.fill")
+            avatarIcon.tintColor = UIColor(hex: "1E6EF7")
+        }
+    }
+
+    func isAvatarPath(_ path: String?) -> Bool {
+        avatarImagePath == path
     }
 }
 

@@ -471,6 +471,16 @@ final class PhysiotherapistProfileView: UIView {
         setAboutText(model.about)
     }
 
+    func setAvatarImage(_ image: UIImage?) {
+        if let image {
+            avatar.image = image
+            avatar.tintColor = .clear
+        } else {
+            avatar.image = UIImage(named: "doctor_placeholder") ?? UIImage(systemName: "person.fill")
+            avatar.tintColor = .white
+        }
+    }
+
     // MARK: About expand/collapse
     func setAboutText(_ text: String) {
         aboutText.text = text

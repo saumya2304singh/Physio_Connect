@@ -20,6 +20,8 @@ struct PhysiotherapistCardModel: Identifiable {
 
     /// Already formatted like "₹1000/hr"
     let feeText: String
+    let profileImagePath: String?
+    let profileImageVersion: String?
 
     let latitude: Double?
     let longitude: Double?
@@ -36,5 +38,3 @@ struct PhysiotherapistCardModel: Identifiable {
         distanceText = "within \(rounded) km"
     }
 }
-
-

@@ -18,4 +18,6 @@ struct Appointment {
     let phoneNumber: String?
     let locationText: String
     let feeText: String
+    let profileImagePath: String?
+    let profileImageVersion: String?
 }

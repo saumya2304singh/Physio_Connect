@@ -22,6 +22,7 @@ final class PhysiotherapistCardCell: UITableViewCell {
     private let distanceLabel = UILabel()
     private let specializationLabel = UILabel()
     private let feeLabel = UILabel()
+    var avatarPath: String?
 
     override init(style: UITableViewCell.CellStyle, reuseIdentifier: String?) {
         super.init(style: style, reuseIdentifier: reuseIdentifier)
@@ -29,6 +30,12 @@ final class PhysiotherapistCardCell: UITableViewCell {
     }
 
     required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
+
+    override func prepareForReuse() {
+        super.prepareForReuse()
+        avatarPath = nil
+        setAvatarImage(nil)
+    }
 
     private func build() {
         selectionStyle = .none
@@ -127,5 +134,16 @@ final class PhysiotherapistCardCell: UITableViewCell {
 
         // Placeholder (until you add image_url column)
         avatarImage.image = UIImage(named: "doctor_placeholder") ?? UIImage(systemName: "person.fill")
+        avatarImage.tintColor = .gray
+    }
+
+    func setAvatarImage(_ image: UIImage?) {
+        if let image {
+            avatarImage.image = image
+            avatarImage.tintColor = .clear
+        } else {
+            avatarImage.image = UIImage(named: "doctor_placeholder") ?? UIImage(systemName: "person.fill")
+            avatarImage.tintColor = .gray
+        }
     }
 }

@@ -26,6 +26,7 @@ struct Physiotherapist: Decodable {
 
     let avg_rating: Double?
     let reviews_count: Int?
+    let profile_image_path: String?
 
     let created_at: String?
     let updated_at: String?

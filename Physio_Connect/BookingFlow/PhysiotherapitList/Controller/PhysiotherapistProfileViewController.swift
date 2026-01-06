@@ -84,6 +84,7 @@ final class PhysiotherapistProfileViewController: UIViewController {
                 await MainActor.run {
                     // Configure top UI
                     self.profileView.configure(with: model)
+                    self.loadAvatarImage(path: physio.profile_image_path, version: physio.updated_at)
 
                     // Configure reviews table
                     self.reviews = fetchedReviews
@@ -93,6 +94,16 @@ final class PhysiotherapistProfileViewController: UIViewController {
             } catch {
                 print("❌ Profile load error:", error)
             }
+        }
+    }
+
+    private func loadAvatarImage(path: String?, version: String?) {
+        guard let path, let url = PhysioService.shared.profileImageURL(pathOrUrl: path, version: version) else {
+            profileView.setAvatarImage(nil)
+            return
+        }
+        ImageLoader.shared.load(url) { [weak self] image in
+            self?.profileView.setAvatarImage(image)
         }
     }
 

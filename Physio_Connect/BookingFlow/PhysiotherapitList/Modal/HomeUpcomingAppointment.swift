@@ -16,6 +16,8 @@ struct HomeUpcomingAppointment {
     let specializationText: String
     let consultationFeeText: String
     let ratingText: String
+    let profileImagePath: String?
+    let profileImageVersion: String?
 
     let startTime: Date
     let endTime: Date

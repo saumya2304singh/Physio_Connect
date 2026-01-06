@@ -190,7 +190,9 @@ final class HomeViewController: UIViewController, UICollectionViewDataSource, UI
             sessionNotes: "",
             phoneNumber: nil,
             locationText: appt.address,
-            feeText: appt.consultationFeeText
+            feeText: appt.consultationFeeText,
+            profileImagePath: appt.profileImagePath,
+            profileImageVersion: appt.profileImageVersion
         )
     }
 

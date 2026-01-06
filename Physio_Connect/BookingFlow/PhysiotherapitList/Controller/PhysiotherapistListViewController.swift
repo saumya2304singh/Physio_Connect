@@ -99,6 +99,8 @@ final class PhysiotherapistListViewController: UIViewController {
             reviewsCount: p.reviews_count ?? 0,
             specializationText: spec,
             feeText: feeText,
+            profileImagePath: p.profile_image_path,
+            profileImageVersion: p.updated_at,
             latitude: p.latitude,
             longitude: p.longitude,
             distanceText: "Calculating..."
@@ -199,6 +201,9 @@ extension PhysiotherapistListViewController: UITableViewDataSource, UITableViewD
 
         let model = isSearching ? filtered[indexPath.row] : items[indexPath.row]
         cell.configure(with: model)
+        cell.avatarPath = model.profileImagePath
+        cell.setAvatarImage(nil)
+        loadAvatar(path: model.profileImagePath, version: model.profileImageVersion, into: cell)
         return cell
     }
 
@@ -207,6 +212,16 @@ extension PhysiotherapistListViewController: UITableViewDataSource, UITableViewD
 
         let vc = PhysiotherapistProfileViewController(physioID: model.id, preloadCard: model)
         navigationController?.pushViewController(vc, animated: true)
+    }
+
+    private func loadAvatar(path: String?, version: String?, into cell: PhysiotherapistCardCell) {
+        guard let path, let url = PhysioService.shared.profileImageURL(pathOrUrl: path, version: version) else { return }
+        ImageLoader.shared.load(url) { [weak cell] image in
+            guard let cell else { return }
+            if cell.avatarPath == path {
+                cell.setAvatarImage(image)
+            }
+        }
     }
 }
 

@@ -13,6 +13,9 @@ final class AppointmentsViewController: UIViewController {
     private let model = AppointmentsModel()
 
     private var currentUpcoming: UpcomingAppointment?
+    private var lastUpcoming: UpcomingAppointment?
+    private var lastPast: [PastAppointment] = []
+    private var physioImages: [String: UIImage] = [:]
     private var isCancelling = false
     private var isRefreshing = false
     private var upcomingTimer: Timer?
@@ -117,6 +120,8 @@ final class AppointmentsViewController: UIViewController {
 
             await MainActor.run {
                 self.currentUpcoming = upcomingResult
+                self.lastUpcoming = upcomingResult
+                self.lastPast = pastResult
                 self.applyUpcoming(upcomingResult)
                 self.applyPast(pastResult)
             }
@@ -171,6 +176,7 @@ final class AppointmentsViewController: UIViewController {
             return "₹ -- / hr"
         }()
 
+        let cacheKey = physioImageKey(id: appt.physioID, version: appt.profileImageVersion)
         let vm = AppointmentsView.UpcomingCardVM(
             dateTimeText: df.string(from: appt.startTime),
             physioName: appt.physioName,
@@ -178,10 +184,22 @@ final class AppointmentsViewController: UIViewController {
             distanceText: distanceText,
             specializationText: appt.specialization,
             feeText: feeText,
-            image: nil
+            image: physioImages[cacheKey]
         )
 
         apptView.setUpcoming(vm)
+
+        if physioImages[cacheKey] == nil,
+           let path = appt.profileImagePath,
+           let url = PhysioService.shared.profileImageURL(pathOrUrl: path, version: appt.profileImageVersion) {
+            ImageLoader.shared.load(url) { [weak self] image in
+                guard let self, let image else { return }
+                self.physioImages[cacheKey] = image
+                if let latest = self.lastUpcoming, latest.physioID == appt.physioID {
+                    self.applyUpcoming(latest)
+                }
+            }
+        }
 
         let interval = appt.startTime.timeIntervalSinceNow
         if interval > 0 {
@@ -214,6 +232,7 @@ final class AppointmentsViewController: UIViewController {
                 return "₹ -- / hr"
             }()
 
+            let cacheKey = physioImageKey(id: item.physioID, version: item.profileImageVersion)
             return CompletedAppointmentVM(
                 appointmentID: item.appointmentID,
                 physioID: item.physioID,
@@ -223,7 +242,7 @@ final class AppointmentsViewController: UIViewController {
                 distanceText: distanceText,
                 specializationText: item.specialization,
                 feeText: feeText,
-                image: nil
+                image: physioImages[cacheKey]
             )
         }
         var unique: [UUID: CompletedAppointmentVM] = [:]
@@ -233,5 +252,21 @@ final class AppointmentsViewController: UIViewController {
             }
         }
         apptView.setCompleted(Array(unique.values))
+
+        for item in past {
+            let cacheKey = physioImageKey(id: item.physioID, version: item.profileImageVersion)
+            if physioImages[cacheKey] != nil { continue }
+            guard let path = item.profileImagePath,
+                  let url = PhysioService.shared.profileImageURL(pathOrUrl: path, version: item.profileImageVersion) else { continue }
+            ImageLoader.shared.load(url) { [weak self] image in
+                guard let self, let image else { return }
+                self.physioImages[cacheKey] = image
+                self.applyPast(self.lastPast)
+            }
+        }
+    }
+
+    private func physioImageKey(id: UUID, version: String?) -> String {
+        "\(id.uuidString)|\(version ?? "")"
     }
 }

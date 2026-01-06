@@ -30,6 +30,7 @@ final class PhysioService {
                 patients_served,
                 avg_rating,
                 reviews_count,
+                profile_image_path,
                 created_at,
                 updated_at
             """)
@@ -49,6 +50,8 @@ struct PhysioListRow: Decodable {
     let reviews_count: Int?
     let years_experience: Int?
     let patients_served: Int?
+    let profile_image_path: String?
+    let updated_at: String?
 
     let physio_specializations: [PhysioSpecJoin]?
 
@@ -83,6 +86,7 @@ extension PhysioService {
                 patients_served,
                 avg_rating,
                 reviews_count,
+                profile_image_path,
                 created_at,
                 updated_at
             """)
@@ -108,6 +112,8 @@ extension PhysioService {
                 reviews_count,
                 years_experience,
                 patients_served,
+                profile_image_path,
+                updated_at,
                 physio_specializations(
                     specializations(name)
                 )
@@ -139,6 +145,43 @@ extension PhysioService {
             .limit(limit)
             .execute()
             .value
+    }
+
+    func profileImageURL(pathOrUrl: String, version: String?) -> URL? {
+        if let url = URL(string: pathOrUrl), url.scheme?.hasPrefix("http") == true {
+            return appendVersion(url, version: version)
+        }
+        let normalized = normalizeImagePath(pathOrUrl, bucket: "physiotherapists")
+        guard let base = Bundle.main.object(forInfoDictionaryKey: "SUPABASE_URL") as? String else {
+            return nil
+        }
+        let url = URL(string: "\(base)/storage/v1/object/public/physiotherapists/\(normalized)")
+        if let url {
+            return appendVersion(url, version: version)
+        }
+        return nil
+    }
+
+    private func normalizeImagePath(_ raw: String, bucket: String) -> String {
+        let trimmed = raw.trimmingCharacters(in: .whitespacesAndNewlines)
+            .trimmingCharacters(in: CharacterSet(charactersIn: "/"))
+        let publicPrefix = "/storage/v1/object/public/\(bucket)/"
+        if let range = trimmed.range(of: publicPrefix) {
+            return String(trimmed[range.upperBound...])
+        }
+        if let range = trimmed.range(of: "\(bucket)/") {
+            return String(trimmed[range.upperBound...])
+        }
+        return trimmed
+    }
+
+    private func appendVersion(_ url: URL, version: String?) -> URL? {
+        guard let version, !version.isEmpty else { return url }
+        var components = URLComponents(url: url, resolvingAgainstBaseURL: false)
+        var items = components?.queryItems ?? []
+        items.append(URLQueryItem(name: "v", value: version))
+        components?.queryItems = items
+        return components?.url ?? url
     }
     
     func fetchAvailableSlots(physioID: UUID, forDayContaining date: Date) async throws -> [SlotRow] {

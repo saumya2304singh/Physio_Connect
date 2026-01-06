@@ -36,6 +36,8 @@ final class HomeModel {
                 let consultation_fee: Double?
                 let avg_rating: Double?
                 let reviews_count: Int?
+                let profile_image_path: String?
+                let updated_at: String?
                 let physio_specializations: [PhysioSpecJoin]?
 
                 struct PhysioSpecJoin: Decodable {
@@ -68,6 +70,8 @@ final class HomeModel {
                     consultation_fee,
                     avg_rating,
                     reviews_count,
+                    profile_image_path,
+                    updated_at,
                     physio_specializations(
                         specializations(name)
                     )
@@ -109,6 +113,8 @@ final class HomeModel {
             specializationText: specialization,
             consultationFeeText: feeText,
             ratingText: ratingText,
+            profileImagePath: r.physiotherapists.profile_image_path,
+            profileImageVersion: r.physiotherapists.updated_at,
             startTime: r.physio_availability_slots.start_time,
             endTime: r.physio_availability_slots.end_time,
             address: r.address_text ?? "",

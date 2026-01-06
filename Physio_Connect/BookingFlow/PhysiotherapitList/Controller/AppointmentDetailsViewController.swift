@@ -36,12 +36,23 @@ final class AppointmentDetailsViewController: UIViewController, UITextViewDelega
 
         // ✅ Pass MODEL to VIEW
         detailsView.configure(with: makeDetailsModel(from: appointment))
+        loadAvatarImage(path: appointment.profileImagePath, version: appointment.profileImageVersion)
         detailsView.updateNotesHeight()
 
         detailsView.notesTextView.delegate = self
         detailsView.backButton.addTarget(self, action: #selector(backTapped), for: .touchUpInside)
         detailsView.callButton.addTarget(self, action: #selector(callTapped), for: .touchUpInside)
         detailsView.messageButton.addTarget(self, action: #selector(messageTapped), for: .touchUpInside)
+    }
+
+    private func loadAvatarImage(path: String?, version: String?) {
+        guard let path, let url = PhysioService.shared.profileImageURL(pathOrUrl: path, version: version) else {
+            detailsView.setAvatarImage(nil)
+            return
+        }
+        ImageLoader.shared.load(url) { [weak self] image in
+            self?.detailsView.setAvatarImage(image)
+        }
     }
 
     // MARK: - Actions

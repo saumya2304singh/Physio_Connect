@@ -23,6 +23,7 @@ final class UpcomingAppointmentCardView: UIView {
 
     private let avatarCircle = UIView()
     private let avatarIcon = UIImageView()
+    private var avatarImagePath: String?
 
     private let nameLabel = UILabel()
     private let subtitleLabel = UILabel()
@@ -57,6 +58,21 @@ final class UpcomingAppointmentCardView: UIView {
         dateRow.setText(vm.dateText)
         timeRow.setText(vm.timeText)
         actionButton.setTitle(vm.buttonTitle, for: .normal)
+    }
+
+    func setAvatarImage(_ image: UIImage?, path: String?) {
+        avatarImagePath = path
+        if let image {
+            avatarIcon.image = image
+            avatarIcon.tintColor = .clear
+        } else {
+            avatarIcon.image = UIImage(named: "doctor_placeholder") ?? UIImage(systemName: "person.fill")
+            avatarIcon.tintColor = UIColor.systemBlue
+        }
+    }
+
+    func isAvatarPath(_ path: String?) -> Bool {
+        avatarImagePath == path
     }
 
     // MARK: - Build
@@ -139,19 +155,20 @@ final class UpcomingAppointmentCardView: UIView {
         avatarCircle.layer.cornerRadius = 30
 
         avatarIcon.translatesAutoresizingMaskIntoConstraints = false
-        avatarIcon.image = UIImage(systemName: "stethoscope")
+        avatarIcon.image = UIImage(named: "doctor_placeholder") ?? UIImage(systemName: "person.fill")
         avatarIcon.tintColor = UIColor.systemBlue
-        avatarIcon.contentMode = .scaleAspectFit
+        avatarIcon.contentMode = .scaleAspectFill
+        avatarIcon.clipsToBounds = true
 
         avatarCircle.addSubview(avatarIcon)
         NSLayoutConstraint.activate([
             avatarCircle.widthAnchor.constraint(equalToConstant: 60),
             avatarCircle.heightAnchor.constraint(equalToConstant: 60),
 
-            avatarIcon.centerXAnchor.constraint(equalTo: avatarCircle.centerXAnchor),
-            avatarIcon.centerYAnchor.constraint(equalTo: avatarCircle.centerYAnchor),
-            avatarIcon.widthAnchor.constraint(equalToConstant: 28),
-            avatarIcon.heightAnchor.constraint(equalToConstant: 28)
+            avatarIcon.topAnchor.constraint(equalTo: avatarCircle.topAnchor),
+            avatarIcon.leadingAnchor.constraint(equalTo: avatarCircle.leadingAnchor),
+            avatarIcon.trailingAnchor.constraint(equalTo: avatarCircle.trailingAnchor),
+            avatarIcon.bottomAnchor.constraint(equalTo: avatarCircle.bottomAnchor)
         ])
 
         // Right stack (name, subtitle, meta)
@@ -272,4 +289,3 @@ private final class MetaRow: UIView {
         ])
     }
 }
-

@@ -41,6 +41,8 @@ final class AppointmentsModel {
                     reviews_count,
                     location_text,
                     consultation_fee,
+                    profile_image_path,
+                    updated_at,
                     physio_specializations(
                         specializations(name)
                     )
@@ -67,6 +69,8 @@ final class AppointmentsModel {
             startTime: startTime,
             address: first.address_text ?? "",
             specialization: physio.primarySpecialization ?? "Healthcare Professional",
+            profileImagePath: physio.profile_image_path,
+            profileImageVersion: physio.updated_at,
             rating: physio.avg_rating,
             reviewsCount: physio.reviews_count,
             locationText: physio.location_text,
@@ -124,6 +128,8 @@ final class AppointmentsModel {
                 status: row.status, // "completed" | "cancelled"
                 startTime: startTime,
                 specialization: physio.primarySpecialization ?? "Healthcare Professional",
+                profileImagePath: physio.profile_image_path,
+                profileImageVersion: physio.updated_at,
                 rating: physio.avg_rating,
                 reviewsCount: physio.reviews_count,
                 locationText: physio.location_text,
@@ -153,6 +159,8 @@ final class AppointmentsModel {
             reviews_count,
             location_text,
             consultation_fee,
+            profile_image_path,
+            updated_at,
             physio_specializations(
                 specializations(name)
             )
@@ -184,6 +192,8 @@ private struct AppointmentJoinedRow: Decodable {
         let reviews_count: Int?
         let location_text: String?
         let consultation_fee: Double?
+        let profile_image_path: String?
+        let updated_at: String?
 
         let physio_specializations: [SpecJoin]?
 
@@ -207,6 +217,8 @@ struct UpcomingAppointment {
     let startTime: Date
     let address: String
     let specialization: String
+    let profileImagePath: String?
+    let profileImageVersion: String?
 
     let rating: Double?
     let reviewsCount: Int?
@@ -221,6 +233,8 @@ struct PastAppointment {
     let status: String          // "completed" | "cancelled"
     let startTime: Date
     let specialization: String
+    let profileImagePath: String?
+    let profileImageVersion: String?
 
     let rating: Double?
     let reviewsCount: Int?

@@ -308,6 +308,16 @@ final class AppointmentDetailsView: UIView {
         notesTextView.text = model.sessionNotes.isEmpty ? "session details" : model.sessionNotes
     }
 
+    func setAvatarImage(_ image: UIImage?) {
+        if let image {
+            avatarImageView.image = image
+            avatarImageView.tintColor = .clear
+        } else {
+            avatarImageView.image = UIImage(named: "doctor_placeholder") ?? UIImage(systemName: "person.fill")
+            avatarImageView.tintColor = .gray
+        }
+    }
+
     func updateNotesHeight() {
         let targetWidth = max(1, notesTextView.bounds.width)
         let size = CGSize(width: targetWidth, height: CGFloat.greatestFiniteMagnitude)
