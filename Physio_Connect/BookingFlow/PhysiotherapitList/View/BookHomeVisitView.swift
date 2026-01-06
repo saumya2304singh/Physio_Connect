@@ -394,8 +394,8 @@ final class BookHomeVisitView: UIView {
         ])
 
         addressField.placeholder = "Enter your complete home address"
-        phoneField.placeholder = "Contact number"
-        phoneField.keyboardType = .phonePad
+        phoneField.placeholder = "Contact Number"
+        phoneField.keyboardType = .numberPad
 
         [addressField, phoneField].forEach {
             $0.translatesAutoresizingMaskIntoConstraints = false

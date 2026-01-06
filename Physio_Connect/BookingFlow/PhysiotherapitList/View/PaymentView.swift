@@ -23,6 +23,8 @@ final class PaymentView: UIView {
     private let titleLabel = UILabel()
     private let subtitleLabel = UILabel()
     private let divider = UIView()
+    private let summaryLabel = UILabel()
+    private let paymentLabel = UILabel()
 
     // Cards
     private let savedCard = UIView()
@@ -46,6 +48,11 @@ final class PaymentView: UIView {
     private let securityCard = UIView()
     private let securityIcon = UIImageView()
     private let securityText = UILabel()
+    private let paymentMethodCard = UIView()
+    private let paymentMethodIconBg = UIView()
+    private let paymentMethodIcon = UIImageView()
+    private let paymentMethodTitle = UILabel()
+    private let paymentMethodSub = UILabel()
 
     // Buttons
     let payButton = UIButton(type: .system)
@@ -86,7 +93,7 @@ final class PaymentView: UIView {
 
         // Stack
         stack.axis = .vertical
-        stack.spacing = 14
+        stack.spacing = 22
         stack.translatesAutoresizingMaskIntoConstraints = false
         contentView.addSubview(stack)
 
@@ -135,6 +142,15 @@ final class PaymentView: UIView {
         stack.addArrangedSubview(subtitleLabel)
         stack.addArrangedSubview(divider)
         divider.heightAnchor.constraint(equalToConstant: 1).isActive = true
+        stack.setCustomSpacing(6, after: headerRow)
+        stack.setCustomSpacing(14, after: subtitleLabel)
+        stack.setCustomSpacing(20, after: divider)
+
+        summaryLabel.text = "Booking Summary"
+        summaryLabel.font = .systemFont(ofSize: 13, weight: .semibold)
+        summaryLabel.textColor = .darkGray
+        stack.addArrangedSubview(summaryLabel)
+        stack.setCustomSpacing(12, after: summaryLabel)
 
         // Saved banner card (blue like your ref)
         styleCard(savedCard)
@@ -192,6 +208,7 @@ final class PaymentView: UIView {
         ])
 
         stack.addArrangedSubview(savedCard)
+        stack.setCustomSpacing(16, after: savedCard)
 
         // Details card
         styleCard(detailsCard)
@@ -204,7 +221,7 @@ final class PaymentView: UIView {
 
         let detailsStack = UIStackView(arrangedSubviews: [detailsTitle, detailsText])
         detailsStack.axis = .vertical
-        detailsStack.spacing = 10
+        detailsStack.spacing = 12
         detailsStack.translatesAutoresizingMaskIntoConstraints = false
 
         detailsCard.addSubview(detailsStack)
@@ -216,6 +233,13 @@ final class PaymentView: UIView {
         ])
 
         stack.addArrangedSubview(detailsCard)
+        stack.setCustomSpacing(20, after: detailsCard)
+
+        paymentLabel.text = "Payment"
+        paymentLabel.font = .systemFont(ofSize: 13, weight: .semibold)
+        paymentLabel.textColor = .darkGray
+        stack.addArrangedSubview(paymentLabel)
+        stack.setCustomSpacing(12, after: paymentLabel)
 
         // Price card
         styleCard(priceCard)
@@ -223,7 +247,7 @@ final class PaymentView: UIView {
         priceTitle.font = .boldSystemFont(ofSize: 16)
 
         priceStack.axis = .vertical
-        priceStack.spacing = 10
+        priceStack.spacing = 12
         priceStack.translatesAutoresizingMaskIntoConstraints = false
 
         totalLeft.text = "Total"
@@ -251,7 +275,7 @@ final class PaymentView: UIView {
 
         let priceContainer = UIStackView(arrangedSubviews: [priceTitle, priceStack, UIView(), totalRow])
         priceContainer.axis = .vertical
-        priceContainer.spacing = 12
+        priceContainer.spacing = 16
         priceContainer.translatesAutoresizingMaskIntoConstraints = false
 
         priceCard.addSubview(priceContainer)
@@ -263,6 +287,56 @@ final class PaymentView: UIView {
         ])
 
         stack.addArrangedSubview(priceCard)
+        stack.setCustomSpacing(12, after: priceCard)
+
+        // Payment method card
+        styleCard(paymentMethodCard)
+
+        paymentMethodIconBg.translatesAutoresizingMaskIntoConstraints = false
+        paymentMethodIconBg.backgroundColor = primaryBlue.withAlphaComponent(0.12)
+        paymentMethodIconBg.layer.cornerRadius = 18
+
+        paymentMethodIcon.translatesAutoresizingMaskIntoConstraints = false
+        paymentMethodIcon.image = UIImage(systemName: "creditcard")
+        paymentMethodIcon.tintColor = primaryBlue
+
+        paymentMethodTitle.translatesAutoresizingMaskIntoConstraints = false
+        paymentMethodTitle.text = "Payment Method"
+        paymentMethodTitle.font = .systemFont(ofSize: 15, weight: .bold)
+
+        paymentMethodSub.translatesAutoresizingMaskIntoConstraints = false
+        paymentMethodSub.text = "Pay securely with UPI, card, or netbanking"
+        paymentMethodSub.font = .systemFont(ofSize: 12, weight: .medium)
+        paymentMethodSub.textColor = .darkGray
+
+        let paymentMethodTextStack = UIStackView(arrangedSubviews: [paymentMethodTitle, paymentMethodSub])
+        paymentMethodTextStack.axis = .vertical
+        paymentMethodTextStack.spacing = 4
+        paymentMethodTextStack.translatesAutoresizingMaskIntoConstraints = false
+
+        paymentMethodCard.addSubview(paymentMethodIconBg)
+        paymentMethodIconBg.addSubview(paymentMethodIcon)
+        paymentMethodCard.addSubview(paymentMethodTextStack)
+
+        NSLayoutConstraint.activate([
+            paymentMethodIconBg.leadingAnchor.constraint(equalTo: paymentMethodCard.leadingAnchor, constant: 14),
+            paymentMethodIconBg.centerYAnchor.constraint(equalTo: paymentMethodCard.centerYAnchor),
+            paymentMethodIconBg.widthAnchor.constraint(equalToConstant: 36),
+            paymentMethodIconBg.heightAnchor.constraint(equalToConstant: 36),
+
+            paymentMethodIcon.centerXAnchor.constraint(equalTo: paymentMethodIconBg.centerXAnchor),
+            paymentMethodIcon.centerYAnchor.constraint(equalTo: paymentMethodIconBg.centerYAnchor),
+            paymentMethodIcon.widthAnchor.constraint(equalToConstant: 18),
+            paymentMethodIcon.heightAnchor.constraint(equalToConstant: 18),
+
+            paymentMethodTextStack.leadingAnchor.constraint(equalTo: paymentMethodIconBg.trailingAnchor, constant: 12),
+            paymentMethodTextStack.trailingAnchor.constraint(equalTo: paymentMethodCard.trailingAnchor, constant: -14),
+            paymentMethodTextStack.topAnchor.constraint(equalTo: paymentMethodCard.topAnchor, constant: 14),
+            paymentMethodTextStack.bottomAnchor.constraint(equalTo: paymentMethodCard.bottomAnchor, constant: -14)
+        ])
+
+        stack.addArrangedSubview(paymentMethodCard)
+        stack.setCustomSpacing(16, after: paymentMethodCard)
 
         // Security card (blue)
         styleCard(securityCard)
@@ -296,6 +370,7 @@ final class PaymentView: UIView {
         ])
 
         stack.addArrangedSubview(securityCard)
+        stack.setCustomSpacing(20, after: securityCard)
 
         // Pay button
         payButton.translatesAutoresizingMaskIntoConstraints = false
@@ -304,6 +379,10 @@ final class PaymentView: UIView {
         payButton.titleLabel?.font = .systemFont(ofSize: 16, weight: .bold)
         payButton.backgroundColor = primaryBlue
         payButton.layer.cornerRadius = 18
+        payButton.layer.shadowColor = UIColor.black.cgColor
+        payButton.layer.shadowOpacity = 0.12
+        payButton.layer.shadowRadius = 10
+        payButton.layer.shadowOffset = CGSize(width: 0, height: 6)
         payButton.heightAnchor.constraint(equalToConstant: 54).isActive = true
 
         payHint.text = "Payment is required to confirm your appointment"
@@ -320,10 +399,20 @@ final class PaymentView: UIView {
     func render(model: PaymentModel) {
         savedLine1.text = model.formattedDateTime()
 
-        detailsText.text =
+        let detailsString =
         "with \(model.draft.physioName)\n" +
         "\(model.draft.address)\n" +
         "\(model.draft.phone)"
+        let detailsStyle = NSMutableParagraphStyle()
+        detailsStyle.lineSpacing = 4
+        detailsText.attributedText = NSAttributedString(
+            string: detailsString,
+            attributes: [
+                .paragraphStyle: detailsStyle,
+                .font: detailsText.font as Any,
+                .foregroundColor: detailsText.textColor as Any
+            ]
+        )
 
         // price rows
         priceStack.arrangedSubviews.forEach { $0.removeFromSuperview() }
@@ -377,4 +466,3 @@ final class PaymentView: UIView {
         v.layer.shadowOffset = CGSize(width: 0, height: 6)
     }
 }
-

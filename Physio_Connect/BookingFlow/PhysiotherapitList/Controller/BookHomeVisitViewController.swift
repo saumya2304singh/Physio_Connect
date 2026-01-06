@@ -7,7 +7,7 @@
 
 import UIKit
 
-final class BookHomeVisitViewController: UIViewController {
+final class BookHomeVisitViewController: UIViewController, UITextFieldDelegate {
 
     private let bookView = BookHomeVisitView()
     private let physioID: UUID
@@ -36,6 +36,8 @@ final class BookHomeVisitViewController: UIViewController {
         bookView.backButton.addTarget(self, action: #selector(backTapped), for: .touchUpInside)
         bookView.confirmButton.addTarget(self, action: #selector(confirmTapped), for: .touchUpInside)
         bookView.calendarButton.addTarget(self, action: #selector(calendarTapped), for: .touchUpInside)
+
+        bookView.phoneField.delegate = self
 
         // Date picker
         bookView.datePicker.addTarget(self, action: #selector(dateChanged), for: .valueChanged)
@@ -163,7 +165,20 @@ final class BookHomeVisitViewController: UIViewController {
         let fmt = DateFormatter()
         fmt.dateFormat = "h:mm a"
 
-        let vms: [BookHomeVisitView.SlotVM] = slots.map {
+        let now = Date()
+        let cal = Calendar.current
+        if let selected = selectedSlot,
+           cal.isDate(selected.start_time, inSameDayAs: now),
+           selected.start_time <= now {
+            selectedSlot = nil
+        }
+
+        let visibleSlots = slots.filter { slot in
+            guard cal.isDate(slot.start_time, inSameDayAs: now) else { return true }
+            return slot.start_time > now
+        }
+
+        let vms: [BookHomeVisitView.SlotVM] = visibleSlots.map {
             .init(id: $0.id, title: fmt.string(from: $0.start_time), isBooked: $0.is_booked)
         }
 
@@ -285,7 +300,8 @@ final class BookHomeVisitViewController: UIViewController {
         }
 
         let address = bookView.addressField.text?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
-        let phone = bookView.phoneField.text?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        let phoneText = bookView.phoneField.text?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        let phoneNormalized = phoneText.replacingOccurrences(of: " ", with: "")
 
         let rawNotes = bookView.instructionsTextView.text.trimmingCharacters(in: .whitespacesAndNewlines)
         let notesIsPlaceholder = (bookView.instructionsTextView.textColor == .lightGray)
@@ -295,10 +311,20 @@ final class BookHomeVisitViewController: UIViewController {
             showAlert("Missing address", "Please enter your home address.")
             return
         }
-        if phone.isEmpty {
+        if phoneNormalized.isEmpty {
             showAlert("Missing phone number", "Please enter a contact number.")
             return
         }
+        if !phoneNormalized.hasPrefix("+91") {
+            showAlert("Invalid phone number", "Use the +91 prefix followed by 10 digits.")
+            return
+        }
+        let phoneDigits = phoneNormalized.replacingOccurrences(of: "+91", with: "")
+        if phoneDigits.count != 10 || phoneDigits.rangeOfCharacter(from: CharacterSet.decimalDigits.inverted) != nil {
+            showAlert("Invalid phone number", "Enter a valid 10 digit number after +91.")
+            return
+        }
+        let phone = "+91" + phoneDigits
 
         // Build draft (NO DB write here)
         let draft = BookingDraft(
@@ -519,5 +545,61 @@ extension BookHomeVisitViewController: UITextViewDelegate {
             textView.textColor = .lightGray
             textView.text = "Special instructions (parking, floor, access etc.)"
         }
+    }
+
+    // MARK: - UITextFieldDelegate
+    func textFieldDidBeginEditing(_ textField: UITextField) {
+        guard textField == bookView.phoneField else { return }
+        let prefix = "+91 "
+        if (textField.text ?? "").isEmpty {
+            textField.text = prefix
+        }
+    }
+
+    func textFieldDidEndEditing(_ textField: UITextField) {
+        guard textField == bookView.phoneField else { return }
+        let normalized = (textField.text ?? "").replacingOccurrences(of: " ", with: "")
+        if normalized == "+91" || normalized.isEmpty {
+            textField.text = nil
+        }
+    }
+
+    func textField(_ textField: UITextField, shouldChangeCharactersIn range: NSRange, replacementString string: String) -> Bool {
+        guard textField == bookView.phoneField else { return true }
+        let prefix = "+91 "
+        let current = textField.text ?? ""
+        let updated = (current as NSString).replacingCharacters(in: range, with: string)
+
+        if updated.isEmpty {
+            return true
+        }
+
+        var raw = updated.replacingOccurrences(of: "+", with: "")
+        raw = raw.replacingOccurrences(of: " ", with: "")
+        if raw.hasPrefix("91") {
+            raw.removeFirst(2)
+        }
+        raw = raw.filter { $0.isNumber }
+        if raw.count > 10 {
+            return false
+        }
+
+        let formatted = formatPhoneDigits(raw, prefix: prefix)
+        textField.text = formatted
+        if let end = textField.endOfDocument as UITextPosition? {
+            textField.selectedTextRange = textField.textRange(from: end, to: end)
+        }
+
+        return false
+    }
+
+    private func formatPhoneDigits(_ digits: String, prefix: String) -> String {
+        if digits.isEmpty { return prefix }
+        let first = String(digits.prefix(5))
+        let rest = String(digits.dropFirst(5))
+        if rest.isEmpty {
+            return prefix + first
+        }
+        return prefix + first + " " + rest
     }
 }
