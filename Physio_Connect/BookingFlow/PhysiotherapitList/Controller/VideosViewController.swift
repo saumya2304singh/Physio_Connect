@@ -497,9 +497,7 @@ final class VideosViewController: UIViewController, UITableViewDataSource, UITab
         summaryView.heightAnchor.constraint(greaterThanOrEqualToConstant: 180).isActive = true
 
         let trendsView = ProgramTrendsView()
-        let highlightText = "Your pain levels have decreased and adherence is improving this week."
-        trendsView.configure(painSeries: painSeries, adherenceSeries: adherenceSeries, highlightText: highlightText)
-        trendsView.heightAnchor.constraint(greaterThanOrEqualToConstant: 360).isActive = true
+        trendsView.configure(painSeries: painSeries, adherenceSeries: adherenceSeries)
 
         stack.addArrangedSubview(summaryView)
         stack.addArrangedSubview(trendsView)

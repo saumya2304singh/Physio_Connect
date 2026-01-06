@@ -16,11 +16,7 @@ final class ProgramTrendsView: UIView {
     private let adherenceLegend = LegendDotView(text: "Adherence", color: UIColor(hex: "3B82F6"))
 
     private let chartView = TrendChartView()
-    private let highlightCard = UIView()
-    private let highlightIcon = UIImageView()
-    private let highlightTitle = UILabel()
-    private let highlightSub = UILabel()
-
+    private var chartHeightConstraint: NSLayoutConstraint?
     override init(frame: CGRect) {
         super.init(frame: frame)
         build()
@@ -30,9 +26,8 @@ final class ProgramTrendsView: UIView {
         fatalError("init(coder:) has not been implemented")
     }
 
-    func configure(painSeries: [Int], adherenceSeries: [Int], highlightText: String) {
+    func configure(painSeries: [Int], adherenceSeries: [Int]) {
         chartView.setData(pain: painSeries, adherence: adherenceSeries)
-        highlightSub.text = highlightText
     }
 
     private func build() {
@@ -61,36 +56,10 @@ final class ProgramTrendsView: UIView {
 
         chartView.translatesAutoresizingMaskIntoConstraints = false
 
-        highlightCard.translatesAutoresizingMaskIntoConstraints = false
-        highlightCard.backgroundColor = UIColor(hex: "E8FFF1")
-        highlightCard.layer.cornerRadius = 16
-
-        highlightIcon.translatesAutoresizingMaskIntoConstraints = false
-        highlightIcon.image = UIImage(systemName: "chart.line.uptrend.xyaxis")
-        highlightIcon.tintColor = UIColor.white
-        highlightIcon.backgroundColor = UIColor(hex: "16A34A")
-        highlightIcon.layer.cornerRadius = 18
-        highlightIcon.layer.masksToBounds = true
-
-        highlightTitle.translatesAutoresizingMaskIntoConstraints = false
-        highlightTitle.font = .systemFont(ofSize: 14, weight: .bold)
-        highlightTitle.textColor = UIColor(hex: "14532D")
-        highlightTitle.text = "Great Progress!"
-
-        highlightSub.translatesAutoresizingMaskIntoConstraints = false
-        highlightSub.font = .systemFont(ofSize: 12, weight: .regular)
-        highlightSub.textColor = UIColor(hex: "166534")
-        highlightSub.numberOfLines = 0
-
-        highlightCard.addSubview(highlightIcon)
-        highlightCard.addSubview(highlightTitle)
-        highlightCard.addSubview(highlightSub)
-
         addSubview(titleLabel)
         addSubview(subtitleLabel)
         addSubview(legendStack)
         addSubview(chartView)
-        addSubview(highlightCard)
 
         NSLayoutConstraint.activate([
             titleLabel.topAnchor.constraint(equalTo: topAnchor, constant: 18),
@@ -107,27 +76,12 @@ final class ProgramTrendsView: UIView {
             chartView.topAnchor.constraint(equalTo: legendStack.bottomAnchor, constant: 12),
             chartView.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 12),
             chartView.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -12),
-            chartView.heightAnchor.constraint(equalToConstant: 180),
-
-            highlightCard.topAnchor.constraint(equalTo: chartView.bottomAnchor, constant: 16),
-            highlightCard.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 16),
-            highlightCard.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -16),
-            highlightCard.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -16),
-
-            highlightIcon.leadingAnchor.constraint(equalTo: highlightCard.leadingAnchor, constant: 12),
-            highlightIcon.topAnchor.constraint(equalTo: highlightCard.topAnchor, constant: 12),
-            highlightIcon.widthAnchor.constraint(equalToConstant: 36),
-            highlightIcon.heightAnchor.constraint(equalToConstant: 36),
-
-            highlightTitle.topAnchor.constraint(equalTo: highlightCard.topAnchor, constant: 12),
-            highlightTitle.leadingAnchor.constraint(equalTo: highlightIcon.trailingAnchor, constant: 10),
-            highlightTitle.trailingAnchor.constraint(equalTo: highlightCard.trailingAnchor, constant: -12),
-
-            highlightSub.topAnchor.constraint(equalTo: highlightTitle.bottomAnchor, constant: 4),
-            highlightSub.leadingAnchor.constraint(equalTo: highlightTitle.leadingAnchor),
-            highlightSub.trailingAnchor.constraint(equalTo: highlightTitle.trailingAnchor),
-            highlightSub.bottomAnchor.constraint(equalTo: highlightCard.bottomAnchor, constant: -12)
+            chartView.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -16)
         ])
+
+        chartHeightConstraint = chartView.heightAnchor.constraint(equalTo: chartView.widthAnchor, multiplier: 0.55)
+        chartHeightConstraint?.priority = .required
+        chartHeightConstraint?.isActive = true
     }
 }
 
@@ -174,12 +128,29 @@ private final class LegendDotView: UIView {
 
 private final class TrendChartView: UIView {
 
-    private var pain: [Int] = [6, 5, 4, 5, 3, 3, 2]
-    private var adherence: [Int] = [90, 80, 95, 70, 100, 85, 92]
+    private var pain: [Int] = []
+    private var adherence: [Int] = []
+
+    private let gridLayer = CAShapeLayer()
+    private let painLine = CAShapeLayer()
+    private let painFill = CAShapeLayer()
+    private let adherenceLine = CAShapeLayer()
+    private let adherenceFill = CAShapeLayer()
+    private let painGradient = CAGradientLayer()
+    private let adherenceGradient = CAGradientLayer()
+    private var valueLabels: [UILabel] = []
+    private let indicatorLine = CAShapeLayer()
+    private let indicatorDotPain = CAShapeLayer()
+    private let indicatorDotAdherence = CAShapeLayer()
+    private let valueLabel = UILabel()
+    private var indicatorIndex: Int?
 
     override init(frame: CGRect) {
         super.init(frame: frame)
         backgroundColor = .clear
+        setupLayers()
+        setupIndicator()
+        setupGestures()
     }
 
     required init?(coder: NSCoder) {
@@ -187,78 +158,281 @@ private final class TrendChartView: UIView {
     }
 
     func setData(pain: [Int], adherence: [Int]) {
-        if pain.count == 7 { self.pain = pain }
-        if adherence.count == 7 { self.adherence = adherence }
-        setNeedsDisplay()
+        self.pain = pain
+        self.adherence = adherence
+        setNeedsLayout()
     }
 
-    override func draw(_ rect: CGRect) {
-        guard let ctx = UIGraphicsGetCurrentContext() else { return }
+    override func layoutSubviews() {
+        super.layoutSubviews()
+        updateChart()
+    }
+
+    private func setupLayers() {
+        gridLayer.strokeColor = UIColor.black.withAlphaComponent(0.05).cgColor
+        gridLayer.lineWidth = 0.8
+        gridLayer.lineDashPattern = [2, 4]
+        gridLayer.fillColor = UIColor.clear.cgColor
+        layer.addSublayer(gridLayer)
+
+        painLine.strokeColor = UIColor(hex: "F97316").cgColor
+        painLine.lineWidth = 2.2
+        painLine.fillColor = UIColor.clear.cgColor
+        painLine.lineCap = .round
+        painLine.lineJoin = .round
+
+        painGradient.colors = [
+            UIColor(hex: "F97316").withAlphaComponent(0.18).cgColor,
+            UIColor(hex: "F97316").withAlphaComponent(0.0).cgColor
+        ]
+        painGradient.startPoint = CGPoint(x: 0.5, y: 0)
+        painGradient.endPoint = CGPoint(x: 0.5, y: 1)
+        painGradient.mask = painFill
+        layer.addSublayer(painGradient)
+        layer.addSublayer(painLine)
+
+        adherenceLine.strokeColor = UIColor(hex: "3B82F6").cgColor
+        adherenceLine.lineWidth = 2.2
+        adherenceLine.fillColor = UIColor.clear.cgColor
+        adherenceLine.lineCap = .round
+        adherenceLine.lineJoin = .round
+
+        adherenceGradient.colors = [
+            UIColor(hex: "3B82F6").withAlphaComponent(0.18).cgColor,
+            UIColor(hex: "3B82F6").withAlphaComponent(0.0).cgColor
+        ]
+        adherenceGradient.startPoint = CGPoint(x: 0.5, y: 0)
+        adherenceGradient.endPoint = CGPoint(x: 0.5, y: 1)
+        adherenceGradient.mask = adherenceFill
+        layer.addSublayer(adherenceGradient)
+        layer.addSublayer(adherenceLine)
+    }
+
+    private func setupIndicator() {
+        indicatorLine.strokeColor = UIColor.black.withAlphaComponent(0.15).cgColor
+        indicatorLine.lineWidth = 1
+        indicatorLine.lineDashPattern = [3, 3]
+        indicatorLine.isHidden = true
+        layer.addSublayer(indicatorLine)
+
+        indicatorDotPain.fillColor = UIColor.white.cgColor
+        indicatorDotPain.strokeColor = UIColor(hex: "F97316").cgColor
+        indicatorDotPain.lineWidth = 2
+        indicatorDotPain.isHidden = true
+        layer.addSublayer(indicatorDotPain)
+
+        indicatorDotAdherence.fillColor = UIColor.white.cgColor
+        indicatorDotAdherence.strokeColor = UIColor(hex: "3B82F6").cgColor
+        indicatorDotAdherence.lineWidth = 2
+        indicatorDotAdherence.isHidden = true
+        layer.addSublayer(indicatorDotAdherence)
+
+        valueLabel.translatesAutoresizingMaskIntoConstraints = false
+        valueLabel.font = .systemFont(ofSize: 12, weight: .semibold)
+        valueLabel.textColor = .white
+        valueLabel.backgroundColor = UIColor.black.withAlphaComponent(0.78)
+        valueLabel.layer.cornerRadius = 10
+        valueLabel.layer.masksToBounds = true
+        valueLabel.textAlignment = .center
+        valueLabel.isHidden = true
+        addSubview(valueLabel)
+    }
+
+    private func setupGestures() {
+        let pan = UIPanGestureRecognizer(target: self, action: #selector(handlePan(_:)))
+        pan.maximumNumberOfTouches = 1
+        addGestureRecognizer(pan)
+
+        if #available(iOS 13.4, *) {
+            let hover = UIHoverGestureRecognizer(target: self, action: #selector(handleHover(_:)))
+            addGestureRecognizer(hover)
+        }
+    }
+
+    private func updateChart() {
+        guard pain.count == adherence.count, pain.count >= 2 else { return }
 
         let inset: CGFloat = 16
-        let chartRect = rect.insetBy(dx: inset, dy: inset)
+        let chartRect = bounds.insetBy(dx: inset, dy: inset)
+        let stepX = chartRect.width / CGFloat(max(pain.count - 1, 1))
 
-        let bgPath = UIBezierPath(roundedRect: chartRect, cornerRadius: 14)
-        UIColor.white.setFill()
-        bgPath.fill()
-
-        ctx.setStrokeColor(UIColor.black.withAlphaComponent(0.06).cgColor)
-        ctx.setLineWidth(1)
+        let gridPath = UIBezierPath()
         for i in 0..<4 {
             let y = chartRect.minY + (CGFloat(i) * chartRect.height / 3)
-            ctx.move(to: CGPoint(x: chartRect.minX, y: y))
-            ctx.addLine(to: CGPoint(x: chartRect.maxX, y: y))
+            gridPath.move(to: CGPoint(x: chartRect.minX, y: y))
+            gridPath.addLine(to: CGPoint(x: chartRect.maxX, y: y))
         }
-        ctx.strokePath()
+        gridLayer.path = gridPath.cgPath
+        gridLayer.frame = bounds
 
-        drawLine(series: adherence, minValue: 0, maxValue: 100, color: UIColor(hex: "3B82F6"), fillAlpha: 0.15, in: chartRect)
-        drawLine(series: pain, minValue: 0, maxValue: 10, color: UIColor(hex: "F97316"), fillAlpha: 0.12, in: chartRect)
+        let painPoints = pointsFor(series: pain, maxValue: 10, rect: chartRect, stepX: stepX)
+        let adherencePoints = pointsFor(series: adherence, maxValue: 100, rect: chartRect, stepX: stepX)
+
+        let painPath = makeMonotonePath(points: painPoints)
+        painLine.path = painPath.cgPath
+
+        let painFillPath = UIBezierPath(cgPath: painPath.cgPath)
+        painFillPath.addLine(to: CGPoint(x: painPoints.last!.x, y: chartRect.maxY))
+        painFillPath.addLine(to: CGPoint(x: painPoints.first!.x, y: chartRect.maxY))
+        painFillPath.close()
+        painFill.path = painFillPath.cgPath
+        painGradient.frame = bounds
+
+        let adherencePath = makeMonotonePath(points: adherencePoints)
+        adherenceLine.path = adherencePath.cgPath
+
+        let adherenceFillPath = UIBezierPath(cgPath: adherencePath.cgPath)
+        adherenceFillPath.addLine(to: CGPoint(x: adherencePoints.last!.x, y: chartRect.maxY))
+        adherenceFillPath.addLine(to: CGPoint(x: adherencePoints.first!.x, y: chartRect.maxY))
+        adherenceFillPath.close()
+        adherenceFill.path = adherenceFillPath.cgPath
+        adherenceGradient.frame = bounds
+
+        valueLabels.forEach { $0.removeFromSuperview() }
+        valueLabels = []
+        if let lastIndex = painPoints.indices.last {
+            let painLabel = makeValueLabel(text: "\(pain[lastIndex])", color: UIColor(hex: "F97316"))
+            painLabel.frame = CGRect(x: painPoints[lastIndex].x - 10, y: painPoints[lastIndex].y - 20, width: 22, height: 14)
+            addSubview(painLabel)
+            valueLabels.append(painLabel)
+
+            let adhLabel = makeValueLabel(text: "\(adherence[lastIndex])", color: UIColor(hex: "3B82F6"))
+            adhLabel.frame = CGRect(x: adherencePoints[lastIndex].x - 14, y: adherencePoints[lastIndex].y - 20, width: 28, height: 14)
+            addSubview(adhLabel)
+            valueLabels.append(adhLabel)
+        }
+
+        if let index = indicatorIndex, index < painPoints.count {
+            updateIndicator(at: index, painPoints: painPoints, adherencePoints: adherencePoints, chartRect: chartRect)
+        }
     }
 
-    private func drawLine(series: [Int],
-                          minValue: Int,
-                          maxValue: Int,
-                          color: UIColor,
-                          fillAlpha: CGFloat,
-                          in rect: CGRect) {
-        guard series.count == 7 else { return }
-        let stepX = rect.width / 6
-        let range = maxValue - minValue
-        let points: [CGPoint] = series.enumerated().map { index, value in
-            let normalized = CGFloat(value - minValue) / CGFloat(max(range, 1))
+    private func makeValueLabel(text: String, color: UIColor) -> UILabel {
+        let label = UILabel()
+        label.font = .systemFont(ofSize: 10, weight: .semibold)
+        label.textColor = color
+        label.textAlignment = .center
+        label.text = text
+        return label
+    }
+
+    private func pointsFor(series: [Int], maxValue: Int, rect: CGRect, stepX: CGFloat) -> [CGPoint] {
+        series.enumerated().map { index, value in
+            let normalized = CGFloat(value) / CGFloat(max(maxValue, 1))
             let x = rect.minX + (CGFloat(index) * stepX)
             let y = rect.maxY - (normalized * rect.height)
             return CGPoint(x: x, y: y)
         }
+    }
 
+    private func makeMonotonePath(points: [CGPoint]) -> UIBezierPath {
         let path = UIBezierPath()
+        guard points.count > 1 else { return path }
         path.move(to: points[0])
-        for i in 1..<points.count {
-            let prev = points[i - 1]
-            let current = points[i]
-            let mid = CGPoint(x: (prev.x + current.x) / 2, y: (prev.y + current.y) / 2)
-            path.addQuadCurve(to: mid, controlPoint: prev)
-            if i == points.count - 1 {
-                path.addQuadCurve(to: current, controlPoint: current)
+
+        let count = points.count
+        var slopes = [CGFloat](repeating: 0, count: count - 1)
+        var tangents = [CGFloat](repeating: 0, count: count)
+
+        for i in 0..<(count - 1) {
+            let dx = points[i + 1].x - points[i].x
+            let dy = points[i + 1].y - points[i].y
+            slopes[i] = dx == 0 ? 0 : dy / dx
+        }
+
+        tangents[0] = slopes[0]
+        tangents[count - 1] = slopes[count - 2]
+        if count > 2 {
+            for i in 1..<(count - 1) {
+                if slopes[i - 1] * slopes[i] <= 0 {
+                    tangents[i] = 0
+                } else {
+                    tangents[i] = (slopes[i - 1] + slopes[i]) / 2
+                }
             }
         }
 
-        let fillPath = path.copy() as! UIBezierPath
-        fillPath.addLine(to: CGPoint(x: points.last!.x, y: rect.maxY))
-        fillPath.addLine(to: CGPoint(x: points.first!.x, y: rect.maxY))
-        fillPath.close()
-        color.withAlphaComponent(fillAlpha).setFill()
-        fillPath.fill()
+        for i in 0..<(count - 1) {
+            let p0 = points[i]
+            let p1 = points[i + 1]
+            let dx = p1.x - p0.x
+            let c1 = CGPoint(x: p0.x + dx / 3, y: p0.y + tangents[i] * dx / 3)
+            let c2 = CGPoint(x: p1.x - dx / 3, y: p1.y - tangents[i + 1] * dx / 3)
+            path.addCurve(to: p1, controlPoint1: c1, controlPoint2: c2)
+        }
+        return path
+    }
 
-        color.setStroke()
-        path.lineWidth = 2.5
-        path.lineCapStyle = .round
-        path.stroke()
+    private func updateIndicator(at index: Int, painPoints: [CGPoint], adherencePoints: [CGPoint], chartRect: CGRect) {
+        let painPoint = painPoints[index]
+        let adherencePoint = adherencePoints[index]
 
-        for point in points {
-            let dot = UIBezierPath(ovalIn: CGRect(x: point.x - 3.5, y: point.y - 3.5, width: 7, height: 7))
-            color.setFill()
-            dot.fill()
+        let linePath = UIBezierPath()
+        linePath.move(to: CGPoint(x: painPoint.x, y: chartRect.minY))
+        linePath.addLine(to: CGPoint(x: painPoint.x, y: chartRect.maxY))
+        indicatorLine.path = linePath.cgPath
+        indicatorLine.isHidden = false
+
+        indicatorDotPain.path = UIBezierPath(ovalIn: CGRect(x: painPoint.x - 5, y: painPoint.y - 5, width: 10, height: 10)).cgPath
+        indicatorDotPain.isHidden = false
+
+        indicatorDotAdherence.path = UIBezierPath(ovalIn: CGRect(x: adherencePoint.x - 5, y: adherencePoint.y - 5, width: 10, height: 10)).cgPath
+        indicatorDotAdherence.isHidden = false
+
+        valueLabel.text = " Pain \(pain[index]) • Adh \(adherence[index]) "
+        valueLabel.sizeToFit()
+        let labelWidth = max(120, valueLabel.bounds.width + 8)
+        valueLabel.frame = CGRect(
+            x: min(max(painPoint.x - labelWidth / 2, chartRect.minX), chartRect.maxX - labelWidth),
+            y: max(chartRect.minY - 26, 2),
+            width: labelWidth,
+            height: 20
+        )
+        valueLabel.isHidden = false
+        bringSubviewToFront(valueLabel)
+    }
+
+    private func updateIndicator(at location: CGPoint) {
+        guard pain.count == adherence.count, pain.count >= 2 else { return }
+        let inset: CGFloat = 16
+        let chartRect = bounds.insetBy(dx: inset, dy: inset)
+        guard bounds.contains(location) else { return }
+        let stepX = chartRect.width / CGFloat(max(pain.count - 1, 1))
+        let clampedX = min(max(location.x, chartRect.minX), chartRect.maxX)
+        let rawIndex = Int(round((clampedX - chartRect.minX) / stepX))
+        let index = max(0, min(rawIndex, pain.count - 1))
+        indicatorIndex = index
+
+        let painPoints = pointsFor(series: pain, maxValue: 10, rect: chartRect, stepX: stepX)
+        let adherencePoints = pointsFor(series: adherence, maxValue: 100, rect: chartRect, stepX: stepX)
+        updateIndicator(at: index, painPoints: painPoints, adherencePoints: adherencePoints, chartRect: chartRect)
+    }
+
+    private func hideIndicator() {
+        indicatorLine.isHidden = true
+        indicatorDotPain.isHidden = true
+        indicatorDotAdherence.isHidden = true
+        valueLabel.isHidden = true
+    }
+
+    @objc private func handlePan(_ gesture: UIPanGestureRecognizer) {
+        updateIndicator(at: gesture.location(in: self))
+        if gesture.state == .ended || gesture.state == .cancelled {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) { [weak self] in
+                self?.hideIndicator()
+            }
+        }
+    }
+
+    @objc private func handleHover(_ gesture: UIHoverGestureRecognizer) {
+        let location = gesture.location(in: self)
+        switch gesture.state {
+        case .began, .changed:
+            updateIndicator(at: location)
+        case .ended, .cancelled:
+            hideIndicator()
+        default:
+            break
         }
     }
 }
