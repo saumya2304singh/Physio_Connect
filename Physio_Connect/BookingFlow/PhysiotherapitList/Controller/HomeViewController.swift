@@ -13,6 +13,7 @@ final class HomeViewController: UIViewController, UICollectionViewDataSource, UI
     private let model = HomeModel()
     private let videosModel = VideosModel()
     private let articlesModel = ArticlesModel()
+    private let locationService = LocationService.shared
     private var currentUpcoming: HomeUpcomingAppointment?
     private var upcomingTimer: Timer?
     private var freeVideos: [ExerciseVideoRow] = []
@@ -53,11 +54,20 @@ final class HomeViewController: UIViewController, UICollectionViewDataSource, UI
 
         homeView.upNextCard.primaryButton.addTarget(self, action: #selector(startNextExercise), for: .touchUpInside)
 
+        locationService.onLocationUpdate = { [weak self] name, _ in
+            DispatchQueue.main.async {
+                self?.homeView.setLocationText(name)
+            }
+        }
+        homeView.setLocationText("Locating...")
+        locationService.requestLocation()
+
         Task { await refreshCards() }
     }
 
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
+        locationService.requestLocation()
         Task { await refreshCards() }
     }
 

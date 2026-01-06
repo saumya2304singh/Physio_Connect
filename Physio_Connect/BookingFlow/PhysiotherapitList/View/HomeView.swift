@@ -67,7 +67,7 @@ final class HomeView: UIView {
         locationIcon.tintColor = UIColor(hex: "1E6EF7")
         locationIcon.translatesAutoresizingMaskIntoConstraints = false
 
-        locationLabel.text = "Chennai"
+        locationLabel.text = "Locating..."
         locationLabel.font = .systemFont(ofSize: 13, weight: .semibold)
         locationLabel.textColor = UIColor.black.withAlphaComponent(0.7)
         locationLabel.translatesAutoresizingMaskIntoConstraints = false
@@ -87,7 +87,7 @@ final class HomeView: UIView {
         titleLabel.font = .boldSystemFont(ofSize: 20)
         titleLabel.textAlignment = .center
         titleLabel.translatesAutoresizingMaskIntoConstraints = false
-        contentView.addSubview(titleLabel)
+        topBar.addSubview(titleLabel)
 
         carousel.translatesAutoresizingMaskIntoConstraints = false
         contentView.addSubview(carousel)
@@ -162,7 +162,7 @@ final class HomeView: UIView {
             topBar.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 8),
             topBar.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 16),
             topBar.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -16),
-            topBar.heightAnchor.constraint(equalToConstant: 30),
+            topBar.heightAnchor.constraint(equalToConstant: 44),
 
             locationIcon.leadingAnchor.constraint(equalTo: topBar.leadingAnchor),
             locationIcon.centerYAnchor.constraint(equalTo: topBar.centerYAnchor),
@@ -177,10 +177,10 @@ final class HomeView: UIView {
             profileButton.widthAnchor.constraint(equalToConstant: 40),
             profileButton.heightAnchor.constraint(equalToConstant: 40),
 
-            titleLabel.topAnchor.constraint(equalTo: topBar.bottomAnchor, constant: 10),
-            titleLabel.centerXAnchor.constraint(equalTo: contentView.centerXAnchor),
+            titleLabel.centerXAnchor.constraint(equalTo: topBar.centerXAnchor),
+            titleLabel.centerYAnchor.constraint(equalTo: topBar.centerYAnchor),
 
-            carousel.topAnchor.constraint(equalTo: titleLabel.bottomAnchor, constant: 14),
+            carousel.topAnchor.constraint(equalTo: topBar.bottomAnchor, constant: 14),
             carousel.leadingAnchor.constraint(equalTo: contentView.leadingAnchor),
             carousel.trailingAnchor.constraint(equalTo: contentView.trailingAnchor),
 
@@ -234,6 +234,10 @@ final class HomeView: UIView {
 
     func setUpcoming(_ appt: HomeUpcomingAppointment?) {
         carousel.setUpcoming(appt)
+    }
+
+    func setLocationText(_ text: String) {
+        locationLabel.text = text
     }
 
     func updateVideosHeight(rows: Int) {
