@@ -17,6 +17,10 @@ final class ProfileView: UIView {
     var onLogin: (() -> Void)?
     var onNotificationsChanged: ((Bool) -> Void)?
     var onRefresh: (() -> Void)?
+    var onSwitchRole: (() -> Void)?
+    var onChangePassword: (() -> Void)?
+    private let switchRoleButton = UIButton(type: .system)
+
 
     private let scrollView = UIScrollView()
     private let contentView = UIView()
@@ -151,6 +155,14 @@ final class ProfileView: UIView {
         editButton.titleLabel?.font = .systemFont(ofSize: 16, weight: .regular)
         editButton.addTarget(self, action: #selector(editTapped), for: .touchUpInside)
         editButton.translatesAutoresizingMaskIntoConstraints = false
+        
+        switchRoleButton.setTitle("Switch Role", for: .normal)
+        switchRoleButton.setTitleColor(.white, for: .normal)
+        switchRoleButton.titleLabel?.font = .systemFont(ofSize: 16, weight: .semibold)
+        switchRoleButton.backgroundColor = UIColor(hex: "1E6EF7")
+        switchRoleButton.layer.cornerRadius = 12
+        switchRoleButton.addTarget(self, action: #selector(switchRolePressed), for: .touchUpInside)
+
 
         topBar.addSubview(backButton)
         topBar.addSubview(titleLabel)
@@ -257,6 +269,7 @@ final class ProfileView: UIView {
 
         privacyButton.addTarget(self, action: #selector(privacyTapped), for: .touchUpInside)
         termsButton.addTarget(self, action: #selector(termsTapped), for: .touchUpInside)
+        
 
         stack.addArrangedSubview(privacyButton)
         stack.addArrangedSubview(makeSeparator())
@@ -267,6 +280,19 @@ final class ProfileView: UIView {
 
         stackView.addArrangedSubview(card)
     }
+    
+    private func setLoggedIn(_ loggedIn: Bool) {
+        signOutButton.isHidden = !loggedIn
+        loginButton.isHidden = loggedIn
+        editButton.isHidden = !loggedIn
+
+        // ✅ allow switching role always
+        switchRoleButton.isHidden = false
+
+        notificationRow.isUserInteractionEnabled = loggedIn
+        notificationRow.alpha = loggedIn ? 1.0 : 0.5
+    }
+
 
     private func buildSignOut() {
         signOutButton.setTitle("Sign Out", for: .normal)
@@ -293,14 +319,34 @@ final class ProfileView: UIView {
         loginButton.heightAnchor.constraint(equalToConstant: 52).isActive = true
         loginButton.addTarget(self, action: #selector(loginTapped), for: .touchUpInside)
 
+        // ✅ Switch Role button (secondary style)
+        switchRoleButton.setTitle("Switch Role", for: .normal)
+        switchRoleButton.setTitleColor(UIColor(hex: "1E6EF7"), for: .normal)
+        switchRoleButton.titleLabel?.font = .systemFont(ofSize: 16, weight: .semibold)
+        switchRoleButton.backgroundColor = UIColor.white
+        switchRoleButton.layer.cornerRadius = 16
+        switchRoleButton.layer.shadowColor = UIColor.black.cgColor
+        switchRoleButton.layer.shadowOpacity = 0.05
+        switchRoleButton.layer.shadowRadius = 10
+        switchRoleButton.layer.shadowOffset = CGSize(width: 0, height: 6)
+        switchRoleButton.heightAnchor.constraint(equalToConstant: 52).isActive = true
+        switchRoleButton.addTarget(self, action: #selector(switchRolePressed), for: .touchUpInside)
+
         authStack.axis = .vertical
         authStack.spacing = 12
+
+        // Order:
+        // logged in: Sign Out + Switch Role
+        // logged out: Log In + Switch Role
         authStack.addArrangedSubview(signOutButton)
         authStack.addArrangedSubview(loginButton)
+        authStack.addArrangedSubview(switchRoleButton)
+
         stackView.addArrangedSubview(authStack)
 
         setLoggedIn(true)
     }
+
 
     private func makeCardView() -> UIView {
         let view = UIView()
@@ -373,14 +419,13 @@ final class ProfileView: UIView {
     @objc private func refreshPulled() {
         onRefresh?()
     }
-
-    private func setLoggedIn(_ loggedIn: Bool) {
-        signOutButton.isHidden = !loggedIn
-        loginButton.isHidden = loggedIn
-        editButton.isHidden = !loggedIn
-        notificationRow.isUserInteractionEnabled = loggedIn
-        notificationRow.alpha = loggedIn ? 1.0 : 0.5
+    
+    @objc private func switchRolePressed() {
+        onSwitchRole?()
     }
+
+    
+    
 }
 
 final class ProfileRowView: UIView {

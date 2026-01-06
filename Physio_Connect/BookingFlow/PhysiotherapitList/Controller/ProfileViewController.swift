@@ -71,11 +71,31 @@ final class ProfileViewController: UIViewController {
         profileView.onRefresh = { [weak self] in
             Task { await self?.refreshProfile() }
         }
+        
+        profileView.onSwitchRole = { [weak self] in
+            self?.switchRoleTapped()
+        }
+
     }
 
     @objc private func appWillEnterForeground() {
         Task { await refreshProfile() }
     }
+    
+    
+    @objc private func switchRoleTapped() {
+        let alert = UIAlertController(
+            title: "Switch role?",
+            message: "You’ll return to the role selection screen.",
+            preferredStyle: .alert
+        )
+        alert.addAction(UIAlertAction(title: "Cancel", style: .cancel))
+        alert.addAction(UIAlertAction(title: "Switch", style: .destructive, handler: { _ in
+            AppLogout.backToRoleSelection(from: self.view)
+        }))
+        present(alert, animated: true)
+    }
+
 
     private func refreshProfile() async {
         if isRefreshing { return }
