@@ -17,6 +17,11 @@ final class HomeHeroCardView: UIView {
     // MARK: - UI
 
     private let container = UIView()
+    private let backgroundGradient = CAGradientLayer()
+    private let bubbleLarge = UIView()
+    private let bubbleSmall = UIView()
+    private let featureCircle = UIView()
+    private let featureIcon = UIImageView()
 
     // Top: calendar badge + pill
     private let topRow = UIStackView()
@@ -84,6 +89,50 @@ final class HomeHeroCardView: UIView {
             container.leadingAnchor.constraint(equalTo: leadingAnchor),
             container.trailingAnchor.constraint(equalTo: trailingAnchor),
             container.bottomAnchor.constraint(equalTo: bottomAnchor)
+        ])
+
+        bubbleLarge.translatesAutoresizingMaskIntoConstraints = false
+        bubbleLarge.backgroundColor = UIColor.white.withAlphaComponent(0.12)
+        bubbleLarge.layer.cornerRadius = 90
+        bubbleLarge.isHidden = true
+
+        bubbleSmall.translatesAutoresizingMaskIntoConstraints = false
+        bubbleSmall.backgroundColor = UIColor.white.withAlphaComponent(0.12)
+        bubbleSmall.layer.cornerRadius = 44
+        bubbleSmall.isHidden = true
+
+        featureCircle.translatesAutoresizingMaskIntoConstraints = false
+        featureCircle.backgroundColor = UIColor.white.withAlphaComponent(0.18)
+        featureCircle.layer.cornerRadius = 32
+        featureCircle.isHidden = true
+
+        featureIcon.translatesAutoresizingMaskIntoConstraints = false
+        featureIcon.image = UIImage(systemName: "calendar")
+        featureIcon.tintColor = .white
+        featureCircle.addSubview(featureIcon)
+
+        container.addSubview(bubbleLarge)
+        container.addSubview(bubbleSmall)
+        container.addSubview(featureCircle)
+
+        NSLayoutConstraint.activate([
+            bubbleLarge.widthAnchor.constraint(equalToConstant: 180),
+            bubbleLarge.heightAnchor.constraint(equalToConstant: 180),
+            bubbleLarge.trailingAnchor.constraint(equalTo: container.trailingAnchor, constant: 40),
+            bubbleLarge.topAnchor.constraint(equalTo: container.topAnchor, constant: -30),
+
+            bubbleSmall.widthAnchor.constraint(equalToConstant: 88),
+            bubbleSmall.heightAnchor.constraint(equalToConstant: 88),
+            bubbleSmall.trailingAnchor.constraint(equalTo: container.trailingAnchor, constant: -36),
+            bubbleSmall.bottomAnchor.constraint(equalTo: container.bottomAnchor, constant: 20),
+
+            featureCircle.widthAnchor.constraint(equalToConstant: 64),
+            featureCircle.heightAnchor.constraint(equalToConstant: 64),
+            featureCircle.trailingAnchor.constraint(equalTo: container.trailingAnchor, constant: -18),
+            featureCircle.centerYAnchor.constraint(equalTo: container.centerYAnchor),
+
+            featureIcon.centerXAnchor.constraint(equalTo: featureCircle.centerXAnchor),
+            featureIcon.centerYAnchor.constraint(equalTo: featureCircle.centerYAnchor)
         ])
 
         // --- Top row ---
@@ -260,10 +309,20 @@ final class HomeHeroCardView: UIView {
     override func layoutSubviews() {
         super.layoutSubviews()
         applyButtonGradient()
+        if case .bookHomeVisit = currentState {
+            backgroundGradient.frame = container.bounds
+            backgroundGradient.cornerRadius = container.layer.cornerRadius
+        }
     }
 
     private func applyButtonGradient() {
         gradientLayer?.removeFromSuperlayer()
+
+        if case .bookHomeVisit = currentState {
+            primaryButton.backgroundColor = .white
+            primaryButton.layer.borderWidth = 0
+            return
+        }
 
         let g = CAGradientLayer()
         g.frame = primaryButton.bounds
@@ -290,8 +349,24 @@ final class HomeHeroCardView: UIView {
             topRow.isHidden = true
             pill.isHidden = true
 
-            nameLabel.text = "Book home visits"
-            subtitleLabel.text = "Get certified physiotherapy at your doorsteps"
+            nameLabel.text = "Book Home Visits"
+            subtitleLabel.text = "Get certified physiotherapy at your doorstep"
+            nameLabel.textColor = .white
+            subtitleLabel.textColor = UIColor.white.withAlphaComponent(0.9)
+            avatarWrap.isHidden = true
+            bubbleLarge.isHidden = false
+            bubbleSmall.isHidden = false
+            featureCircle.isHidden = false
+            container.backgroundColor = .clear
+            backgroundGradient.colors = [
+                UIColor(hex: "19C5F7").cgColor,
+                UIColor(hex: "2C6BFF").cgColor
+            ]
+            backgroundGradient.startPoint = CGPoint(x: 0, y: 0.2)
+            backgroundGradient.endPoint = CGPoint(x: 1, y: 1)
+            if backgroundGradient.superlayer == nil {
+                container.layer.insertSublayer(backgroundGradient, at: 0)
+            }
 
             // ✅ Hide meta cleanly
             metaContainer.isHidden = true
@@ -299,7 +374,13 @@ final class HomeHeroCardView: UIView {
             contentTopToContainerConstraint?.isActive = true
             buttonTopConstraint?.constant = 8
 
-            primaryButton.setTitle("Book appointment", for: .normal)
+            primaryButton.setTitle("Book Appointment", for: .normal)
+            primaryButton.setTitleColor(UIColor(hex: "1E6EF7"), for: .normal)
+            primaryButton.layer.shadowColor = UIColor.black.cgColor
+            primaryButton.layer.shadowOpacity = 0.12
+            primaryButton.layer.shadowRadius = 8
+            primaryButton.layer.shadowOffset = CGSize(width: 0, height: 4)
+            buttonChevron.isHidden = true
 
         case .upcoming(let appt):
             topRow.isHidden = false
@@ -309,6 +390,14 @@ final class HomeHeroCardView: UIView {
             nameLabel.text = appt.physioName
 
             subtitleLabel.text = appt.specializationText
+            nameLabel.textColor = .black
+            subtitleLabel.textColor = UIColor.black.withAlphaComponent(0.55)
+            avatarWrap.isHidden = false
+            bubbleLarge.isHidden = true
+            bubbleSmall.isHidden = true
+            featureCircle.isHidden = true
+            backgroundGradient.removeFromSuperlayer()
+            container.backgroundColor = .white
 
 
             metaContainer.isHidden = false
@@ -326,6 +415,8 @@ final class HomeHeroCardView: UIView {
             timeRow.setText(df2.string(from: appt.startTime))
 
             primaryButton.setTitle("View Details", for: .normal)
+            primaryButton.setTitleColor(.white, for: .normal)
+            buttonChevron.isHidden = false
         }
 
         // ✅ Force refresh so button doesn’t get “stuck”

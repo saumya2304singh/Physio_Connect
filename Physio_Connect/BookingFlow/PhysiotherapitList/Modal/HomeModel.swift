@@ -8,6 +8,14 @@ import Foundation
 
 final class HomeModel {
 
+    struct ProgressSummary {
+        let painSeries: [Int]
+        let adherenceSeries: [Int]
+        let weeklyAdherencePercent: Int
+        let painDeltaPercent: Int
+        let averagePain: Double
+    }
+
     func fetchUpcomingAppointment() async throws -> HomeUpcomingAppointment? {
 
         let session = try await SupabaseManager.shared.client.auth.session
@@ -105,6 +113,81 @@ final class HomeModel {
             endTime: r.physio_availability_slots.end_time,
             address: r.address_text ?? "",
             status: r.status
+        )
+    }
+
+    func fetchProgressSummary() async throws -> ProgressSummary {
+        struct ProgressRow: Decodable {
+            let progress_date: String?
+            let is_completed: Bool?
+            let pain_level: Int?
+        }
+
+        let session = try await SupabaseManager.shared.client.auth.session
+        let userId = session.user.id.uuidString
+
+        let df = DateFormatter()
+        df.dateFormat = "yyyy-MM-dd"
+        df.locale = Locale(identifier: "en_US_POSIX")
+        let calendar = Calendar.current
+        let today = calendar.startOfDay(for: Date())
+        guard let startDate = calendar.date(byAdding: .day, value: -41, to: today) else {
+            return ProgressSummary(
+                painSeries: Array(repeating: 0, count: 7),
+                adherenceSeries: Array(repeating: 0, count: 6),
+                weeklyAdherencePercent: 0,
+                painDeltaPercent: 0,
+                averagePain: 0
+            )
+        }
+        let startString = df.string(from: startDate)
+
+        let rows: [ProgressRow] = try await SupabaseManager.shared.client
+            .from("exercise_progress")
+            .select("progress_date, is_completed, pain_level")
+            .eq("customer_id", value: userId)
+            .gte("progress_date", value: startString)
+            .execute()
+            .value
+
+        var painSeries: [Int] = []
+        for i in (0...6).reversed() {
+            guard let day = calendar.date(byAdding: .day, value: -i, to: today) else { continue }
+            let dayString = df.string(from: day)
+            let dayRows = rows.filter { $0.progress_date == dayString }
+            let pains = dayRows.compactMap { $0.pain_level }
+            let painAvg = pains.isEmpty ? 0 : Int(Double(pains.reduce(0, +)) / Double(pains.count))
+            painSeries.append(painAvg)
+        }
+
+        var adherenceSeries: [Int] = []
+        for i in (0...5).reversed() {
+            guard let weekStart = calendar.date(byAdding: .weekOfYear, value: -i, to: today) else { continue }
+            let weekRange = calendar.dateInterval(of: .weekOfYear, for: weekStart)
+            let weekRows = rows.filter { row in
+                guard let dateString = row.progress_date, let date = df.date(from: dateString) else { return false }
+                guard let weekRange else { return false }
+                return weekRange.contains(date)
+            }
+            let completed = weekRows.filter { $0.is_completed == true }.count
+            let total = weekRows.count
+            let adherence = total == 0 ? 0 : Int(Double(completed) / Double(total) * 100.0)
+            adherenceSeries.append(adherence)
+        }
+
+        let weeklyTotal = adherenceSeries.last ?? 0
+        let weeklyAdherencePercent = weeklyTotal
+        let firstPain = painSeries.first ?? 0
+        let lastPain = painSeries.last ?? 0
+        let painDeltaPercent = firstPain == 0 ? 0 : Int(Double(lastPain - firstPain) / Double(firstPain) * 100.0)
+        let avgPain = painSeries.isEmpty ? 0 : Double(painSeries.reduce(0, +)) / Double(painSeries.count)
+
+        return ProgressSummary(
+            painSeries: painSeries,
+            adherenceSeries: adherenceSeries,
+            weeklyAdherencePercent: weeklyAdherencePercent,
+            painDeltaPercent: painDeltaPercent,
+            averagePain: avgPain
         )
     }
 }
