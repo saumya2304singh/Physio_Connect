@@ -112,6 +112,10 @@ final class LoginView: UIView {
         passwordField.titleText = "Password"
         passwordField.placeholder = "Enter your password"
         passwordField.textField.isSecureTextEntry = true
+        passwordField.textField.autocapitalizationType = .none
+        passwordField.textField.autocorrectionType = .no
+        passwordField.textField.keyboardType = .asciiCapable
+        passwordField.textField.textContentType = UITextContentType(rawValue: "")
 
         configureEyeButton(passwordEyeButton)
         passwordField.textField.rightView = passwordEyeButton

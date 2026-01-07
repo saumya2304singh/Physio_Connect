@@ -263,16 +263,38 @@ final class CreateAccountView: UIView {
         emailField.textField.autocapitalizationType = .none
 
         phoneField.titleText = "Phone Number *"
-        phoneField.placeholder = "+1 (555) 000-0000"
-        phoneField.textField.keyboardType = .phonePad
+        phoneField.placeholder = "888 123 4567"
+        phoneField.textField.keyboardType = .numberPad
+        phoneField.textField.autocorrectionType = .no
+        phoneField.textField.autocapitalizationType = .none
+        // Start with country prefix visible
+        if phoneField.textField.text == nil || phoneField.textField.text?.isEmpty == true {
+            phoneField.textField.text = "+91 "
+        }
 
         passwordField.titleText = "Password *"
         passwordField.placeholder = "Create a strong password"
         passwordField.textField.isSecureTextEntry = true
+        passwordField.textField.autocapitalizationType = .none
+        passwordField.textField.autocorrectionType = .no
+        passwordField.textField.spellCheckingType = .no
+        passwordField.textField.keyboardType = .asciiCapable
+        passwordField.textField.textContentType = UITextContentType(rawValue: "")
+        passwordField.textField.inputAssistantItem.leadingBarButtonGroups = []
+        passwordField.textField.inputAssistantItem.trailingBarButtonGroups = []
+        passwordField.textField.clearsOnBeginEditing = false
 
         confirmPasswordField.titleText = "Confirm Password *"
         confirmPasswordField.placeholder = "Re-enter your password"
         confirmPasswordField.textField.isSecureTextEntry = true
+        confirmPasswordField.textField.autocapitalizationType = .none
+        confirmPasswordField.textField.autocorrectionType = .no
+        confirmPasswordField.textField.spellCheckingType = .no
+        confirmPasswordField.textField.keyboardType = .asciiCapable
+        confirmPasswordField.textField.textContentType = UITextContentType(rawValue: "")
+        confirmPasswordField.textField.inputAssistantItem.leadingBarButtonGroups = []
+        confirmPasswordField.textField.inputAssistantItem.trailingBarButtonGroups = []
+        confirmPasswordField.textField.clearsOnBeginEditing = false
 
         // Eye buttons inside password fields (right view)
         configureEyeButton(passwordEyeButton)
@@ -406,7 +428,10 @@ final class CreateAccountView: UIView {
     private func configureEyeButton(_ b: UIButton) {
         b.tintColor = UIColor.black.withAlphaComponent(0.35)
         b.setImage(UIImage(systemName: "eye"), for: .normal)
-        b.frame = CGRect(x: 0, y: 0, width: 44, height: 44)
+        b.frame = CGRect(x: 0, y: 0, width: 30, height: 30)
+        b.contentMode = .center
+        b.isUserInteractionEnabled = true
+        b.contentEdgeInsets = UIEdgeInsets(top: 6, left: 6, bottom: 6, right: 6)
     }
 
     private func updateTermsUI() {

@@ -64,6 +64,10 @@ final class ProfileViewController: UIViewController {
             self?.showLogin()
         }
 
+        profileView.onSignup = { [weak self] in
+            self?.showSignup()
+        }
+
         profileView.onNotificationsChanged = { [weak self] isOn in
             Task { await self?.model.updateNotifications(enabled: isOn) }
         }

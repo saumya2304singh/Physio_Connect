@@ -15,6 +15,7 @@ final class ProfileView: UIView {
     var onTermsTapped: (() -> Void)?
     var onSignOut: (() -> Void)?
     var onLogin: (() -> Void)?
+    var onSignup: (() -> Void)?
     var onNotificationsChanged: ((Bool) -> Void)?
     var onRefresh: (() -> Void)?
     var onSwitchRole: (() -> Void)?
@@ -49,6 +50,7 @@ final class ProfileView: UIView {
     private let authStack = UIStackView()
     private let signOutButton = UIButton(type: .system)
     private let loginButton = UIButton(type: .system)
+    private let signUpButton = UIButton(type: .system)
 
     override init(frame: CGRect) {
         super.init(frame: frame)
@@ -284,6 +286,7 @@ final class ProfileView: UIView {
     private func setLoggedIn(_ loggedIn: Bool) {
         signOutButton.isHidden = !loggedIn
         loginButton.isHidden = loggedIn
+        signUpButton.isHidden = loggedIn
         editButton.isHidden = !loggedIn
 
         // ✅ allow switching role always
@@ -319,6 +322,18 @@ final class ProfileView: UIView {
         loginButton.heightAnchor.constraint(equalToConstant: 52).isActive = true
         loginButton.addTarget(self, action: #selector(loginTapped), for: .touchUpInside)
 
+        signUpButton.setTitle("Sign Up", for: .normal)
+        signUpButton.setTitleColor(UIColor(hex: "1E6EF7"), for: .normal)
+        signUpButton.titleLabel?.font = .systemFont(ofSize: 16, weight: .semibold)
+        signUpButton.backgroundColor = UIColor.white
+        signUpButton.layer.cornerRadius = 16
+        signUpButton.layer.shadowColor = UIColor.black.cgColor
+        signUpButton.layer.shadowOpacity = 0.05
+        signUpButton.layer.shadowRadius = 10
+        signUpButton.layer.shadowOffset = CGSize(width: 0, height: 6)
+        signUpButton.heightAnchor.constraint(equalToConstant: 52).isActive = true
+        signUpButton.addTarget(self, action: #selector(signUpTapped), for: .touchUpInside)
+
         // ✅ Switch Role button (secondary style)
         switchRoleButton.setTitle("Switch Role", for: .normal)
         switchRoleButton.setTitleColor(UIColor(hex: "1E6EF7"), for: .normal)
@@ -337,9 +352,10 @@ final class ProfileView: UIView {
 
         // Order:
         // logged in: Sign Out + Switch Role
-        // logged out: Log In + Switch Role
+        // logged out: Log In + Sign Up + Switch Role
         authStack.addArrangedSubview(signOutButton)
         authStack.addArrangedSubview(loginButton)
+        authStack.addArrangedSubview(signUpButton)
         authStack.addArrangedSubview(switchRoleButton)
 
         stackView.addArrangedSubview(authStack)
@@ -414,6 +430,10 @@ final class ProfileView: UIView {
 
     @objc private func loginTapped() {
         onLogin?()
+    }
+
+    @objc private func signUpTapped() {
+        onSignup?()
     }
 
     @objc private func refreshPulled() {
