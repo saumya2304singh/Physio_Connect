@@ -17,7 +17,15 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
             case .patient:
                 window?.rootViewController = MainTabBarController() // ✅ keep patient app same
             case .physiotherapist:
-                window?.rootViewController = UINavigationController(rootViewController: PhysioHomePlaceholderViewController())
+                // Default to auth, then swap to home if a session is present.
+                let nav = UINavigationController(rootViewController: PhysioAuthViewController())
+                window?.rootViewController = nav
+                Task { @MainActor in
+                    let hasSession = (try? await SupabaseManager.shared.client.auth.session) != nil
+                    if hasSession {
+                        nav.setViewControllers([PhysioHomeViewController()], animated: false)
+                    }
+                }
             }
         } else {
             // First time: show Continue screen

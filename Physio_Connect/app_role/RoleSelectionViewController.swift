@@ -21,6 +21,7 @@ final class RoleSelectionViewController: UIViewController {
 
         roleView.patientButton.addTarget(self, action: #selector(patientTapped), for: .touchUpInside)
         roleView.physioButton.addTarget(self, action: #selector(physioTapped), for: .touchUpInside)
+        roleView.backButton.addTarget(self, action: #selector(backTapped), for: .touchUpInside)
     }
 
     @objc private func patientTapped() {
@@ -39,9 +40,33 @@ final class RoleSelectionViewController: UIViewController {
     }
 
     private func switchToPhysioApp() {
-        let physioRoot = PhysioHomePlaceholderViewController()
+        let physioRoot = PhysioAuthViewController()
         let nav = UINavigationController(rootViewController: physioRoot)
         RootRouter.setRoot(nav, window: currentWindow())
+    }
+
+    @objc private func backTapped() {
+        if let nav = navigationController, nav.viewControllers.count > 1 {
+            nav.popViewController(animated: true)
+            return
+        }
+        if presentingViewController != nil {
+            dismiss(animated: true)
+            return
+        }
+
+        // Fallback: return to the last selected role if any, else to patient home.
+        if let role = model.currentRole {
+            switch role {
+            case .patient:
+                RootRouter.setRoot(MainTabBarController(), window: currentWindow())
+            case .physiotherapist:
+                let nav = UINavigationController(rootViewController: PhysioHomeViewController())
+                RootRouter.setRoot(nav, window: currentWindow())
+            }
+        } else {
+            RootRouter.setRoot(MainTabBarController(), window: currentWindow())
+        }
     }
 
     private func currentWindow() -> UIWindow? {
@@ -52,4 +77,3 @@ final class RoleSelectionViewController: UIViewController {
             .first { $0.isKeyWindow })
     }
 }
-

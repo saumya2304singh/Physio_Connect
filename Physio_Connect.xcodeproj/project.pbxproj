@@ -38,7 +38,6 @@
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				Info.plist,
-				Physitherapist_Side_Physioconnect/View/Untitled.swift,
 			);
 			target = 1F7F0C572F029AE3006CED20 /* Physio_Connect */;
 		};

@@ -17,6 +17,7 @@ final class RoleSelectionView: UIView {
 
     let patientButton = UIButton(type: .system)
     let physioButton = UIButton(type: .system)
+    let backButton = UIButton(type: .system)
 
     // MARK: - Init
     override init(frame: CGRect) {
@@ -32,6 +33,7 @@ final class RoleSelectionView: UIView {
     // MARK: - Setup
     private func buildUI() {
         addSubview(container)
+        addSubview(backButton)
         [heroImageView, titleLabel, subtitleLabel, patientButton, physioButton].forEach { container.addSubview($0) }
     }
 
@@ -42,6 +44,7 @@ final class RoleSelectionView: UIView {
         subtitleLabel.translatesAutoresizingMaskIntoConstraints = false
         patientButton.translatesAutoresizingMaskIntoConstraints = false
         physioButton.translatesAutoresizingMaskIntoConstraints = false
+        backButton.translatesAutoresizingMaskIntoConstraints = false
 
         NSLayoutConstraint.activate([
             container.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 20),
@@ -71,7 +74,12 @@ final class RoleSelectionView: UIView {
             physioButton.trailingAnchor.constraint(equalTo: container.trailingAnchor),
             physioButton.heightAnchor.constraint(equalToConstant: 52),
 
-            physioButton.bottomAnchor.constraint(equalTo: container.bottomAnchor)
+            physioButton.bottomAnchor.constraint(equalTo: container.bottomAnchor),
+
+            backButton.topAnchor.constraint(equalTo: safeAreaLayoutGuide.topAnchor, constant: 10),
+            backButton.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 16),
+            backButton.widthAnchor.constraint(equalToConstant: 36),
+            backButton.heightAnchor.constraint(equalToConstant: 36)
         ])
     }
 
@@ -97,6 +105,16 @@ final class RoleSelectionView: UIView {
         // Buttons
         configurePrimaryButton(patientButton, title: "Patient")
         configurePrimaryButton(physioButton, title: "Physiotherapist")
+
+        let config = UIImage.SymbolConfiguration(pointSize: 18, weight: .semibold)
+        backButton.setImage(UIImage(systemName: "chevron.left", withConfiguration: config), for: .normal)
+        backButton.tintColor = UIColor.black.withAlphaComponent(0.8)
+        backButton.backgroundColor = UIColor.white.withAlphaComponent(0.9)
+        backButton.layer.cornerRadius = 12
+        backButton.layer.shadowColor = UIColor.black.cgColor
+        backButton.layer.shadowOpacity = 0.1
+        backButton.layer.shadowRadius = 8
+        backButton.layer.shadowOffset = CGSize(width: 0, height: 4)
     }
 
     private func configurePrimaryButton(_ button: UIButton, title: String) {
@@ -116,4 +134,3 @@ final class RoleSelectionView: UIView {
         heroImageView.image = image
     }
 }
-

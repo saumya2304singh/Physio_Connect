@@ -141,11 +141,7 @@ final class ProfileView: UIView {
 
     private func buildTopBar() {
         topBar.translatesAutoresizingMaskIntoConstraints = false
-
-        backButton.setImage(UIImage(systemName: "chevron.left"), for: .normal)
-        backButton.tintColor = UIColor(hex: "1E6EF7")
-        backButton.addTarget(self, action: #selector(backTapped), for: .touchUpInside)
-        backButton.translatesAutoresizingMaskIntoConstraints = false
+        backButton.removeFromSuperview()
 
         titleLabel.text = "Profile"
         titleLabel.font = .systemFont(ofSize: 18, weight: .semibold)
@@ -165,18 +161,11 @@ final class ProfileView: UIView {
         switchRoleButton.layer.cornerRadius = 12
         switchRoleButton.addTarget(self, action: #selector(switchRolePressed), for: .touchUpInside)
 
-
-        topBar.addSubview(backButton)
         topBar.addSubview(titleLabel)
         topBar.addSubview(editButton)
 
         NSLayoutConstraint.activate([
-            backButton.leadingAnchor.constraint(equalTo: topBar.leadingAnchor),
-            backButton.centerYAnchor.constraint(equalTo: topBar.centerYAnchor),
-            backButton.heightAnchor.constraint(equalToConstant: 32),
-            backButton.widthAnchor.constraint(equalToConstant: 32),
-
-            titleLabel.centerXAnchor.constraint(equalTo: topBar.centerXAnchor),
+            titleLabel.leadingAnchor.constraint(equalTo: topBar.leadingAnchor),
             titleLabel.centerYAnchor.constraint(equalTo: topBar.centerYAnchor),
 
             editButton.trailingAnchor.constraint(equalTo: topBar.trailingAnchor),
@@ -283,7 +272,7 @@ final class ProfileView: UIView {
         stackView.addArrangedSubview(card)
     }
     
-    private func setLoggedIn(_ loggedIn: Bool) {
+    func setLoggedIn(_ loggedIn: Bool) {
         signOutButton.isHidden = !loggedIn
         loginButton.isHidden = loggedIn
         signUpButton.isHidden = loggedIn
