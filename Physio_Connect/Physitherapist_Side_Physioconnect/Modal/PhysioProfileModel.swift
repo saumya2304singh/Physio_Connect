@@ -43,7 +43,8 @@ struct PhysioProfileModel {
             dateOfBirth: "—",
             healthIdentifier: "—",
             location: row?.location_text ?? "—",
-            notificationsEnabled: true
+            notificationsEnabled: true,
+            avatarURL: row?.profile_image_path
         )
     }
 }

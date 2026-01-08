@@ -1,0 +1,489 @@
+//
+//  PhysioSignupView.swift
+//  Physio_Connect
+//
+//  Created by Codex on 08/01/26.
+//
+
+import UIKit
+
+struct PhysioSignupInput {
+    let name: String
+    let email: String
+    let phone: String
+    let password: String
+    let confirmPassword: String
+    let acceptedTerms: Bool
+}
+
+final class PhysioSignupView: UIView {
+
+    // MARK: - Callbacks
+    var onBack: (() -> Void)?
+    var onCreateAccount: ((PhysioSignupInput) -> Void)?
+    var onLoginLink: (() -> Void)?
+
+    // MARK: - Theme
+    private let bg = UIColor(hex: "E6F1FF")
+    private let primaryBlue = UIColor(hex: "1E6EF7")
+    private let cardBg = UIColor.white
+
+    // MARK: - Scroll
+    let scrollView = UIScrollView()
+    private let contentView = UIView()
+    private let stack = UIStackView()
+
+    // MARK: - Header
+    let backButton = UIButton(type: .system)
+    private let titleLabel = UILabel()
+    private let subtitleLabel = UILabel()
+    private let divider = UIView()
+
+    // MARK: - Form
+    private let sectionTitle = UILabel()
+
+    let fullNameField = PhysioIconTextField(iconSystemName: "person")
+    let emailField = PhysioIconTextField(iconSystemName: "envelope")
+    let phoneField = PhysioIconTextField(iconSystemName: "phone")
+    let passwordField = PhysioIconTextField(iconSystemName: "lock")
+    let confirmPasswordField = PhysioIconTextField(iconSystemName: "lock")
+
+    let passwordEyeButton = UIButton(type: .system)
+    let confirmPasswordEyeButton = UIButton(type: .system)
+
+    private let passwordHint = UILabel()
+
+    // MARK: - Terms
+    private let termsCard = UIView()
+    let termsCheckButton = UIButton(type: .system)
+    private let termsLabel = UILabel()
+    private let statusLabel = UILabel()
+
+    // MARK: - CTA
+    let createAccountButton = UIButton(type: .system)
+
+    // MARK: - Divider
+    private let orDivider = OrDividerView()
+
+    // MARK: - Social
+    let googleButton = UIButton(type: .system)
+    let appleButton = UIButton(type: .system)
+
+    // MARK: - Login
+    let loginButton = UIButton(type: .system)
+
+    // MARK: - Security notice
+    private let securityCard = UIView()
+    private let securityIcon = UIImageView()
+    private let securityText = UILabel()
+
+    // MARK: - State
+    private(set) var isTermsChecked: Bool = false {
+        didSet { updateTermsUI() }
+    }
+
+    private var isPasswordVisible = false
+    private var isConfirmVisible = false
+
+    override init(frame: CGRect) {
+        super.init(frame: frame)
+        backgroundColor = bg
+        build()
+    }
+
+    required init?(coder: NSCoder) { fatalError() }
+
+    // MARK: - UI
+    private func build() {
+        addSubview(scrollView)
+        scrollView.translatesAutoresizingMaskIntoConstraints = false
+        scrollView.alwaysBounceVertical = true
+        scrollView.showsVerticalScrollIndicator = false
+        scrollView.keyboardDismissMode = .onDrag
+
+        scrollView.addSubview(contentView)
+        contentView.translatesAutoresizingMaskIntoConstraints = false
+
+        NSLayoutConstraint.activate([
+            scrollView.topAnchor.constraint(equalTo: safeAreaLayoutGuide.topAnchor),
+            scrollView.leadingAnchor.constraint(equalTo: leadingAnchor),
+            scrollView.trailingAnchor.constraint(equalTo: trailingAnchor),
+            scrollView.bottomAnchor.constraint(equalTo: bottomAnchor),
+
+            contentView.topAnchor.constraint(equalTo: scrollView.contentLayoutGuide.topAnchor),
+            contentView.leadingAnchor.constraint(equalTo: scrollView.contentLayoutGuide.leadingAnchor),
+            contentView.trailingAnchor.constraint(equalTo: scrollView.contentLayoutGuide.trailingAnchor),
+            contentView.bottomAnchor.constraint(equalTo: scrollView.contentLayoutGuide.bottomAnchor),
+            contentView.widthAnchor.constraint(equalTo: scrollView.frameLayoutGuide.widthAnchor)
+        ])
+
+        stack.axis = .vertical
+        stack.spacing = 20
+        stack.translatesAutoresizingMaskIntoConstraints = false
+        contentView.addSubview(stack)
+
+        NSLayoutConstraint.activate([
+            stack.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 16),
+            stack.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 20),
+            stack.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -20),
+            stack.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -24)
+        ])
+
+        let headerRow = UIView()
+        headerRow.translatesAutoresizingMaskIntoConstraints = false
+
+        backButton.translatesAutoresizingMaskIntoConstraints = false
+        backButton.setImage(UIImage(systemName: "chevron.left"), for: .normal)
+        backButton.tintColor = primaryBlue
+        backButton.contentEdgeInsets = UIEdgeInsets(top: 8, left: 6, bottom: 8, right: 6)
+        backButton.addTarget(self, action: #selector(handleBack), for: .touchUpInside)
+
+        titleLabel.translatesAutoresizingMaskIntoConstraints = false
+        titleLabel.text = "Create Your Account"
+        titleLabel.font = .boldSystemFont(ofSize: 22)
+        titleLabel.textAlignment = .center
+
+        subtitleLabel.translatesAutoresizingMaskIntoConstraints = false
+        subtitleLabel.text = "Join us to complete your booking"
+        subtitleLabel.font = .systemFont(ofSize: 15, weight: .medium)
+        subtitleLabel.textColor = UIColor.black.withAlphaComponent(0.6)
+        subtitleLabel.textAlignment = .center
+
+        divider.translatesAutoresizingMaskIntoConstraints = false
+        divider.backgroundColor = UIColor.black.withAlphaComponent(0.08)
+
+        headerRow.addSubview(backButton)
+        headerRow.addSubview(titleLabel)
+
+        NSLayoutConstraint.activate([
+            headerRow.heightAnchor.constraint(equalToConstant: 40),
+            backButton.leadingAnchor.constraint(equalTo: headerRow.leadingAnchor),
+            backButton.centerYAnchor.constraint(equalTo: headerRow.centerYAnchor),
+            titleLabel.centerXAnchor.constraint(equalTo: headerRow.centerXAnchor),
+            titleLabel.centerYAnchor.constraint(equalTo: headerRow.centerYAnchor)
+        ])
+
+        stack.addArrangedSubview(headerRow)
+        stack.addArrangedSubview(subtitleLabel)
+        stack.addArrangedSubview(divider)
+        divider.heightAnchor.constraint(equalToConstant: 1).isActive = true
+
+        // Section title
+        sectionTitle.text = "Sign up with email"
+        sectionTitle.font = .systemFont(ofSize: 18, weight: .bold)
+        sectionTitle.textColor = .black
+        stack.addArrangedSubview(sectionTitle)
+
+        // Fields
+        fullNameField.titleText = "Full Name *"
+        fullNameField.placeholder = "Enter your full name"
+
+        emailField.titleText = "Email Address *"
+        emailField.placeholder = "your.email@example.com"
+        emailField.textField.keyboardType = .emailAddress
+        emailField.textField.autocapitalizationType = .none
+
+        phoneField.titleText = "Phone Number *"
+        phoneField.placeholder = "+91"
+        phoneField.textField.keyboardType = .numberPad
+        phoneField.textField.autocorrectionType = .no
+        phoneField.textField.autocapitalizationType = .none
+        if phoneField.textField.text == nil || phoneField.textField.text?.isEmpty == true {
+            phoneField.textField.text = "+91 "
+        }
+
+        passwordField.titleText = "Password *"
+        passwordField.placeholder = "Create a strong password"
+        passwordField.textField.isSecureTextEntry = true
+        passwordField.textField.autocapitalizationType = .none
+        passwordField.textField.autocorrectionType = .no
+        passwordField.textField.spellCheckingType = .no
+        passwordField.textField.keyboardType = .asciiCapable
+        passwordField.textField.textContentType = UITextContentType(rawValue: "")
+        passwordField.textField.clearsOnBeginEditing = false
+
+        confirmPasswordField.titleText = "Confirm Password *"
+        confirmPasswordField.placeholder = "Re-enter your password"
+        confirmPasswordField.textField.isSecureTextEntry = true
+        confirmPasswordField.textField.autocapitalizationType = .none
+        confirmPasswordField.textField.autocorrectionType = .no
+        confirmPasswordField.textField.spellCheckingType = .no
+        confirmPasswordField.textField.keyboardType = .asciiCapable
+        confirmPasswordField.textField.textContentType = UITextContentType(rawValue: "")
+        confirmPasswordField.textField.clearsOnBeginEditing = false
+
+        configureEyeButton(passwordEyeButton, selector: #selector(togglePassword))
+        configureEyeButton(confirmPasswordEyeButton, selector: #selector(toggleConfirmPassword))
+
+        passwordField.textField.rightView = passwordEyeButton
+        passwordField.textField.rightViewMode = .always
+
+        confirmPasswordField.textField.rightView = confirmPasswordEyeButton
+        confirmPasswordField.textField.rightViewMode = .always
+
+        stack.addArrangedSubview(fullNameField)
+        stack.addArrangedSubview(emailField)
+        stack.addArrangedSubview(phoneField)
+        stack.addArrangedSubview(passwordField)
+
+        passwordHint.text = "Must be at least 8 characters"
+        passwordHint.font = .systemFont(ofSize: 12, weight: .medium)
+        passwordHint.textColor = .gray
+        stack.addArrangedSubview(passwordHint)
+
+        stack.addArrangedSubview(confirmPasswordField)
+
+        // Terms card
+        styleCard(termsCard)
+        termsCard.backgroundColor = UIColor.black.withAlphaComponent(0.03)
+        termsCard.layer.shadowOpacity = 0
+
+        termsCheckButton.translatesAutoresizingMaskIntoConstraints = false
+        termsCheckButton.tintColor = primaryBlue
+        termsCheckButton.contentHorizontalAlignment = .left
+        termsCheckButton.addTarget(self, action: #selector(toggleTerms), for: .touchUpInside)
+
+        termsLabel.translatesAutoresizingMaskIntoConstraints = false
+        termsLabel.numberOfLines = 0
+        termsLabel.font = .systemFont(ofSize: 13, weight: .medium)
+        termsLabel.textColor = UIColor.black.withAlphaComponent(0.75)
+        termsLabel.text = "I agree to the Terms of Service and Privacy Policy"
+
+        termsCard.addSubview(termsCheckButton)
+        termsCard.addSubview(termsLabel)
+
+        NSLayoutConstraint.activate([
+            termsCheckButton.leadingAnchor.constraint(equalTo: termsCard.leadingAnchor, constant: 14),
+            termsCheckButton.topAnchor.constraint(equalTo: termsCard.topAnchor, constant: 14),
+            termsCheckButton.widthAnchor.constraint(equalToConstant: 26),
+            termsCheckButton.heightAnchor.constraint(equalToConstant: 26),
+
+            termsLabel.leadingAnchor.constraint(equalTo: termsCheckButton.trailingAnchor, constant: 10),
+            termsLabel.trailingAnchor.constraint(equalTo: termsCard.trailingAnchor, constant: -14),
+            termsLabel.centerYAnchor.constraint(equalTo: termsCheckButton.centerYAnchor),
+
+            termsCard.bottomAnchor.constraint(equalTo: termsCheckButton.bottomAnchor, constant: 14)
+        ])
+
+        updateTermsUI()
+        stack.addArrangedSubview(termsCard)
+
+        statusLabel.translatesAutoresizingMaskIntoConstraints = false
+        statusLabel.font = .systemFont(ofSize: 13, weight: .semibold)
+        statusLabel.textColor = UIColor.red.withAlphaComponent(0.85)
+        statusLabel.numberOfLines = 0
+        statusLabel.isHidden = true
+        stack.addArrangedSubview(statusLabel)
+
+        // CTA
+        createAccountButton.translatesAutoresizingMaskIntoConstraints = false
+        createAccountButton.setTitle("Create Account", for: .normal)
+        createAccountButton.setTitleColor(.white, for: .normal)
+        createAccountButton.titleLabel?.font = .systemFont(ofSize: 17, weight: .bold)
+        createAccountButton.backgroundColor = primaryBlue
+        createAccountButton.layer.cornerRadius = 18
+        createAccountButton.heightAnchor.constraint(equalToConstant: 56).isActive = true
+        createAccountButton.layer.shadowColor = UIColor.black.cgColor
+        createAccountButton.layer.shadowOpacity = 0.12
+        createAccountButton.layer.shadowRadius = 12
+        createAccountButton.layer.shadowOffset = CGSize(width: 0, height: 8)
+        createAccountButton.addTarget(self, action: #selector(createTapped), for: .touchUpInside)
+
+        stack.addArrangedSubview(createAccountButton)
+
+        // Or divider
+        stack.addArrangedSubview(orDivider)
+
+        // Social buttons row
+        let socialRow = UIStackView(arrangedSubviews: [googleButton, appleButton])
+        socialRow.axis = .horizontal
+        socialRow.spacing = 12
+        socialRow.distribution = .fillEqually
+        socialRow.translatesAutoresizingMaskIntoConstraints = false
+
+        styleOutlineSocialButton(googleButton, title: "Google", iconSystemName: "g.circle")
+        styleOutlineSocialButton(appleButton, title: "Apple", iconSystemName: "apple.logo")
+
+        stack.addArrangedSubview(socialRow)
+
+        // Login link
+        loginButton.setTitle("Already have an account? Log in", for: .normal)
+        loginButton.setTitleColor(primaryBlue, for: .normal)
+        loginButton.titleLabel?.font = .systemFont(ofSize: 14, weight: .semibold)
+        loginButton.contentHorizontalAlignment = .center
+        loginButton.addTarget(self, action: #selector(loginTapped), for: .touchUpInside)
+        stack.addArrangedSubview(loginButton)
+
+        // Security notice
+        styleCard(securityCard)
+        securityCard.backgroundColor = primaryBlue.withAlphaComponent(0.08)
+        securityCard.layer.borderWidth = 1
+        securityCard.layer.borderColor = primaryBlue.withAlphaComponent(0.18).cgColor
+        securityCard.layer.shadowOpacity = 0
+
+        securityIcon.translatesAutoresizingMaskIntoConstraints = false
+        securityIcon.image = UIImage(systemName: "shield.fill")
+        securityIcon.tintColor = primaryBlue
+
+        securityText.translatesAutoresizingMaskIntoConstraints = false
+        securityText.numberOfLines = 0
+        securityText.font = .systemFont(ofSize: 12, weight: .medium)
+        securityText.textColor = UIColor.black.withAlphaComponent(0.75)
+        securityText.text = "Your information is encrypted and secure. We never share your data with third parties."
+
+        securityCard.addSubview(securityIcon)
+        securityCard.addSubview(securityText)
+
+        NSLayoutConstraint.activate([
+            securityIcon.leadingAnchor.constraint(equalTo: securityCard.leadingAnchor, constant: 14),
+            securityIcon.topAnchor.constraint(equalTo: securityCard.topAnchor, constant: 14),
+            securityIcon.widthAnchor.constraint(equalToConstant: 18),
+            securityIcon.heightAnchor.constraint(equalToConstant: 18),
+
+            securityText.leadingAnchor.constraint(equalTo: securityIcon.trailingAnchor, constant: 10),
+            securityText.trailingAnchor.constraint(equalTo: securityCard.trailingAnchor, constant: -14),
+            securityText.topAnchor.constraint(equalTo: securityCard.topAnchor, constant: 12),
+            securityText.bottomAnchor.constraint(equalTo: securityCard.bottomAnchor, constant: -12)
+        ])
+
+        stack.addArrangedSubview(securityCard)
+    }
+
+    // MARK: - Helpers
+    private func configureEyeButton(_ b: UIButton, selector: Selector) {
+        b.tintColor = UIColor.black.withAlphaComponent(0.35)
+        b.setImage(UIImage(systemName: "eye"), for: .normal)
+        b.frame = CGRect(x: 0, y: 0, width: 30, height: 30)
+        b.contentMode = .center
+        b.isUserInteractionEnabled = true
+        b.contentEdgeInsets = UIEdgeInsets(top: 6, left: 6, bottom: 6, right: 6)
+        b.addTarget(self, action: selector, for: .touchUpInside)
+    }
+
+    @objc private func togglePassword() {
+        isPasswordVisible.toggle()
+        passwordField.textField.isSecureTextEntry = !isPasswordVisible
+        let name = isPasswordVisible ? "eye.slash" : "eye"
+        passwordEyeButton.setImage(UIImage(systemName: name), for: .normal)
+        let text = passwordField.textField.text
+        passwordField.textField.text = nil
+        passwordField.textField.text = text
+    }
+
+    @objc private func toggleConfirmPassword() {
+        isConfirmVisible.toggle()
+        confirmPasswordField.textField.isSecureTextEntry = !isConfirmVisible
+        let name = isConfirmVisible ? "eye.slash" : "eye"
+        confirmPasswordEyeButton.setImage(UIImage(systemName: name), for: .normal)
+        let text = confirmPasswordField.textField.text
+        confirmPasswordField.textField.text = nil
+        confirmPasswordField.textField.text = text
+    }
+
+    @objc private func toggleTerms() {
+        isTermsChecked.toggle()
+    }
+
+    private func updateTermsUI() {
+        let imageName = isTermsChecked ? "checkmark.square.fill" : "square"
+        termsCheckButton.setImage(UIImage(systemName: imageName), for: .normal)
+    }
+
+    private func styleCard(_ v: UIView) {
+        v.translatesAutoresizingMaskIntoConstraints = false
+        v.backgroundColor = cardBg
+        v.layer.cornerRadius = 18
+        v.layer.shadowColor = UIColor.black.cgColor
+        v.layer.shadowOpacity = 0.06
+        v.layer.shadowRadius = 10
+        v.layer.shadowOffset = CGSize(width: 0, height: 6)
+    }
+
+    private func styleOutlineSocialButton(_ b: UIButton, title: String, iconSystemName: String) {
+        b.translatesAutoresizingMaskIntoConstraints = false
+        b.setTitle("  \(title)", for: .normal)
+        b.setTitleColor(.black, for: .normal)
+        b.titleLabel?.font = .systemFont(ofSize: 15, weight: .semibold)
+        b.layer.cornerRadius = 14
+        b.layer.borderWidth = 1.5
+        b.layer.borderColor = UIColor.black.withAlphaComponent(0.12).cgColor
+        b.backgroundColor = .white
+        b.heightAnchor.constraint(equalToConstant: 52).isActive = true
+        b.setImage(UIImage(systemName: iconSystemName), for: .normal)
+        b.tintColor = UIColor.black.withAlphaComponent(0.75)
+    }
+
+    // MARK: - Actions
+    @objc private func handleBack() { onBack?() }
+
+    @objc private func loginTapped() { onLoginLink?() }
+
+    @objc private func createTapped() {
+        let input = PhysioSignupInput(
+            name: (fullNameField.textField.text ?? "").trimmingCharacters(in: .whitespacesAndNewlines),
+            email: (emailField.textField.text ?? "").trimmingCharacters(in: .whitespacesAndNewlines),
+            phone: (phoneField.textField.text ?? "").trimmingCharacters(in: .whitespacesAndNewlines),
+            password: passwordField.textField.text ?? "",
+            confirmPassword: confirmPasswordField.textField.text ?? "",
+            acceptedTerms: isTermsChecked
+        )
+        onCreateAccount?(input)
+    }
+
+    func setLoading(_ loading: Bool) {
+        createAccountButton.isEnabled = !loading
+        createAccountButton.alpha = loading ? 0.6 : 1
+    }
+
+    func showError(_ message: String?) {
+        statusLabel.text = message
+        statusLabel.isHidden = (message == nil || message?.isEmpty == true)
+    }
+}
+
+// MARK: - Divider view
+private final class OrDividerView: UIView {
+    private let line1 = UIView()
+    private let line2 = UIView()
+    private let label = UILabel()
+
+    override init(frame: CGRect) {
+        super.init(frame: frame)
+        build()
+    }
+    required init?(coder: NSCoder) { fatalError() }
+
+    private func build() {
+        translatesAutoresizingMaskIntoConstraints = false
+        heightAnchor.constraint(equalToConstant: 24).isActive = true
+
+        line1.translatesAutoresizingMaskIntoConstraints = false
+        line2.translatesAutoresizingMaskIntoConstraints = false
+        line1.backgroundColor = UIColor.black.withAlphaComponent(0.12)
+        line2.backgroundColor = UIColor.black.withAlphaComponent(0.12)
+
+        label.translatesAutoresizingMaskIntoConstraints = false
+        label.text = "or continue with"
+        label.font = .systemFont(ofSize: 12, weight: .medium)
+        label.textColor = .gray
+
+        addSubview(line1)
+        addSubview(line2)
+        addSubview(label)
+
+        NSLayoutConstraint.activate([
+            label.centerXAnchor.constraint(equalTo: centerXAnchor),
+            label.centerYAnchor.constraint(equalTo: centerYAnchor),
+
+            line1.leadingAnchor.constraint(equalTo: leadingAnchor),
+            line1.trailingAnchor.constraint(equalTo: label.leadingAnchor, constant: -12),
+            line1.centerYAnchor.constraint(equalTo: centerYAnchor),
+            line1.heightAnchor.constraint(equalToConstant: 1),
+
+            line2.leadingAnchor.constraint(equalTo: label.trailingAnchor, constant: 12),
+            line2.trailingAnchor.constraint(equalTo: trailingAnchor),
+            line2.centerYAnchor.constraint(equalTo: centerYAnchor),
+            line2.heightAnchor.constraint(equalToConstant: 1)
+        ])
+    }
+}

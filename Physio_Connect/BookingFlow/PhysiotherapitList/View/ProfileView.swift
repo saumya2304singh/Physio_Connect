@@ -52,6 +52,8 @@ final class ProfileView: UIView {
     private let loginButton = UIButton(type: .system)
     private let signUpButton = UIButton(type: .system)
 
+    private var currentAvatarURL: String?
+
     override init(frame: CGRect) {
         super.init(frame: frame)
         backgroundColor = UIColor(hex: "E8EEF5")
@@ -71,6 +73,7 @@ final class ProfileView: UIView {
         dobRow.setValue(data.dateOfBirth)
         locationRow.setValue(data.location)
         notificationRow.setOn(data.notificationsEnabled)
+        setAvatar(with: data.avatarURL)
     }
 
     func applyLoggedOut() {
@@ -82,6 +85,7 @@ final class ProfileView: UIView {
         dobRow.setValue("—")
         locationRow.setValue("—")
         notificationRow.setOn(false)
+        setAvatar(with: nil)
     }
 
     func setRefreshing(_ isRefreshing: Bool) {
@@ -210,6 +214,39 @@ final class ProfileView: UIView {
         ])
 
         stackView.addArrangedSubview(container)
+    }
+
+    private func setAvatar(with urlString: String?) {
+        currentAvatarURL = urlString
+        let placeholder = UIImage(systemName: "person.crop.circle.fill")?.withRenderingMode(.alwaysTemplate)
+        avatarImageView.image = placeholder
+        avatarImageView.tintColor = UIColor(hex: "96A7BD")
+
+        guard let trimmed = urlString?.trimmingCharacters(in: .whitespacesAndNewlines),
+              !trimmed.isEmpty else {
+            return
+        }
+
+        let url: URL?
+        if let absolute = URL(string: trimmed), absolute.scheme != nil {
+            url = absolute
+        } else {
+            // Prefer physio bucket normalization using shared service
+            if let built = PhysioService.shared.profileImageURL(pathOrUrl: trimmed, version: nil) {
+                url = built
+            } else {
+                let normalized = trimmed.trimmingCharacters(in: CharacterSet(charactersIn: "/"))
+                url = URL(string: "\(SupabaseConfig.url)/storage/v1/object/public/\(normalized)")
+            }
+        }
+        guard let finalURL = url else { return }
+
+        ImageLoader.shared.load(finalURL) { [weak self] image in
+            guard let self else { return }
+            guard self.currentAvatarURL == urlString else { return }
+            self.avatarImageView.image = image ?? placeholder
+            self.avatarImageView.tintColor = image == nil ? UIColor(hex: "96A7BD") : .clear
+        }
     }
 
     private func buildPersonalInfo() {

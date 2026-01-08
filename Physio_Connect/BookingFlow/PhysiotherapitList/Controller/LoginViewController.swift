@@ -33,7 +33,7 @@ final class LoginViewController: UIViewController {
     }
 
     @objc private func backTapped() {
-        navigationController?.popViewController(animated: true)
+        AppLogout.backToRoleSelection(from: view)
     }
 
     @objc private func togglePassword() {

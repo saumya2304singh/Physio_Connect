@@ -49,20 +49,8 @@ final class PhysioHomeView: UIView {
 
         headerStack.axis = .vertical
         headerStack.spacing = 6
+        headerStack.alignment = .center
         headerStack.translatesAutoresizingMaskIntoConstraints = false
-
-        titleLabel.text = "Physio Home"
-        titleLabel.font = .systemFont(ofSize: 26, weight: .bold)
-        titleLabel.textColor = UIColor(hex: "102A43")
-
-        subtitleLabel.text = "Track sessions, patients, and tasks at a glance."
-        subtitleLabel.font = .systemFont(ofSize: 15, weight: .semibold)
-        subtitleLabel.textColor = UIColor.black.withAlphaComponent(0.55)
-        subtitleLabel.numberOfLines = 0
-
-        headerStack.addArrangedSubview(titleLabel)
-        headerStack.addArrangedSubview(subtitleLabel)
-        contentStack.addArrangedSubview(headerStack)
 
         statsStack.axis = .horizontal
         statsStack.spacing = 12
@@ -70,6 +58,22 @@ final class PhysioHomeView: UIView {
         statsStack.translatesAutoresizingMaskIntoConstraints = false
         statsStack.addArrangedSubview(sessionsCard)
         statsStack.addArrangedSubview(tasksCard)
+        
+        // Header (centered)
+        titleLabel.text = "Dashboard"
+        titleLabel.font = .systemFont(ofSize: 26, weight: .bold)
+        titleLabel.textColor = UIColor(hex: "102A43")
+        titleLabel.textAlignment = .center
+
+        subtitleLabel.text = "Track sessions, patients, and tasks at a glance."
+        subtitleLabel.font = .systemFont(ofSize: 15, weight: .semibold)
+        subtitleLabel.textColor = UIColor.black.withAlphaComponent(0.55)
+        subtitleLabel.numberOfLines = 0
+        subtitleLabel.textAlignment = .center
+
+        headerStack.addArrangedSubview(titleLabel)
+        headerStack.addArrangedSubview(subtitleLabel)
+        contentStack.addArrangedSubview(headerStack)
         contentStack.addArrangedSubview(statsStack)
 
         upcomingTitle.text = "Upcoming Session"
@@ -137,6 +141,8 @@ final class PhysioHomeView: UIView {
     func setUpcoming(sessionTitle: String, patient: String, time: String, location: String) {
         upcomingCard.configure(title: sessionTitle, patient: patient, time: time, location: location)
     }
+
+    func setAvatar(urlString: String?) { /* header avatar removed by design */ }
 }
 
 private final class StatCardView: UIView {

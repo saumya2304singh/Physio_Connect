@@ -33,6 +33,7 @@ struct ProfileViewData {
     let healthIdentifier: String
     let location: String
     let notificationsEnabled: Bool
+    let avatarURL: String?
 
     static func from(row: CustomerProfileRow?, emailFallback: String) -> ProfileViewData {
         let rawName = row?.full_name?.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -59,7 +60,8 @@ struct ProfileViewData {
             dateOfBirth: dob?.isEmpty == false ? dob! : "—",
             healthIdentifier: health?.isEmpty == false ? health! : "—",
             location: location?.isEmpty == false ? location! : (address?.isEmpty == false ? address! : "—"),
-            notificationsEnabled: row?.notifications_enabled ?? true
+            notificationsEnabled: row?.notifications_enabled ?? true,
+            avatarURL: row?.avatar_url
         )
     }
 }

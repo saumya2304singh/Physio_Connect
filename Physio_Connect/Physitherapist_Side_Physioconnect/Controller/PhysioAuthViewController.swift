@@ -9,74 +9,162 @@ import UIKit
 
 final class PhysioAuthViewController: UIViewController {
 
-    private let authView = PhysioAuthView()
-    private let model = PhysioAuthModel()
+    private enum Mode {
+        case login
+        case signup
+    }
 
-    override func loadView() { view = authView }
+    private let loginView = PhysioLoginView()
+    private let signupView = PhysioSignupView()
+    private let model = PhysioAuthModel()
+    private var mode: Mode = .login
+
+    override func loadView() {
+        view = UIView()
+        view.backgroundColor = UIColor(hex: "E6F1FF")
+    }
 
     override func viewDidLoad() {
         super.viewDidLoad()
         navigationController?.navigationBar.prefersLargeTitles = false
         title = "Physio Access"
 
-        authView.modeControl.addTarget(self, action: #selector(modeChanged), for: .valueChanged)
-        authView.actionButton.addTarget(self, action: #selector(submitTapped), for: .touchUpInside)
-        authView.setMode(.login)
+        layoutViews()
+        bind()
+        show(mode: .login, animated: false)
     }
 
-    @objc private func modeChanged() {
-        let mode: PhysioAuthView.Mode = authView.modeControl.selectedSegmentIndex == 0 ? .login : .signup
-        authView.setMode(mode)
-        authView.showError(nil)
+    private func layoutViews() {
+        [loginView, signupView].forEach {
+            $0.translatesAutoresizingMaskIntoConstraints = false
+            view.addSubview($0)
+            NSLayoutConstraint.activate([
+                $0.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
+                $0.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+                $0.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+                $0.bottomAnchor.constraint(equalTo: view.bottomAnchor)
+            ])
+        }
+        signupView.isHidden = true
     }
 
-    @objc private func submitTapped() {
-        view.endEditing(true)
-        let mode: PhysioAuthView.Mode = authView.modeControl.selectedSegmentIndex == 0 ? .login : .signup
-        guard let email = authView.emailField.text?.trimmingCharacters(in: .whitespacesAndNewlines), !email.isEmpty,
-              let password = authView.passwordField.text, !password.isEmpty else {
-            authView.showError("Please enter email and password.")
-            return
+    private func bind() {
+        loginView.onBack = { [weak self] in self?.popOrDismiss() }
+        loginView.onSignupTapped = { [weak self] in self?.show(mode: .signup, animated: true) }
+        loginView.onLogin = { [weak self] email, password in
+            self?.handleLogin(email: email, password: password)
         }
 
-        let name = authView.nameField.text?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
-        if mode == .signup && name.isEmpty {
-            authView.showError("Please enter your full name.")
+        signupView.onBack = { [weak self] in self?.popOrDismiss() }
+        signupView.onLoginLink = { [weak self] in self?.show(mode: .login, animated: true) }
+        signupView.onCreateAccount = { [weak self] input in
+            self?.handleSignup(input: input)
+        }
+    }
+
+    private func show(mode: Mode, animated: Bool) {
+        self.mode = mode
+        let showLogin = (mode == .login)
+        let duration: TimeInterval = animated ? 0.2 : 0.0
+        loginView.showError(nil)
+        signupView.showError(nil)
+        UIView.transition(with: view, duration: duration, options: .transitionCrossDissolve, animations: {
+            self.loginView.isHidden = !showLogin
+            self.signupView.isHidden = showLogin
+        })
+    }
+
+    private func handleLogin(email: String, password: String) {
+        let trimmedEmail = email.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmedEmail.isEmpty, !password.isEmpty else {
+            loginView.showError("Please enter your email and password.")
             return
         }
-
-        authView.showError(nil)
-        authView.setLoading(true)
+        loginView.showError(nil)
+        loginView.setLoading(true)
 
         Task {
             do {
-                switch mode {
-                case .login:
-                    _ = try await model.login(email: email, password: password)
-                case .signup:
-                    let input = PhysioAuthModel.PhysioSignupInput(name: name, email: email, password: password)
-                    _ = try await model.signup(input: input)
-                }
+                _ = try await model.login(email: trimmedEmail, password: password)
                 await MainActor.run {
-                    self.authView.setLoading(false)
+                    self.loginView.setLoading(false)
                     self.routeToHome()
                 }
             } catch {
                 await MainActor.run {
-                    self.authView.setLoading(false)
-                    self.authView.showError(error.localizedDescription)
+                    self.loginView.setLoading(false)
+                    self.loginView.showError(error.localizedDescription)
                 }
             }
         }
     }
 
-    private func routeToHome() {
-        let homeVC = PhysioHomeViewController()
-        if let nav = navigationController {
-            nav.setViewControllers([homeVC], animated: true)
+    private func handleSignup(input: PhysioSignupInput) {
+        let email = input.email.trimmingCharacters(in: .whitespacesAndNewlines)
+        let name = input.name.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !name.isEmpty else {
+            showInlineError("Please enter your full name.")
+            return
+        }
+        guard !email.isEmpty else {
+            showInlineError("Please enter your email.")
+            return
+        }
+        guard !input.password.isEmpty, input.password.count >= 8 else {
+            showInlineError("Password must be at least 8 characters.")
+            return
+        }
+        guard input.password == input.confirmPassword else {
+            showInlineError("Passwords do not match.")
+            return
+        }
+        guard input.acceptedTerms else {
+            showInlineError("Please accept the Terms to continue.")
+            return
+        }
+
+        showInlineError(nil)
+        signupView.setLoading(true)
+
+        Task {
+            do {
+                let signupInput = PhysioAuthModel.PhysioSignupInput(name: name, email: email, password: input.password)
+                _ = try await model.signup(input: signupInput)
+                await MainActor.run {
+                    self.signupView.setLoading(false)
+                    self.routeToHome()
+                }
+            } catch {
+                await MainActor.run {
+                    self.signupView.setLoading(false)
+                    self.showInlineError(error.localizedDescription)
+                }
+            }
+        }
+    }
+
+    private func showInlineError(_ message: String?) {
+        if mode == .login {
+            loginView.showError(message)
         } else {
-            let nav = UINavigationController(rootViewController: homeVC)
-            RootRouter.setRoot(nav, window: view.window)
+            signupView.showError(message)
+        }
+    }
+
+    private func routeToHome() {
+        let tab = PhysioTabBarController()
+        if let nav = navigationController {
+            nav.setViewControllers([tab], animated: true)
+        } else {
+            RootRouter.setRoot(tab, window: view.window)
+        }
+    }
+
+    private func popOrDismiss() {
+        if let nav = navigationController {
+            nav.popViewController(animated: true)
+        } else {
+            dismiss(animated: true)
         }
     }
 }
