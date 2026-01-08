@@ -234,11 +234,14 @@ final class ExerciseDetailView: UIView, UIGestureRecognizerDelegate {
         addSubview(scroll)
         scroll.addSubview(content)
 
+        let topBarHeight = topBar.heightAnchor.constraint(equalToConstant: 36)
+        topBarHeight.priority = .defaultHigh
+
         NSLayoutConstraint.activate([
             topBar.topAnchor.constraint(equalTo: safeAreaLayoutGuide.topAnchor, constant: 6),
             topBar.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 16),
             topBar.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -16),
-            topBar.heightAnchor.constraint(equalToConstant: 36),
+            topBarHeight,
 
             backButton.leadingAnchor.constraint(equalTo: topBar.leadingAnchor),
             backButton.centerYAnchor.constraint(equalTo: topBar.centerYAnchor),

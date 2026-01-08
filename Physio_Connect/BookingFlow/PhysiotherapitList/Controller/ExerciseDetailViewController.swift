@@ -142,6 +142,7 @@ final class ExerciseDetailViewController: UIViewController {
                 vc.player = player
                 present(vc, animated: true) { player.play() }
             } catch {
+                print("❌ Video URL error for path \(videoPath):", error)
                 showError("Video error", error.localizedDescription)
             }
         }
@@ -158,6 +159,7 @@ final class ExerciseDetailViewController: UIViewController {
                 }
                 task.resume()
             } catch {
+                print("❌ Detail thumb error for path \(thumbnailPath):", error)
                 return
             }
         }

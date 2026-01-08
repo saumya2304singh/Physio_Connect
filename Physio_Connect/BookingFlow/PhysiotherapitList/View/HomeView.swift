@@ -30,6 +30,8 @@ final class HomeView: UIView {
     let adherenceCard = HomeAdherenceCardView()
     private let upNextTitle = UILabel()
     let upNextCard = HomeUpNextCardView()
+    private var upNextTitleHeightConstraint: NSLayoutConstraint?
+    private var upNextCardHeightConstraint: NSLayoutConstraint?
     private let articlesTitle = UILabel()
     let articlesSegmented = UISegmentedControl(items: ["Top Rated", "Most Relevant"])
     let articlesTableView = UITableView(frame: .zero, style: .plain)
@@ -228,6 +230,10 @@ final class HomeView: UIView {
 
         videosHeightConstraint = videosCollectionView.heightAnchor.constraint(equalToConstant: 340)
         videosHeightConstraint?.isActive = true
+        upNextTitleHeightConstraint = upNextTitle.heightAnchor.constraint(equalToConstant: 24)
+        upNextTitleHeightConstraint?.isActive = true
+        upNextCardHeightConstraint = upNextCard.heightAnchor.constraint(greaterThanOrEqualToConstant: 160)
+        upNextCardHeightConstraint?.isActive = true
         articlesHeightConstraint = articlesTableView.heightAnchor.constraint(equalToConstant: 260)
         articlesHeightConstraint?.isActive = true
     }
@@ -261,6 +267,9 @@ final class HomeView: UIView {
     func setUpNextVisible(_ visible: Bool) {
         upNextTitle.isHidden = !visible
         upNextCard.isHidden = !visible
+        upNextTitleHeightConstraint?.constant = visible ? 24 : 0
+        upNextCardHeightConstraint?.constant = visible ? 160 : 0
+        layoutIfNeeded()
     }
 
     func updateArticlesHeight(rows: Int) {

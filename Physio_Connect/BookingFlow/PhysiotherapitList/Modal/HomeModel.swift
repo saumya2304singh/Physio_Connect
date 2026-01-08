@@ -16,6 +16,16 @@ final class HomeModel {
         let averagePain: Double
     }
 
+    static var emptyProgressSummary: ProgressSummary {
+        ProgressSummary(
+            painSeries: Array(repeating: 0, count: 7),
+            adherenceSeries: Array(repeating: 0, count: 6),
+            weeklyAdherencePercent: 0,
+            painDeltaPercent: 0,
+            averagePain: 0
+        )
+    }
+
     func fetchUpcomingAppointments() async throws -> [HomeUpcomingAppointment] {
 
         let session = try await SupabaseManager.shared.client.auth.session

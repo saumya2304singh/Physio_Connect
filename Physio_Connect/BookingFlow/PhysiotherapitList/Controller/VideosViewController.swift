@@ -469,6 +469,7 @@ final class VideosViewController: UIViewController, UITableViewDataSource, UITab
                     }
                 }
             } catch {
+                print("❌ Free thumb load failed for \(path): \(error)")
                 return
             }
         }
@@ -486,6 +487,7 @@ final class VideosViewController: UIViewController, UITableViewDataSource, UITab
                     }
                 }
             } catch {
+                print("❌ Program thumb load failed for \(path): \(error)")
                 return
             }
         }

@@ -106,17 +106,87 @@ final class VideosModel {
     }
 
     func signedVideoURL(path: String) async throws -> URL {
-        let normalized = path.trimmingCharacters(in: .whitespacesAndNewlines).trimmingCharacters(in: CharacterSet(charactersIn: "/"))
-        return try await client.storage
-            .from(videoBucket)
-            .createSignedURL(path: normalized, expiresIn: 3600)
+        return try await signedURL(path: path, bucket: videoBucket)
     }
 
     func signedThumbnailURL(path: String) async throws -> URL {
-        let normalized = path.trimmingCharacters(in: .whitespacesAndNewlines).trimmingCharacters(in: CharacterSet(charactersIn: "/"))
-        return try await client.storage
-            .from(thumbnailBucket)
-            .createSignedURL(path: normalized, expiresIn: 3600)
+        return try await signedURL(path: path, bucket: thumbnailBucket)
+    }
+
+    private func signedURL(path: String, bucket: String) async throws -> URL {
+        let trimmed = path
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+            .trimmingCharacters(in: CharacterSet(charactersIn: "/"))
+        guard !trimmed.isEmpty else { throw URLError(.badURL) }
+
+        if let direct = URL(string: trimmed), direct.scheme?.hasPrefix("http") == true {
+            return direct
+        }
+
+        var lastError: Error?
+        let candidates = candidateKeys(for: trimmed, bucket: bucket)
+        for key in candidates {
+            do {
+                return try await client.storage
+                    .from(bucket)
+                    .createSignedURL(path: key, expiresIn: 3600)
+            } catch {
+                lastError = error
+                if let publicURL = makePublicURL(bucket: bucket, key: key) {
+                    print("ℹ️ Falling back to public URL for bucket \(bucket), key \(key): \(error)")
+                    return publicURL
+                }
+            }
+        }
+        print("❌ All candidate keys failed for bucket \(bucket) from raw path '\(path)': \(candidates)")
+        throw lastError ?? URLError(.fileDoesNotExist)
+    }
+
+    private func candidateKeys(for raw: String, bucket: String) -> [String] {
+        var cleaned = raw
+        if let qIndex = cleaned.firstIndex(of: "?") {
+            cleaned = String(cleaned[..<qIndex])
+        }
+        cleaned = cleaned.trimmingCharacters(in: .whitespacesAndNewlines)
+            .trimmingCharacters(in: CharacterSet(charactersIn: "/"))
+
+        var keys: [String] = []
+        let publicPrefix = "storage/v1/object/public/\(bucket)/"
+        if let range = cleaned.range(of: publicPrefix) {
+            keys.append(String(cleaned[range.upperBound...]))
+        } else if cleaned.hasPrefix("\(bucket)/") {
+            keys.append(String(cleaned.dropFirst(bucket.count + 1)))
+        }
+        keys.append(cleaned)
+        keys.append("\(bucket)/\(cleaned)")
+
+        var seen = Set<String>()
+        let unique = keys.filter { key in
+            if seen.contains(key) {
+                return false
+            } else {
+                seen.insert(key)
+                return true
+            }
+        }
+        return unique
+    }
+
+    private func supabaseBaseURL() -> String? {
+        if let base = Bundle.main.object(forInfoDictionaryKey: "SUPABASE_URL") as? String {
+            return base
+        }
+        return SupabaseConfig.url
+    }
+
+    private func makePublicURL(bucket: String, key: String) -> URL? {
+        guard let base = supabaseBaseURL() else { return nil }
+        let path = key.trimmingCharacters(in: CharacterSet(charactersIn: "/"))
+        let encodedPath = path
+            .split(separator: "/")
+            .map { $0.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) ?? String($0) }
+            .joined(separator: "/")
+        return URL(string: "\(base)/storage/v1/object/public/\(bucket)/\(encodedPath)")
     }
 
     func upsertProgress(exerciseID: UUID,

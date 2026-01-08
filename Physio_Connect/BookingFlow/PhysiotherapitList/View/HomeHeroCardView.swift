@@ -90,7 +90,8 @@ final class HomeHeroCardView: UIView {
             container.topAnchor.constraint(equalTo: topAnchor),
             container.leadingAnchor.constraint(equalTo: leadingAnchor),
             container.trailingAnchor.constraint(equalTo: trailingAnchor),
-            container.bottomAnchor.constraint(equalTo: bottomAnchor)
+            container.bottomAnchor.constraint(equalTo: bottomAnchor),
+            container.widthAnchor.constraint(greaterThanOrEqualToConstant: 120)
         ])
 
         bubbleLarge.translatesAutoresizingMaskIntoConstraints = false
@@ -291,6 +292,14 @@ final class HomeHeroCardView: UIView {
         contentTopToContainerConstraint?.isActive = false
         buttonTopConstraint = primaryButton.topAnchor.constraint(equalTo: contentRow.bottomAnchor, constant: 12)
 
+        let contentTrailing = contentRow.trailingAnchor.constraint(lessThanOrEqualTo: container.layoutMarginsGuide.trailingAnchor)
+        contentTrailing.priority = .defaultHigh
+
+        let buttonLeading = primaryButton.leadingAnchor.constraint(equalTo: container.layoutMarginsGuide.leadingAnchor)
+        buttonLeading.priority = .defaultHigh
+        let buttonTrailing = primaryButton.trailingAnchor.constraint(lessThanOrEqualTo: container.layoutMarginsGuide.trailingAnchor)
+        buttonTrailing.priority = .defaultHigh
+
         NSLayoutConstraint.activate([
             topRow.topAnchor.constraint(equalTo: container.layoutMarginsGuide.topAnchor),
             topRow.leadingAnchor.constraint(equalTo: container.layoutMarginsGuide.leadingAnchor),
@@ -298,10 +307,11 @@ final class HomeHeroCardView: UIView {
 
             contentTopToTopRowConstraint!,
             contentRow.leadingAnchor.constraint(equalTo: container.layoutMarginsGuide.leadingAnchor),
-            contentRow.trailingAnchor.constraint(equalTo: container.layoutMarginsGuide.trailingAnchor),
+            contentTrailing,
             // ✅ Button always visible at bottom
-            primaryButton.leadingAnchor.constraint(equalTo: container.layoutMarginsGuide.leadingAnchor),
-            primaryButton.trailingAnchor.constraint(equalTo: container.layoutMarginsGuide.trailingAnchor),
+            buttonLeading,
+            buttonTrailing,
+            primaryButton.centerXAnchor.constraint(equalTo: container.centerXAnchor),
             primaryButton.heightAnchor.constraint(equalToConstant: 48),
             primaryButton.bottomAnchor.constraint(equalTo: container.layoutMarginsGuide.bottomAnchor),
 

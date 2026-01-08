@@ -78,48 +78,60 @@ final class HomeViewController: UIViewController, UICollectionViewDataSource, UI
     }
 
     private func refreshCards() async {
-        do {
-            let upcoming = try await model.fetchUpcomingAppointments()
-            let videos = try await videosModel.fetchFreeExercises(search: nil)
-            let progress = try await model.fetchProgressSummary()
-            let fetchedArticles = try await articlesModel.fetchArticles(search: nil, category: nil, sort: selectedArticlesSort)
-            let programRows = try await videosModel.fetchMyProgramExercises()
-            let nextExercise = try await resolveNextExercise(from: programRows)
-            await MainActor.run {
-                self.applyUpcoming(upcoming)
-                self.freeVideos = Array(videos.prefix(4))
-                self.thumbnailImages = [:]
-                self.homeView.videosCollectionView.reloadData()
-                self.homeView.updateVideosHeight(rows: self.freeVideos.count)
-                self.homeView.painCard.configure(
-                    painSeries: progress.painSeries,
-                    averagePain: progress.averagePain,
-                    percentChange: progress.painDeltaPercent
-                )
-                self.homeView.adherenceCard.configure(
-                    adherenceSeries: progress.adherenceSeries,
-                    weeklyPercent: progress.weeklyAdherencePercent
-                )
-                self.programExercises = programRows
-                self.nextProgramExercise = nextExercise
-                self.applyUpNext()
-                self.articles = Array(fetchedArticles.prefix(4))
-                self.articleImages = [:]
-                self.homeView.articlesTableView.reloadData()
-                self.homeView.updateArticlesHeight(rows: self.articles.count)
-                DispatchQueue.main.async {
-                    self.homeView.updateArticlesHeightToFit()
-                }
-            }
-            loadThumbnails(for: Array(videos.prefix(4)))
-            loadArticleImages(for: Array(fetchedArticles.prefix(4)))
-        } catch {
-            await MainActor.run {
-                self.applyUpcoming([])
-                self.homeView.setUpNextVisible(false)
-            }
-            print("❌ Home refresh error:", error)
+        let emptyProgress = HomeModel.ProgressSummary(
+            painSeries: Array(repeating: 0, count: 7),
+            adherenceSeries: Array(repeating: 0, count: 6),
+            weeklyAdherencePercent: 0,
+            painDeltaPercent: 0,
+            averagePain: 0
+        )
+
+        let isLoggedIn = (try? await SupabaseManager.shared.client.auth.session) != nil
+
+        let videos = (try? await videosModel.fetchFreeExercises(search: nil)) ?? []
+        let fetchedArticles = (try? await articlesModel.fetchArticles(search: nil, category: nil, sort: selectedArticlesSort)) ?? []
+
+        var upcoming: [HomeUpcomingAppointment] = []
+        var programRows: [MyProgramExerciseRow] = []
+        var nextExercise: MyProgramExerciseRow?
+        var progress = emptyProgress
+
+        if isLoggedIn {
+            upcoming = (try? await model.fetchUpcomingAppointments()) ?? []
+            progress = (try? await model.fetchProgressSummary()) ?? emptyProgress
+            programRows = (try? await videosModel.fetchMyProgramExercises()) ?? []
+            nextExercise = try? await resolveNextExercise(from: programRows)
         }
+
+        await MainActor.run {
+            self.applyUpcoming(upcoming)
+            self.freeVideos = Array(videos.prefix(4))
+            self.thumbnailImages = [:]
+            self.homeView.videosCollectionView.reloadData()
+            self.homeView.updateVideosHeight(rows: self.freeVideos.count)
+            self.homeView.painCard.configure(
+                painSeries: progress.painSeries,
+                averagePain: progress.averagePain,
+                percentChange: progress.painDeltaPercent
+            )
+            self.homeView.adherenceCard.configure(
+                adherenceSeries: progress.adherenceSeries,
+                weeklyPercent: progress.weeklyAdherencePercent
+            )
+            self.programExercises = programRows
+            self.nextProgramExercise = nextExercise
+            self.applyUpNext()
+            self.homeView.setUpNextVisible(isLoggedIn && nextExercise != nil)
+            self.articles = Array(fetchedArticles.prefix(4))
+            self.articleImages = [:]
+            self.homeView.articlesTableView.reloadData()
+            self.homeView.updateArticlesHeight(rows: self.articles.count)
+            DispatchQueue.main.async {
+                self.homeView.updateArticlesHeightToFit()
+            }
+        }
+        loadThumbnails(for: Array(videos.prefix(4)))
+        loadArticleImages(for: Array(fetchedArticles.prefix(4)))
     }
 
     private func applyUpNext() {
