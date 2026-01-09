@@ -38,7 +38,7 @@ final class PhysioTabBarController: UITabBarController {
             selectedImage: UIImage(systemName: "square.grid.2x2.fill")
         )
 
-        let reports = UINavigationController(rootViewController: PlaceholderViewController(title: "Reports"))
+        let reports = UINavigationController(rootViewController: PhysioReportsViewController())
         reports.tabBarItem = UITabBarItem(
             title: "Reports",
             image: UIImage(systemName: "chart.bar"),
