@@ -13,9 +13,8 @@ struct PatientReportRow {
     let name: String
     let ageText: String
     let location: String
-    let contact: String
     let programTitles: [String]
-    let lastInteraction: Date?
+    let adherencePercent: Int
 }
 
 struct PhysioReportsSnapshot {
@@ -65,45 +64,35 @@ final class PhysioReportsModel {
         let programs = try await fetchPrograms(physioID: physioID)
         let programIDs = programs.map(\.id)
         let redemptions = try await fetchRedemptions(programIDs: programIDs)
-        let appointments = try await fetchAppointmentCustomers(physioID: physioID)
 
         let customerIDs = Set(redemptions.map(\.customer_id))
-            .union(appointments.compactMap(\.customer_id))
         let customers = try await fetchCustomers(ids: Array(customerIDs))
 
         let programByID = Dictionary(uniqueKeysWithValues: programs.map { ($0.id, $0.title) })
-        let appointmentsByCustomer = Dictionary(grouping: appointments.compactMap { row -> (UUID, Date)? in
-            guard let id = row.customer_id, let created = row.created_at else { return nil }
-            return (id, created)
-        }, by: { $0.0 })
+        let programExerciseCounts = try await fetchProgramExerciseCounts(programIDs: programIDs)
+        let progressRows = try await fetchProgressRows(customerIDs: Array(customerIDs), programIDs: programIDs)
+        let completedByCustomer = Dictionary(grouping: progressRows.filter { $0.is_completed == true }, by: \.customer_id)
 
         let patients: [PatientReportRow] = customers.map { customer in
             let programsForPatient = redemptions
                 .filter { $0.customer_id == customer.id }
                 .compactMap { programByID[$0.program_id] }
             let ageText = ageString(from: customer.date_of_birth) ?? "—"
-            let contact = Self.firstNonEmpty(
-                values: [customer.phone, customer.email],
-                fallback: "No contact"
-            )
             let location = Self.firstNonEmpty(
                 values: [customer.location],
                 fallback: "Location unavailable"
             )
-            let appointmentLatest = appointmentsByCustomer[customer.id]?.map { $0.1 }.max()
-            let redemptionLatest = redemptions
-                .filter { $0.customer_id == customer.id }
-                .compactMap { parseDate($0.redeemed_at ?? $0.created_at ?? "") }
-                .max()
-            let lastInteraction = [appointmentLatest, redemptionLatest].compactMap { $0 }.max()
+            let assignedProgramIDs = redemptions.filter { $0.customer_id == customer.id }.map(\.program_id)
+            let totalExercises = assignedProgramIDs.reduce(0) { $0 + (programExerciseCounts[$1] ?? 0) }
+            let completedCount = completedByCustomer[customer.id]?.count ?? 0
+            let adherence = totalExercises == 0 ? 0 : min(100, Int(Double(completedCount) / Double(totalExercises) * 100.0))
             return PatientReportRow(
                 id: customer.id,
                 name: Self.firstNonEmpty(values: [customer.full_name], fallback: "Patient"),
                 ageText: ageText,
                 location: location,
-                contact: contact,
                 programTitles: programsForPatient,
-                lastInteraction: lastInteraction
+                adherencePercent: adherence
             )
         }
 
@@ -129,20 +118,8 @@ final class PhysioReportsModel {
         guard !programIDs.isEmpty else { return [] }
         let rows: [RedemptionRow] = try await client
             .from("program_redemptions")
-            .select("program_id,customer_id,redeemed_at,created_at")
+            .select("program_id,customer_id,redeemed_at")
             .in("program_id", values: programIDs.map { $0.uuidString })
-            .execute()
-            .value
-        return rows
-    }
-
-    private func fetchAppointmentCustomers(physioID: String) async throws -> [AppointmentCustomerRow] {
-        let rows: [AppointmentCustomerRow] = try await client
-            .from("appointments")
-            .select("customer_id,created_at")
-            .eq("physio_id", value: physioID)
-            .order("created_at", ascending: false)
-            .limit(180)
             .execute()
             .value
         return rows
@@ -155,6 +132,36 @@ final class PhysioReportsModel {
             .from("customers")
             .select("id,full_name,email,phone,location,date_of_birth")
             .in("id", values: unique.map { $0.uuidString })
+            .execute()
+            .value
+        return rows
+    }
+
+    private func fetchProgramExerciseCounts(programIDs: [UUID]) async throws -> [UUID: Int] {
+        guard !programIDs.isEmpty else { return [:] }
+        struct Row: Decodable {
+            let program_id: UUID
+        }
+        let rows: [Row] = try await client
+            .from("program_exercises")
+            .select("program_id")
+            .in("program_id", values: programIDs.map { $0.uuidString })
+            .execute()
+            .value
+        var counts: [UUID: Int] = [:]
+        for row in rows {
+            counts[row.program_id, default: 0] += 1
+        }
+        return counts
+    }
+
+    private func fetchProgressRows(customerIDs: [UUID], programIDs: [UUID]) async throws -> [ProgressRow] {
+        guard !customerIDs.isEmpty, !programIDs.isEmpty else { return [] }
+        let rows: [ProgressRow] = try await client
+            .from("exercise_progress")
+            .select("customer_id,program_id,is_completed")
+            .in("customer_id", values: customerIDs.map { $0.uuidString })
+            .in("program_id", values: programIDs.map { $0.uuidString })
             .execute()
             .value
         return rows
@@ -205,12 +212,12 @@ private struct RedemptionRow: Decodable {
     let program_id: UUID
     let customer_id: UUID
     let redeemed_at: String?
-    let created_at: String?
 }
 
-private struct AppointmentCustomerRow: Decodable {
-    let customer_id: UUID?
-    let created_at: Date?
+private struct ProgressRow: Decodable {
+    let customer_id: UUID
+    let program_id: UUID
+    let is_completed: Bool?
 }
 
 private struct CustomerRow: Decodable {

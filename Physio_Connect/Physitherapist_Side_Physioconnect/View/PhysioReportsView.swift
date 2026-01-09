@@ -13,9 +13,8 @@ final class PhysioReportsView: UIView {
         let name: String
         let age: String
         let location: String
-        let contact: String
-        let programs: [String]
-        let lastInteractionText: String
+        let programText: String
+        let adherencePercent: Int
     }
 
     let tableView = UITableView(frame: .zero, style: .plain)
@@ -24,10 +23,6 @@ final class PhysioReportsView: UIView {
 
     private let titleLabel = UILabel()
     private let subtitleLabel = UILabel()
-    private let statsStack = UIStackView()
-    private let patientsStat = ReportStatView()
-    private let programsStat = ReportStatView()
-    private let assignmentsStat = ReportStatView()
     private let emptyLabel = UILabel()
 
     override init(frame: CGRect) {
@@ -46,18 +41,10 @@ final class PhysioReportsView: UIView {
         titleLabel.textColor = UIColor(hex: "102A43")
 
         subtitleLabel.translatesAutoresizingMaskIntoConstraints = false
-        subtitleLabel.text = "Monitor every patient assigned to you and the programs they’re following."
+        subtitleLabel.text = "View patient progress and analytics."
         subtitleLabel.font = .systemFont(ofSize: 15, weight: .medium)
         subtitleLabel.textColor = UIColor.black.withAlphaComponent(0.55)
         subtitleLabel.numberOfLines = 0
-
-        statsStack.translatesAutoresizingMaskIntoConstraints = false
-        statsStack.axis = .horizontal
-        statsStack.spacing = 12
-        statsStack.distribution = .fillEqually
-        statsStack.addArrangedSubview(patientsStat)
-        statsStack.addArrangedSubview(programsStat)
-        statsStack.addArrangedSubview(assignmentsStat)
 
         searchBar.translatesAutoresizingMaskIntoConstraints = false
         searchBar.searchBarStyle = .minimal
@@ -74,7 +61,7 @@ final class PhysioReportsView: UIView {
         tableView.refreshControl = refreshControl
 
         emptyLabel.translatesAutoresizingMaskIntoConstraints = false
-        emptyLabel.text = "No patients linked yet.\nAssign a program to see their summary here."
+        emptyLabel.text = "No program assignments yet.\nShare a program code to see patient reports."
         emptyLabel.font = .systemFont(ofSize: 15, weight: .semibold)
         emptyLabel.textColor = UIColor.black.withAlphaComponent(0.55)
         emptyLabel.numberOfLines = 0
@@ -84,7 +71,6 @@ final class PhysioReportsView: UIView {
 
         addSubview(titleLabel)
         addSubview(subtitleLabel)
-        addSubview(statsStack)
         addSubview(searchBar)
         addSubview(tableView)
         addSubview(emptyLabel)
@@ -98,12 +84,7 @@ final class PhysioReportsView: UIView {
             subtitleLabel.leadingAnchor.constraint(equalTo: titleLabel.leadingAnchor),
             subtitleLabel.trailingAnchor.constraint(equalTo: titleLabel.trailingAnchor),
 
-            statsStack.topAnchor.constraint(equalTo: subtitleLabel.bottomAnchor, constant: 14),
-            statsStack.leadingAnchor.constraint(equalTo: titleLabel.leadingAnchor),
-            statsStack.trailingAnchor.constraint(equalTo: titleLabel.trailingAnchor),
-            statsStack.heightAnchor.constraint(equalToConstant: 100),
-
-            searchBar.topAnchor.constraint(equalTo: statsStack.bottomAnchor, constant: 12),
+            searchBar.topAnchor.constraint(equalTo: subtitleLabel.bottomAnchor, constant: 14),
             searchBar.leadingAnchor.constraint(equalTo: titleLabel.leadingAnchor),
             searchBar.trailingAnchor.constraint(equalTo: titleLabel.trailingAnchor),
 
@@ -119,68 +100,13 @@ final class PhysioReportsView: UIView {
         ])
     }
 
-    func setStats(totalPatients: Int, activePrograms: Int, assignments: Int) {
-        patientsStat.configure(title: "Assigned Patients", value: totalPatients)
-        programsStat.configure(title: "Active Programs", value: activePrograms)
-        assignmentsStat.configure(title: "Total Assignments", value: assignments)
-    }
-
     override func layoutSubviews() {
         super.layoutSubviews()
-        let compact = bounds.width < 380
-        statsStack.axis = compact ? .vertical : .horizontal
-        statsStack.distribution = compact ? .fillEqually : .fillEqually
     }
 
     func showEmptyState(_ show: Bool) {
         emptyLabel.isHidden = !show
         if show { bringSubviewToFront(emptyLabel) }
-    }
-}
-
-private final class ReportStatView: UIView {
-    private let valueLabel = UILabel()
-    private let titleLabel = UILabel()
-
-    override init(frame: CGRect) {
-        super.init(frame: frame)
-        translatesAutoresizingMaskIntoConstraints = false
-        backgroundColor = UIColor.white
-        layer.cornerRadius = 14
-        layer.shadowColor = UIColor.black.cgColor
-        layer.shadowOpacity = 0.06
-        layer.shadowRadius = 8
-        layer.shadowOffset = CGSize(width: 0, height: 4)
-
-        valueLabel.translatesAutoresizingMaskIntoConstraints = false
-        valueLabel.font = .systemFont(ofSize: 26, weight: .bold)
-        valueLabel.textColor = UIColor(hex: "1E6EF7")
-
-        titleLabel.translatesAutoresizingMaskIntoConstraints = false
-        titleLabel.font = .systemFont(ofSize: 12, weight: .semibold)
-        titleLabel.textColor = UIColor.black.withAlphaComponent(0.6)
-        titleLabel.numberOfLines = 2
-
-        addSubview(valueLabel)
-        addSubview(titleLabel)
-
-        NSLayoutConstraint.activate([
-            valueLabel.topAnchor.constraint(equalTo: topAnchor, constant: 14),
-            valueLabel.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 14),
-            valueLabel.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -14),
-
-            titleLabel.topAnchor.constraint(equalTo: valueLabel.bottomAnchor, constant: 6),
-            titleLabel.leadingAnchor.constraint(equalTo: valueLabel.leadingAnchor),
-            titleLabel.trailingAnchor.constraint(equalTo: valueLabel.trailingAnchor),
-            titleLabel.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -14)
-        ])
-    }
-
-    required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
-
-    func configure(title: String, value: Int) {
-        titleLabel.text = title
-        valueLabel.text = "\(value)"
     }
 }
 
@@ -190,10 +116,12 @@ final class ReportPatientCell: UITableViewCell {
     private let card = UIView()
     private let nameLabel = UILabel()
     private let agePill = UILabel()
+    private let programLabel = UILabel()
     private let locationLabel = UILabel()
-    private let contactLabel = UILabel()
-    private let programStack = UIStackView()
-    private let lastInteractionLabel = UILabel()
+    private let divider = UIView()
+    private let adherenceTitleLabel = UILabel()
+    private let adherenceValueLabel = UILabel()
+    private let adherenceBar = UIProgressView(progressViewStyle: .default)
 
     override init(style: UITableViewCell.CellStyle, reuseIdentifier: String?) {
         super.init(style: style, reuseIdentifier: reuseIdentifier)
@@ -228,30 +156,43 @@ final class ReportPatientCell: UITableViewCell {
         agePill.clipsToBounds = true
         agePill.setContentHuggingPriority(.required, for: .horizontal)
 
+        programLabel.translatesAutoresizingMaskIntoConstraints = false
+        programLabel.font = .systemFont(ofSize: 14, weight: .semibold)
+        programLabel.textColor = UIColor.black.withAlphaComponent(0.75)
+        programLabel.numberOfLines = 0
+
         locationLabel.translatesAutoresizingMaskIntoConstraints = false
-        locationLabel.font = .systemFont(ofSize: 13, weight: .medium)
+        locationLabel.font = .systemFont(ofSize: 14, weight: .medium)
         locationLabel.textColor = UIColor.black.withAlphaComponent(0.7)
         locationLabel.numberOfLines = 0
 
-        contactLabel.translatesAutoresizingMaskIntoConstraints = false
-        contactLabel.font = .systemFont(ofSize: 13, weight: .semibold)
-        contactLabel.textColor = UIColor(hex: "1E6EF7")
-        contactLabel.numberOfLines = 0
+        divider.translatesAutoresizingMaskIntoConstraints = false
+        divider.backgroundColor = UIColor.black.withAlphaComponent(0.05)
 
-        programStack.translatesAutoresizingMaskIntoConstraints = false
-        programStack.axis = .vertical
-        programStack.spacing = 6
+        adherenceTitleLabel.translatesAutoresizingMaskIntoConstraints = false
+        adherenceTitleLabel.font = .systemFont(ofSize: 13, weight: .semibold)
+        adherenceTitleLabel.textColor = UIColor.black.withAlphaComponent(0.6)
+        adherenceTitleLabel.text = "Adherence Rate"
 
-        lastInteractionLabel.translatesAutoresizingMaskIntoConstraints = false
-        lastInteractionLabel.font = .systemFont(ofSize: 12, weight: .medium)
-        lastInteractionLabel.textColor = UIColor.black.withAlphaComponent(0.55)
+        adherenceValueLabel.translatesAutoresizingMaskIntoConstraints = false
+        adherenceValueLabel.font = .systemFont(ofSize: 13, weight: .bold)
+        adherenceValueLabel.textColor = UIColor(hex: "1E6EF7")
+        adherenceValueLabel.textAlignment = .right
+
+        adherenceBar.translatesAutoresizingMaskIntoConstraints = false
+        adherenceBar.trackTintColor = UIColor.black.withAlphaComponent(0.06)
+        adherenceBar.progressTintColor = UIColor(hex: "1E6EF7")
+        adherenceBar.layer.cornerRadius = 4
+        adherenceBar.clipsToBounds = true
 
         card.addSubview(nameLabel)
         card.addSubview(agePill)
+        card.addSubview(programLabel)
         card.addSubview(locationLabel)
-        card.addSubview(contactLabel)
-        card.addSubview(programStack)
-        card.addSubview(lastInteractionLabel)
+        card.addSubview(divider)
+        card.addSubview(adherenceTitleLabel)
+        card.addSubview(adherenceValueLabel)
+        card.addSubview(adherenceBar)
 
         NSLayoutConstraint.activate([
             card.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 10),
@@ -268,31 +209,36 @@ final class ReportPatientCell: UITableViewCell {
             agePill.heightAnchor.constraint(equalToConstant: 24),
             agePill.widthAnchor.constraint(greaterThanOrEqualToConstant: 60),
 
-            locationLabel.topAnchor.constraint(equalTo: nameLabel.bottomAnchor, constant: 8),
+            programLabel.topAnchor.constraint(equalTo: nameLabel.bottomAnchor, constant: 8),
+            programLabel.leadingAnchor.constraint(equalTo: nameLabel.leadingAnchor),
+            programLabel.trailingAnchor.constraint(equalTo: card.trailingAnchor, constant: -14),
+
+            locationLabel.topAnchor.constraint(equalTo: programLabel.bottomAnchor, constant: 6),
             locationLabel.leadingAnchor.constraint(equalTo: nameLabel.leadingAnchor),
             locationLabel.trailingAnchor.constraint(equalTo: card.trailingAnchor, constant: -14),
 
-            contactLabel.topAnchor.constraint(equalTo: locationLabel.bottomAnchor, constant: 6),
-            contactLabel.leadingAnchor.constraint(equalTo: nameLabel.leadingAnchor),
-            contactLabel.trailingAnchor.constraint(equalTo: card.trailingAnchor, constant: -14),
+            divider.topAnchor.constraint(equalTo: locationLabel.bottomAnchor, constant: 12),
+            divider.leadingAnchor.constraint(equalTo: nameLabel.leadingAnchor),
+            divider.trailingAnchor.constraint(equalTo: card.trailingAnchor, constant: -14),
+            divider.heightAnchor.constraint(equalToConstant: 1),
 
-            programStack.topAnchor.constraint(equalTo: contactLabel.bottomAnchor, constant: 10),
-            programStack.leadingAnchor.constraint(equalTo: nameLabel.leadingAnchor),
-            programStack.trailingAnchor.constraint(equalTo: card.trailingAnchor, constant: -14),
+            adherenceTitleLabel.topAnchor.constraint(equalTo: divider.bottomAnchor, constant: 10),
+            adherenceTitleLabel.leadingAnchor.constraint(equalTo: nameLabel.leadingAnchor),
 
-            lastInteractionLabel.topAnchor.constraint(equalTo: programStack.bottomAnchor, constant: 10),
-            lastInteractionLabel.leadingAnchor.constraint(equalTo: nameLabel.leadingAnchor),
-            lastInteractionLabel.trailingAnchor.constraint(equalTo: card.trailingAnchor, constant: -14),
-            lastInteractionLabel.bottomAnchor.constraint(equalTo: card.bottomAnchor, constant: -12)
+            adherenceValueLabel.centerYAnchor.constraint(equalTo: adherenceTitleLabel.centerYAnchor),
+            adherenceValueLabel.trailingAnchor.constraint(equalTo: card.trailingAnchor, constant: -14),
+            adherenceValueLabel.leadingAnchor.constraint(greaterThanOrEqualTo: adherenceTitleLabel.trailingAnchor, constant: 8),
+
+            adherenceBar.topAnchor.constraint(equalTo: adherenceTitleLabel.bottomAnchor, constant: 8),
+            adherenceBar.leadingAnchor.constraint(equalTo: nameLabel.leadingAnchor),
+            adherenceBar.trailingAnchor.constraint(equalTo: card.trailingAnchor, constant: -14),
+            adherenceBar.heightAnchor.constraint(equalToConstant: 6),
+            adherenceBar.bottomAnchor.constraint(equalTo: card.bottomAnchor, constant: -14)
         ])
     }
 
     override func prepareForReuse() {
         super.prepareForReuse()
-        programStack.arrangedSubviews.forEach { view in
-            programStack.removeArrangedSubview(view)
-            view.removeFromSuperview()
-        }
     }
 
     func apply(_ vm: PhysioReportsView.PatientVM) {
@@ -301,61 +247,9 @@ final class ReportPatientCell: UITableViewCell {
         agePill.isHidden = ageValue.isEmpty || ageValue == "—"
         agePill.text = ageValue.isEmpty ? nil : "  \(ageValue)  "
 
-        locationLabel.text = "Location • \(vm.location)"
-        contactLabel.text = "Contact • \(vm.contact)"
-        lastInteractionLabel.text = vm.lastInteractionText
-
-        addProgramChips(vm.programs)
-    }
-
-    private func addProgramChips(_ programs: [String]) {
-        if programs.isEmpty {
-            let label = UILabel()
-            label.font = .systemFont(ofSize: 13, weight: .medium)
-            label.textColor = UIColor.black.withAlphaComponent(0.5)
-            label.text = "No programs assigned yet."
-            programStack.addArrangedSubview(label)
-            return
-        }
-
-        let maxVisible = 3
-        for title in programs.prefix(maxVisible) {
-            programStack.addArrangedSubview(makeChip(text: title))
-        }
-        if programs.count > maxVisible {
-            programStack.addArrangedSubview(makeChip(text: "+\(programs.count - maxVisible) more", isMuted: true))
-        }
-    }
-
-    private func makeChip(text: String, isMuted: Bool = false) -> UIView {
-        let label = PaddingLabel(insets: UIEdgeInsets(top: 6, left: 10, bottom: 6, right: 10))
-        label.text = text
-        label.font = .systemFont(ofSize: 12, weight: .semibold)
-        label.textColor = isMuted ? UIColor.black.withAlphaComponent(0.55) : UIColor(hex: "1E6EF7")
-        label.backgroundColor = isMuted ? UIColor(hex: "EEF2F7") : UIColor(hex: "E6F1FF")
-        label.layer.cornerRadius = 10
-        label.clipsToBounds = true
-        return label
-    }
-}
-
-private final class PaddingLabel: UILabel {
-    private let insets: UIEdgeInsets
-
-    init(insets: UIEdgeInsets) {
-        self.insets = insets
-        super.init(frame: .zero)
-    }
-
-    required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
-
-    override func drawText(in rect: CGRect) {
-        super.drawText(in: rect.inset(by: insets))
-    }
-
-    override var intrinsicContentSize: CGSize {
-        let size = super.intrinsicContentSize
-        return CGSize(width: size.width + insets.left + insets.right,
-                      height: size.height + insets.top + insets.bottom)
+        programLabel.text = "Program Assigned: \(vm.programText)"
+        locationLabel.text = "Location: \(vm.location)"
+        adherenceValueLabel.text = "\(vm.adherencePercent)%"
+        adherenceBar.setProgress(Float(vm.adherencePercent) / 100.0, animated: false)
     }
 }

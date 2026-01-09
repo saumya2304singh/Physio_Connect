@@ -55,26 +55,19 @@ final class PhysioReportsViewController: UIViewController, UITableViewDataSource
             let snapshot = try await model.fetchReport(physioID: id)
 
             let patientVMs = snapshot.patients.map { row -> PhysioReportsView.PatientVM in
-                let lastText = formatLastInteraction(row.lastInteraction, programs: row.programTitles)
                 return PhysioReportsView.PatientVM(
                     id: row.id,
                     name: row.name,
                     age: row.ageText,
                     location: row.location,
-                    contact: row.contact,
-                    programs: row.programTitles,
-                    lastInteractionText: lastText
+                    programText: programText(from: row.programTitles),
+                    adherencePercent: row.adherencePercent
                 )
             }
 
             await MainActor.run {
                 self.allPatients = patientVMs
                 self.applyFilter()
-                self.reportsView.setStats(
-                    totalPatients: patientVMs.count,
-                    activePrograms: snapshot.totalPrograms,
-                    assignments: snapshot.totalAssignments
-                )
                 self.reportsView.showEmptyState(patientVMs.isEmpty)
             }
         } catch {
@@ -95,24 +88,12 @@ final class PhysioReportsViewController: UIViewController, UITableViewDataSource
         present(ac, animated: true)
     }
 
-    private func formatLastInteraction(_ date: Date?, programs: [String]) -> String {
-        if let date {
-            let relative = RelativeDateTimeFormatter()
-            relative.unitsStyle = .short
-            let calendar = Calendar.current
-            let isToday = calendar.isDateInToday(date)
-
-            let timeFormatter = DateFormatter()
-            timeFormatter.dateFormat = "h:mm a"
-            let time = timeFormatter.string(from: date)
-
-            let dayPart = isToday ? "Today" : relative.localizedString(for: date, relativeTo: Date())
-            return "Last touch • \(dayPart) at \(time)"
+    private func programText(from programs: [String]) -> String {
+        guard let first = programs.first else { return "—" }
+        if programs.count > 1 {
+            return "\(first) +\(programs.count - 1)"
         }
-        if !programs.isEmpty {
-            return "Last touch • Program assigned"
-        }
-        return "Last touch • Not recorded"
+        return first
     }
 
     // MARK: - Table data
@@ -130,10 +111,10 @@ final class PhysioReportsViewController: UIViewController, UITableViewDataSource
 
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         let patient = filteredPatients[indexPath.row]
-        let programs = patient.programs.isEmpty ? "No programs yet" : patient.programs.joined(separator: ", ")
+        let programs = patient.programText
         let ac = UIAlertController(
             title: patient.name,
-            message: "Age: \(patient.age)\nContact: \(patient.contact)\nPrograms: \(programs)\n\(patient.lastInteractionText)",
+            message: "Age: \(patient.age)\nLocation: \(patient.location)\nProgram: \(programs)\nAdherence: \(patient.adherencePercent)%",
             preferredStyle: .alert
         )
         ac.addAction(UIAlertAction(title: "OK", style: .cancel))
@@ -165,7 +146,7 @@ final class PhysioReportsViewController: UIViewController, UITableViewDataSource
         }
 
         filteredPatients = allPatients.filter { vm in
-            let haystack = "\(vm.name) \(vm.programs.joined(separator: " ")) \(vm.contact) \(vm.location)".lowercased()
+            let haystack = "\(vm.name) \(vm.programText) \(vm.location)".lowercased()
             return haystack.contains(query)
         }
         reportsView.tableView.reloadData()
