@@ -18,6 +18,12 @@ final class PhysioProfileViewController: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         navigationItem.hidesBackButton = true
+        navigationItem.rightBarButtonItem = UIBarButtonItem(
+            title: "Edit",
+            style: .plain,
+            target: self,
+            action: #selector(editTapped)
+        )
         profileView.onBack = { [weak self] in self?.navigationController?.popViewController(animated: true) }
         profileView.onEdit = { [weak self] in self?.showEdit() }
         profileView.onSignOut = { [weak self] in self?.signOut() }
@@ -26,6 +32,10 @@ final class PhysioProfileViewController: UIViewController {
 
         profileView.setLoggedIn(true)
         loadInitial()
+    }
+
+    @objc private func editTapped() {
+        showEdit()
     }
 
     private func loadInitial() {

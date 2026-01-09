@@ -61,7 +61,7 @@ final class PhysioHomeView: UIView {
         
         // Header (centered)
         titleLabel.text = "Dashboard"
-        titleLabel.font = .systemFont(ofSize: 26, weight: .bold)
+        titleLabel.font = .systemFont(ofSize: 32, weight: .bold)
         titleLabel.textColor = UIColor(hex: "102A43")
         titleLabel.textAlignment = .center
 

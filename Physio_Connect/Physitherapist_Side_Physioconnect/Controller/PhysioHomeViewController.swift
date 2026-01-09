@@ -46,7 +46,7 @@ final class PhysioHomeViewController: UIViewController {
     }
 
     private func configureProfileButton(image: UIImage?) {
-        let size: CGFloat = 38
+        let size: CGFloat = 36
         profileButton.translatesAutoresizingMaskIntoConstraints = false
         profileButton.setImage(image, for: .normal)
         profileButton.imageView?.contentMode = .scaleAspectFill
@@ -57,6 +57,8 @@ final class PhysioHomeViewController: UIViewController {
         profileButton.adjustsImageWhenHighlighted = false
         profileButton.contentHorizontalAlignment = .fill
         profileButton.contentVerticalAlignment = .fill
+        profileButton.contentEdgeInsets = .zero
+        profileButton.imageEdgeInsets = .zero
         profileButton.addTarget(self, action: #selector(profileTapped), for: .touchUpInside)
 
         let barItem = UIBarButtonItem(customView: profileButton)

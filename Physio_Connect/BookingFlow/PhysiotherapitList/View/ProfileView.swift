@@ -129,55 +129,17 @@ final class ProfileView: UIView {
         stackView.alignment = .fill
 
         NSLayoutConstraint.activate([
-            stackView.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 0),
+            stackView.topAnchor.constraint(equalTo: contentView.topAnchor),
             stackView.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 16),
             stackView.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -16),
             stackView.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -24)
         ])
 
-        buildTopBar()
         buildHeader()
         buildPersonalInfo()
         buildSettings()
         buildPrivacy()
         buildSignOut()
-    }
-
-    private func buildTopBar() {
-        topBar.translatesAutoresizingMaskIntoConstraints = false
-        backButton.removeFromSuperview()
-
-        titleLabel.text = "Profile"
-        titleLabel.font = .systemFont(ofSize: 18, weight: .semibold)
-        titleLabel.textColor = UIColor.black
-        titleLabel.translatesAutoresizingMaskIntoConstraints = false
-
-        editButton.setTitle("Edit", for: .normal)
-        editButton.setTitleColor(UIColor(hex: "1E6EF7"), for: .normal)
-        editButton.titleLabel?.font = .systemFont(ofSize: 16, weight: .regular)
-        editButton.addTarget(self, action: #selector(editTapped), for: .touchUpInside)
-        editButton.translatesAutoresizingMaskIntoConstraints = false
-        
-        switchRoleButton.setTitle("Switch Role", for: .normal)
-        switchRoleButton.setTitleColor(.white, for: .normal)
-        switchRoleButton.titleLabel?.font = .systemFont(ofSize: 16, weight: .semibold)
-        switchRoleButton.backgroundColor = UIColor(hex: "1E6EF7")
-        switchRoleButton.layer.cornerRadius = 12
-        switchRoleButton.addTarget(self, action: #selector(switchRolePressed), for: .touchUpInside)
-
-        topBar.addSubview(titleLabel)
-        topBar.addSubview(editButton)
-
-        NSLayoutConstraint.activate([
-            titleLabel.leadingAnchor.constraint(equalTo: topBar.leadingAnchor),
-            titleLabel.centerYAnchor.constraint(equalTo: topBar.centerYAnchor),
-
-            editButton.trailingAnchor.constraint(equalTo: topBar.trailingAnchor),
-            editButton.centerYAnchor.constraint(equalTo: topBar.centerYAnchor)
-        ])
-
-        topBar.heightAnchor.constraint(equalToConstant: 44).isActive = true
-        stackView.addArrangedSubview(topBar)
     }
 
     private func buildHeader() {

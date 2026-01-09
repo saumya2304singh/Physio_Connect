@@ -29,7 +29,7 @@ final class PhysioEditProfileView: UIView, UIPickerViewDataSource, UIPickerViewD
     private let locationField = PhysioLabeledTextField(title: "Location", placeholder: "City")
     private let genderPicker = UIPickerView()
     private let dobPicker = UIDatePicker()
-    private let genderOptions = ["Male", "Female", "Other"]
+    private let genderOptions = ["male", "female"]
     private var selectedGenderIndex = 0
     private static let dateFormatter: DateFormatter = {
         let df = DateFormatter()
@@ -64,9 +64,6 @@ final class PhysioEditProfileView: UIView, UIPickerViewDataSource, UIPickerViewD
     func currentInput() -> PhysioProfileModel.UpdateInput {
         let resolvedGender: String = {
             let selection = genderField.text
-            if selection == "Other" {
-                return customGenderField.text
-            }
             return selection
         }()
         return PhysioProfileModel.UpdateInput(
@@ -113,7 +110,7 @@ final class PhysioEditProfileView: UIView, UIPickerViewDataSource, UIPickerViewD
         stackView.alignment = .fill
 
         NSLayoutConstraint.activate([
-            stackView.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 8),
+            stackView.topAnchor.constraint(equalTo: contentView.topAnchor),
             stackView.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 16),
             stackView.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -16),
             stackView.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -24)
@@ -187,7 +184,6 @@ final class PhysioEditProfileView: UIView, UIPickerViewDataSource, UIPickerViewD
         formStack.addArrangedSubview(nameField)
         formStack.addArrangedSubview(phoneField)
         formStack.addArrangedSubview(genderField)
-        formStack.addArrangedSubview(customGenderField)
         formStack.addArrangedSubview(dobField)
         formStack.addArrangedSubview(locationField)
 
@@ -233,13 +229,13 @@ final class PhysioEditProfileView: UIView, UIPickerViewDataSource, UIPickerViewD
             genderPicker.selectRow(index, inComponent: 0, animated: false)
             genderField.text = genderOptions[index]
             customGenderField.text = ""
-            customGenderField.isHidden = genderOptions[index] != "Other"
+            customGenderField.isHidden = true
         } else {
             selectedGenderIndex = genderOptions.count - 1
             genderPicker.selectRow(selectedGenderIndex, inComponent: 0, animated: false)
-            genderField.text = "Other"
-            customGenderField.text = normalized
-            customGenderField.isHidden = false
+            genderField.text = genderOptions[selectedGenderIndex]
+            customGenderField.text = ""
+            customGenderField.isHidden = true
         }
     }
 
@@ -250,7 +246,7 @@ final class PhysioEditProfileView: UIView, UIPickerViewDataSource, UIPickerViewD
     func pickerView(_ pickerView: UIPickerView, didSelectRow row: Int, inComponent component: Int) {
         genderField.text = genderOptions[row]
         selectedGenderIndex = row
-        customGenderField.isHidden = genderOptions[row] != "Other"
-        if genderOptions[row] != "Other" { customGenderField.text = "" }
+        customGenderField.isHidden = true
+        customGenderField.text = ""
     }
 }
