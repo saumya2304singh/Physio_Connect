@@ -470,11 +470,13 @@ struct CompletedAppointmentVM {
     enum Status {
         case completed
         case cancelled
+        case cancelledByPhysio
 
         var text: String {
             switch self {
             case .completed: return "Completed"
             case .cancelled: return "Cancelled"
+            case .cancelledByPhysio: return "Cancelled by Physio"
             }
         }
 
@@ -482,6 +484,7 @@ struct CompletedAppointmentVM {
             switch self {
             case .completed: return UIColor(hex: "E6F5EA")
             case .cancelled: return UIColor(hex: "FCE4E4")
+            case .cancelledByPhysio: return UIColor(hex: "FCE4E4")
             }
         }
 
@@ -489,6 +492,7 @@ struct CompletedAppointmentVM {
             switch self {
             case .completed: return UIColor(hex: "2E7D32")
             case .cancelled: return UIColor(hex: "E53935")
+            case .cancelledByPhysio: return UIColor(hex: "E53935")
             }
         }
 
@@ -496,6 +500,7 @@ struct CompletedAppointmentVM {
             switch self {
             case .completed: return UIColor(hex: "BFE3C7")
             case .cancelled: return UIColor(hex: "F2B8B8")
+            case .cancelledByPhysio: return UIColor(hex: "F2B8B8")
             }
         }
     }
@@ -759,6 +764,7 @@ final class CompletedAppointmentCell: UITableViewCell {
             switch vm.status {
             case .completed: return "checkmark.circle.fill"
             case .cancelled: return "xmark.circle.fill"
+            case .cancelledByPhysio: return "xmark.circle.fill"
             }
         }()
         statusIcon.image = UIImage(systemName: iconName)

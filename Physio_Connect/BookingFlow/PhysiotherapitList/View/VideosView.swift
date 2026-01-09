@@ -47,6 +47,12 @@ final class VideosView: UIView {
         tableView.isHidden = show
     }
 
+    func configureEmptyState(title: String, message: String, showRedeem: Bool) {
+        emptyTitle.text = title
+        emptySub.text = message
+        redeemButton.isHidden = !showRedeem
+    }
+
     func setProgramMode(_ enabled: Bool) {
         searchBar.isHidden = enabled
         filterCollectionView.isHidden = enabled

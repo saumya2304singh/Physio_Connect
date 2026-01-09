@@ -92,6 +92,8 @@ final class AppointmentDetailsViewController: UIViewController, UITextViewDelega
             statusText = "Completed"
         case .cancelled:
             statusText = "Cancelled"
+        case .cancelledByPhysio:
+            statusText = "Cancelled by Physio"
         }
 
         return AppointmentDetailsModel(

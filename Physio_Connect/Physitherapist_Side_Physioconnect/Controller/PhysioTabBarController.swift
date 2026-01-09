@@ -24,14 +24,14 @@ final class PhysioTabBarController: UITabBarController {
             selectedImage: UIImage(systemName: "house.fill")
         )
 
-        let appointments = UINavigationController(rootViewController: PlaceholderViewController(title: "Appointments"))
+        let appointments = UINavigationController(rootViewController: PhysioAppointmentsViewController())
         appointments.tabBarItem = UITabBarItem(
             title: "Appointments",
             image: UIImage(systemName: "calendar"),
             selectedImage: UIImage(systemName: "calendar.circle.fill")
         )
 
-        let programs = UINavigationController(rootViewController: PlaceholderViewController(title: "Programs"))
+        let programs = UINavigationController(rootViewController: PhysioProgramsViewController())
         programs.tabBarItem = UITabBarItem(
             title: "Programs",
             image: UIImage(systemName: "square.grid.2x2"),

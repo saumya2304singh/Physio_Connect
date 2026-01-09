@@ -192,6 +192,8 @@ final class HomeViewController: UIViewController, UICollectionViewDataSource, UI
         switch appt.status.lowercased() {
         case "completed":
             status = .completed
+        case "cancelled_by_physio":
+            status = .cancelledByPhysio
         case "cancelled", "canceled":
             status = .cancelled
         default:

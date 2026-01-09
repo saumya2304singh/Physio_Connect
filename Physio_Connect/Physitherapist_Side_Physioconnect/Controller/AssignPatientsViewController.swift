@@ -1,0 +1,195 @@
+//
+//  AssignPatientsViewController.swift
+//  Physio_Connect
+//
+//  Created by user@8 on 09/01/26.
+//
+
+import UIKit
+
+final class AssignPatientsViewController: UIViewController, UITableViewDataSource, UITableViewDelegate {
+
+    var onAssigned: ((String) -> Void)?
+
+    private let program: PhysioProgramRow
+    private let model = PhysioProgramsModel()
+    private let tableView = UITableView(frame: .zero, style: .insetGrouped)
+    private let footerView = UIView()
+    private let cancelButton = UIButton(type: .system)
+    private let assignButton = UIButton(type: .system)
+
+    private var physioID: String?
+    private var patients: [ProgramsCustomerRow] = []
+    private var selectedIDs = Set<UUID>()
+    private var isLoading = false
+
+    init(program: PhysioProgramRow) {
+        self.program = program
+        super.init(nibName: nil, bundle: nil)
+    }
+
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
+
+    override func viewDidLoad() {
+        super.viewDidLoad()
+        title = "Assign Patients"
+        view.backgroundColor = UIColor(hex: "E6F1FF")
+        navigationItem.leftBarButtonItem = UIBarButtonItem(title: "Close", style: .plain, target: self, action: #selector(closeTapped))
+
+        setupFooter()
+        setupTableView()
+        Task { await loadPatients() }
+    }
+
+    private func setupTableView() {
+        tableView.translatesAutoresizingMaskIntoConstraints = false
+        tableView.dataSource = self
+        tableView.delegate = self
+        tableView.rowHeight = 56
+        tableView.backgroundColor = .clear
+        view.addSubview(tableView)
+
+        NSLayoutConstraint.activate([
+            tableView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
+            tableView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+            tableView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+            tableView.bottomAnchor.constraint(equalTo: footerView.topAnchor)
+        ])
+    }
+
+    private func setupFooter() {
+        footerView.translatesAutoresizingMaskIntoConstraints = false
+        footerView.backgroundColor = UIColor(hex: "E6F1FF")
+        view.addSubview(footerView)
+
+        cancelButton.setTitle("Cancel", for: .normal)
+        cancelButton.titleLabel?.font = UIFont.systemFont(ofSize: 16, weight: .semibold)
+        cancelButton.backgroundColor = UIColor(hex: "EEF2F7")
+        cancelButton.setTitleColor(UIColor(hex: "2B2B2B"), for: .normal)
+        cancelButton.layer.cornerRadius = 18
+        cancelButton.addTarget(self, action: #selector(closeTapped), for: .touchUpInside)
+
+        assignButton.setTitle("Assign", for: .normal)
+        assignButton.titleLabel?.font = UIFont.systemFont(ofSize: 16, weight: .semibold)
+        assignButton.backgroundColor = UIColor(hex: "2D6BFF")
+        assignButton.setTitleColor(.white, for: .normal)
+        assignButton.layer.cornerRadius = 18
+        assignButton.addTarget(self, action: #selector(assignTapped), for: .touchUpInside)
+
+        let stack = UIStackView(arrangedSubviews: [cancelButton, assignButton])
+        stack.translatesAutoresizingMaskIntoConstraints = false
+        stack.axis = .horizontal
+        stack.spacing = 12
+        stack.distribution = .fillEqually
+        footerView.addSubview(stack)
+
+        NSLayoutConstraint.activate([
+            footerView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+            footerView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+            footerView.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor),
+            stack.leadingAnchor.constraint(equalTo: footerView.leadingAnchor, constant: 16),
+            stack.trailingAnchor.constraint(equalTo: footerView.trailingAnchor, constant: -16),
+            stack.topAnchor.constraint(equalTo: footerView.topAnchor, constant: 12),
+            stack.bottomAnchor.constraint(equalTo: footerView.bottomAnchor, constant: -12),
+            cancelButton.heightAnchor.constraint(equalToConstant: 44),
+            assignButton.heightAnchor.constraint(equalToConstant: 44)
+        ])
+    }
+
+    private func loadPatients() async {
+        if isLoading { return }
+        isLoading = true
+        defer { isLoading = false }
+
+        do {
+            let id = try await model.resolvePhysioID()
+            physioID = id
+            let allPatients = try await model.fetchPatientsForPhysio(physioID: id)
+            let redemptions = try await model.fetchRedemptions(programIDs: [program.id])
+            let assigned = Set(redemptions.map(\.customer_id))
+
+            let unique = Dictionary(grouping: allPatients, by: \.id)
+                .compactMapValues { $0.first }
+                .values
+                .sorted { $0.full_name < $1.full_name }
+
+            let filtered = unique.filter { !assigned.contains($0.id) }
+
+            await MainActor.run {
+                self.patients = filtered
+                self.tableView.reloadData()
+            }
+        } catch {
+            await MainActor.run { self.showError("Patients Error", error.localizedDescription) }
+        }
+    }
+
+    @objc private func closeTapped() {
+        dismiss(animated: true)
+    }
+
+    @objc private func assignTapped() {
+        guard let physioID else { return }
+        let ids = Array(selectedIDs)
+        if ids.isEmpty {
+            showError("Select Patients", "Pick at least one patient to assign.")
+            return
+        }
+
+        Task {
+            do {
+                let code = try await model.createAccessCode(
+                    programID: program.id,
+                    physioID: physioID,
+                    maxRedemptions: ids.count
+                )
+                try await model.createRedemptions(
+                    programID: program.id,
+                    codeID: code.id,
+                    customerIDs: ids
+                )
+                await MainActor.run {
+                    self.onAssigned?(code.code)
+                    self.dismiss(animated: true)
+                }
+            } catch {
+                await MainActor.run { self.showError("Assign Error", error.localizedDescription) }
+            }
+        }
+    }
+
+    func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
+        patients.count
+    }
+
+    func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
+        let cell = tableView.dequeueReusableCell(withIdentifier: "patientCell")
+            ?? UITableViewCell(style: .subtitle, reuseIdentifier: "patientCell")
+        let patient = patients[indexPath.row]
+        cell.textLabel?.text = patient.full_name
+        cell.textLabel?.font = UIFont.systemFont(ofSize: 16, weight: .semibold)
+        cell.detailTextLabel?.text = patient.location ?? patient.email ?? ""
+        cell.detailTextLabel?.textColor = UIColor.black.withAlphaComponent(0.6)
+        cell.backgroundColor = .clear
+        cell.accessoryType = selectedIDs.contains(patient.id) ? .checkmark : .none
+        return cell
+    }
+
+    func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
+        let patient = patients[indexPath.row]
+        if selectedIDs.contains(patient.id) {
+            selectedIDs.remove(patient.id)
+        } else {
+            selectedIDs.insert(patient.id)
+        }
+        tableView.reloadRows(at: [indexPath], with: .automatic)
+    }
+
+    private func showError(_ title: String, _ message: String) {
+        let ac = UIAlertController(title: title, message: message, preferredStyle: .alert)
+        ac.addAction(UIAlertAction(title: "OK", style: .cancel))
+        present(ac, animated: true)
+    }
+}

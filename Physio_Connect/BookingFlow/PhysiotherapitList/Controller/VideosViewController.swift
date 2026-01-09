@@ -150,6 +150,7 @@ final class VideosViewController: UIViewController, UITableViewDataSource, UITab
         do {
             if isProgramTab {
                 videosView.setProgramMode(true)
+                var programCompleted = false
                 let rows = try await model.fetchMyProgramExercises()
                 programExercises = rows
                 programTitle = rows.first?.program_title
@@ -176,17 +177,25 @@ final class VideosViewController: UIViewController, UITableViewDataSource, UITab
                     let adherencePercent = totalCount == 0 ? 0 : Int(Double(completedCount) / Double(totalCount) * 100.0)
                     let series = buildSeries(from: progressRows)
                     let completedDays = programSections.filter { isDayComplete($0) }.count
+                    programCompleted = programSections.count > 0 && completedDays == programSections.count
                     await MainActor.run {
-                        self.applyProgramHeader(
-                            programTitle: self.programTitle ?? "Your Recovery Program",
-                            adherencePercent: adherencePercent,
-                            completedCount: completedCount,
-                            totalCount: totalCount,
-                            weeklyMinutes: weeklyMinutes,
-                            painSeries: series.pain,
-                            adherenceSeries: series.adherence
-                        )
-                        self.applyProgramFooter(completedDays: completedDays, totalDays: self.programSections.count)
+                        if programCompleted {
+                            self.programHeaderView = nil
+                            self.programFooterView = nil
+                            self.videosView.tableView.tableHeaderView = nil
+                            self.videosView.tableView.tableFooterView = nil
+                        } else {
+                            self.applyProgramHeader(
+                                programTitle: self.programTitle ?? "Your Recovery Program",
+                                adherencePercent: adherencePercent,
+                                completedCount: completedCount,
+                                totalCount: totalCount,
+                                weeklyMinutes: weeklyMinutes,
+                                painSeries: series.pain,
+                                adherenceSeries: series.adherence
+                            )
+                            self.applyProgramFooter(completedDays: completedDays, totalDays: self.programSections.count)
+                        }
                     }
                 } else {
                     await MainActor.run {
@@ -197,7 +206,21 @@ final class VideosViewController: UIViewController, UITableViewDataSource, UITab
                     }
                 }
                 await MainActor.run {
-                    self.videosView.showEmptyState(rows.isEmpty)
+                    if programCompleted {
+                        self.videosView.configureEmptyState(
+                            title: "Program Completed",
+                            message: "Great work! Your program is completed. Ask your physiotherapist for a new plan.",
+                            showRedeem: false
+                        )
+                        self.videosView.showEmptyState(true)
+                    } else {
+                        self.videosView.configureEmptyState(
+                            title: "No Program Yet",
+                            message: "Redeem your physiotherapist's code to unlock your personalized program.",
+                            showRedeem: true
+                        )
+                        self.videosView.showEmptyState(rows.isEmpty)
+                    }
                     self.videosView.tableView.reloadData()
                     self.updateHeaderLayout()
                 }

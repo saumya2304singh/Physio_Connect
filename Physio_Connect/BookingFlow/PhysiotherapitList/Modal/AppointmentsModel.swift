@@ -49,7 +49,7 @@ final class AppointmentsModel {
                 )
             """)
             .eq("customer_id", value: userID)
-            .or("status.eq.booked,status.eq.confirmed")
+            .or("status.eq.booked,status.eq.confirmed,status.eq.scheduled")
             .gte("physio_availability_slots.start_time", value: nowISO) // future only (works with embedded)
             .order("start_time", ascending: true, referencedTable: "physio_availability_slots")
             .execute()
@@ -105,7 +105,7 @@ final class AppointmentsModel {
             .from("appointments")
             .select(joinSelect)
             .eq("customer_id", value: userID)
-            .eq("status", value: "cancelled")
+            .in("status", values: ["cancelled", "cancelled_by_physio"])
             .order("start_time", ascending: true, referencedTable: "physio_availability_slots")
 
             .execute()

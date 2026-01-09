@@ -4,6 +4,7 @@ enum AppointmentStatus {
     case upcoming
     case completed
     case cancelled
+    case cancelledByPhysio
 }
 
 struct Appointment {

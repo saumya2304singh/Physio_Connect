@@ -202,8 +202,15 @@ final class AppointmentsViewController: UIViewController {
 
     private func applyPast(_ past: [PastAppointment]) {
         let vms: [CompletedAppointmentVM] = past.map { item in
-            let status: CompletedAppointmentVM.Status =
-            item.status.lowercased() == "cancelled" ? .cancelled : .completed
+            let status: CompletedAppointmentVM.Status
+            switch item.status.lowercased() {
+            case "cancelled_by_physio":
+                status = .cancelledByPhysio
+            case "cancelled", "canceled":
+                status = .cancelled
+            default:
+                status = .completed
+            }
 
             let ratingText: String = {
                 let r = item.rating ?? 0
