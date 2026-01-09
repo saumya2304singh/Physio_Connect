@@ -12,10 +12,6 @@ final class PhysioHomeView: UIView {
     private let scrollView = UIScrollView()
     private let contentStack = UIStackView()
 
-    private let headerStack = UIStackView()
-    private let titleLabel = UILabel()
-    private let subtitleLabel = UILabel()
-
     private let statsStack = UIStackView()
     private let sessionsCard = StatCardView()
     private let upcomingCard = StatCardView()
@@ -53,11 +49,6 @@ final class PhysioHomeView: UIView {
         contentStack.alignment = .fill
         scrollView.addSubview(contentStack)
 
-        headerStack.axis = .vertical
-        headerStack.spacing = 6
-        headerStack.alignment = .center
-        headerStack.translatesAutoresizingMaskIntoConstraints = false
-
         statsStack.axis = .horizontal
         statsStack.spacing = 12
         statsStack.distribution = .fillEqually
@@ -66,22 +57,6 @@ final class PhysioHomeView: UIView {
         statsStack.addArrangedSubview(upcomingCard)
         statsStack.addArrangedSubview(programsCard)
         
-        // Header (left-aligned)
-        titleLabel.text = "Dashboard"
-        titleLabel.font = .systemFont(ofSize: 32, weight: .bold)
-        titleLabel.textColor = UIColor(hex: "102A43")
-        titleLabel.textAlignment = .left
-
-        subtitleLabel.text = "Track sessions, patients, and tasks at a glance."
-        subtitleLabel.font = .systemFont(ofSize: 15, weight: .semibold)
-        subtitleLabel.textColor = UIColor.black.withAlphaComponent(0.55)
-        subtitleLabel.numberOfLines = 0
-        subtitleLabel.textAlignment = .left
-
-        headerStack.addArrangedSubview(titleLabel)
-        headerStack.addArrangedSubview(subtitleLabel)
-        headerStack.alignment = .leading
-        contentStack.addArrangedSubview(headerStack)
         contentStack.addArrangedSubview(statsStack)
 
         upcomingTitle.text = "Upcoming Sessions"
@@ -138,7 +113,7 @@ final class PhysioHomeView: UIView {
             scrollView.trailingAnchor.constraint(equalTo: trailingAnchor),
             scrollView.bottomAnchor.constraint(equalTo: bottomAnchor),
 
-            contentStack.topAnchor.constraint(equalTo: scrollView.contentLayoutGuide.topAnchor, constant: 20),
+            contentStack.topAnchor.constraint(equalTo: scrollView.contentLayoutGuide.topAnchor, constant: 12),
             contentStack.leadingAnchor.constraint(equalTo: scrollView.contentLayoutGuide.leadingAnchor, constant: 16),
             contentStack.trailingAnchor.constraint(equalTo: scrollView.contentLayoutGuide.trailingAnchor, constant: -16),
             contentStack.bottomAnchor.constraint(equalTo: scrollView.contentLayoutGuide.bottomAnchor, constant: -24),

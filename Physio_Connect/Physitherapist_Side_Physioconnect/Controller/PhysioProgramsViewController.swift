@@ -11,6 +11,8 @@ final class PhysioProgramsViewController: UIViewController, UITableViewDataSourc
 
     private let programsView = PhysioProgramsView()
     private let model = PhysioProgramsModel()
+    private let profileModel = PhysioProfileModel()
+    private let profileButton = UIButton(type: .system)
     private var items: [ProgramListItem] = []
     private var isLoading = false
 
@@ -20,7 +22,13 @@ final class PhysioProgramsViewController: UIViewController, UITableViewDataSourc
 
     override func viewDidLoad() {
         super.viewDidLoad()
-        navigationController?.setNavigationBarHidden(true, animated: false)
+        PhysioNavBarStyle.apply(
+            to: self,
+            title: "Programs",
+            profileButton: profileButton,
+            profileAction: #selector(profileTapped)
+        )
+        loadProfileAvatar()
 
         programsView.tableView.dataSource = self
         programsView.tableView.delegate = self
@@ -29,6 +37,24 @@ final class PhysioProgramsViewController: UIViewController, UITableViewDataSourc
         programsView.createButton.addTarget(self, action: #selector(createTapped), for: .touchUpInside)
 
         Task { await reload() }
+    }
+
+    private func loadProfileAvatar() {
+        Task {
+            do {
+                let data = try await profileModel.fetchProfile()
+                await MainActor.run {
+                    PhysioNavBarStyle.updateProfileButton(self.profileButton, urlString: data.avatarURL)
+                }
+            } catch {
+                // ignore avatar load errors
+            }
+        }
+    }
+
+    @objc private func profileTapped() {
+        let vc = PhysioProfileViewController()
+        navigationController?.pushViewController(vc, animated: true)
     }
 
     @objc private func refreshPulled() {

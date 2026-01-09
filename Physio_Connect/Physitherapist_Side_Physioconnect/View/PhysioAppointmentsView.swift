@@ -56,9 +56,6 @@ final class PhysioAppointmentsView: UIView {
     let segmentControl = UISegmentedControl(items: ["All", "Upcoming", "Completed"])
     let tableView = UITableView(frame: .zero, style: .plain)
 
-    private let titleLabel = UILabel()
-    private let subtitleLabel = UILabel()
-
     override init(frame: CGRect) {
         super.init(frame: frame)
         build()
@@ -68,16 +65,6 @@ final class PhysioAppointmentsView: UIView {
 
     private func build() {
         backgroundColor = UIColor(hex: "E6F1FF")
-
-        titleLabel.translatesAutoresizingMaskIntoConstraints = false
-        titleLabel.text = "Appointments"
-        titleLabel.font = .systemFont(ofSize: 28, weight: .bold)
-        titleLabel.textColor = UIColor(hex: "102A43")
-
-        subtitleLabel.translatesAutoresizingMaskIntoConstraints = false
-        subtitleLabel.text = "Manage your patient appointments"
-        subtitleLabel.font = .systemFont(ofSize: 15, weight: .medium)
-        subtitleLabel.textColor = UIColor.black.withAlphaComponent(0.55)
 
         addButton.translatesAutoresizingMaskIntoConstraints = false
         addButton.setTitle("  New Appointment", for: .normal)
@@ -104,34 +91,24 @@ final class PhysioAppointmentsView: UIView {
         tableView.showsVerticalScrollIndicator = false
         tableView.register(PhysioAppointmentCell.self, forCellReuseIdentifier: "PhysioAppointmentCell")
 
-        addSubview(titleLabel)
-        addSubview(subtitleLabel)
         addSubview(addButton)
         addSubview(searchBar)
         addSubview(segmentControl)
         addSubview(tableView)
 
         NSLayoutConstraint.activate([
-            titleLabel.topAnchor.constraint(equalTo: safeAreaLayoutGuide.topAnchor, constant: 16),
-            titleLabel.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 20),
-            titleLabel.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -20),
-
-            subtitleLabel.topAnchor.constraint(equalTo: titleLabel.bottomAnchor, constant: 6),
-            subtitleLabel.leadingAnchor.constraint(equalTo: titleLabel.leadingAnchor),
-            subtitleLabel.trailingAnchor.constraint(equalTo: titleLabel.trailingAnchor),
-
-            addButton.topAnchor.constraint(equalTo: subtitleLabel.bottomAnchor, constant: 16),
-            addButton.leadingAnchor.constraint(equalTo: titleLabel.leadingAnchor),
-            addButton.trailingAnchor.constraint(equalTo: titleLabel.trailingAnchor),
+            addButton.topAnchor.constraint(equalTo: safeAreaLayoutGuide.topAnchor, constant: 12),
+            addButton.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 20),
+            addButton.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -20),
             addButton.heightAnchor.constraint(equalToConstant: 48),
 
             searchBar.topAnchor.constraint(equalTo: addButton.bottomAnchor, constant: 14),
-            searchBar.leadingAnchor.constraint(equalTo: titleLabel.leadingAnchor),
-            searchBar.trailingAnchor.constraint(equalTo: titleLabel.trailingAnchor),
+            searchBar.leadingAnchor.constraint(equalTo: addButton.leadingAnchor),
+            searchBar.trailingAnchor.constraint(equalTo: addButton.trailingAnchor),
 
             segmentControl.topAnchor.constraint(equalTo: searchBar.bottomAnchor, constant: 10),
-            segmentControl.leadingAnchor.constraint(equalTo: titleLabel.leadingAnchor),
-            segmentControl.trailingAnchor.constraint(equalTo: titleLabel.trailingAnchor),
+            segmentControl.leadingAnchor.constraint(equalTo: addButton.leadingAnchor),
+            segmentControl.trailingAnchor.constraint(equalTo: addButton.trailingAnchor),
             segmentControl.heightAnchor.constraint(equalToConstant: 34),
 
             tableView.topAnchor.constraint(equalTo: segmentControl.bottomAnchor, constant: 12),

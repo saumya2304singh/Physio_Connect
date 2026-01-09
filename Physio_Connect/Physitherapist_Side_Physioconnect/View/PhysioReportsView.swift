@@ -21,8 +21,6 @@ final class PhysioReportsView: UIView {
     let searchBar = UISearchBar()
     let refreshControl = UIRefreshControl()
 
-    private let titleLabel = UILabel()
-    private let subtitleLabel = UILabel()
     private let emptyLabel = UILabel()
 
     override init(frame: CGRect) {
@@ -34,17 +32,6 @@ final class PhysioReportsView: UIView {
 
     private func build() {
         backgroundColor = UIColor(hex: "E6F1FF")
-
-        titleLabel.translatesAutoresizingMaskIntoConstraints = false
-        titleLabel.text = "Reports"
-        titleLabel.font = .systemFont(ofSize: 30, weight: .bold)
-        titleLabel.textColor = UIColor(hex: "102A43")
-
-        subtitleLabel.translatesAutoresizingMaskIntoConstraints = false
-        subtitleLabel.text = "View patient progress and analytics."
-        subtitleLabel.font = .systemFont(ofSize: 15, weight: .medium)
-        subtitleLabel.textColor = UIColor.black.withAlphaComponent(0.55)
-        subtitleLabel.numberOfLines = 0
 
         searchBar.translatesAutoresizingMaskIntoConstraints = false
         searchBar.searchBarStyle = .minimal
@@ -69,24 +56,14 @@ final class PhysioReportsView: UIView {
         emptyLabel.isHidden = true
         emptyLabel.isUserInteractionEnabled = false
 
-        addSubview(titleLabel)
-        addSubview(subtitleLabel)
         addSubview(searchBar)
         addSubview(tableView)
         addSubview(emptyLabel)
 
         NSLayoutConstraint.activate([
-            titleLabel.topAnchor.constraint(equalTo: safeAreaLayoutGuide.topAnchor, constant: 16),
-            titleLabel.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 20),
-            titleLabel.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -20),
-
-            subtitleLabel.topAnchor.constraint(equalTo: titleLabel.bottomAnchor, constant: 6),
-            subtitleLabel.leadingAnchor.constraint(equalTo: titleLabel.leadingAnchor),
-            subtitleLabel.trailingAnchor.constraint(equalTo: titleLabel.trailingAnchor),
-
-            searchBar.topAnchor.constraint(equalTo: subtitleLabel.bottomAnchor, constant: 14),
-            searchBar.leadingAnchor.constraint(equalTo: titleLabel.leadingAnchor),
-            searchBar.trailingAnchor.constraint(equalTo: titleLabel.trailingAnchor),
+            searchBar.topAnchor.constraint(equalTo: safeAreaLayoutGuide.topAnchor, constant: 12),
+            searchBar.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 20),
+            searchBar.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -20),
 
             tableView.topAnchor.constraint(equalTo: searchBar.bottomAnchor, constant: 8),
             tableView.leadingAnchor.constraint(equalTo: leadingAnchor),

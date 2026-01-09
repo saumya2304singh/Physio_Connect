@@ -11,6 +11,8 @@ final class PhysioReportsViewController: UIViewController, UITableViewDataSource
 
     private let reportsView = PhysioReportsView()
     private let model = PhysioReportsModel()
+    private let profileModel = PhysioProfileModel()
+    private let profileButton = UIButton(type: .system)
 
     private var physioID: String?
     private var allPatients: [PhysioReportsView.PatientVM] = []
@@ -23,8 +25,13 @@ final class PhysioReportsViewController: UIViewController, UITableViewDataSource
 
     override func viewDidLoad() {
         super.viewDidLoad()
-        title = "Reports"
-        navigationController?.navigationBar.prefersLargeTitles = true
+        PhysioNavBarStyle.apply(
+            to: self,
+            title: "Reports",
+            profileButton: profileButton,
+            profileAction: #selector(profileTapped)
+        )
+        loadProfileAvatar()
 
         reportsView.tableView.dataSource = self
         reportsView.tableView.delegate = self
@@ -32,6 +39,24 @@ final class PhysioReportsViewController: UIViewController, UITableViewDataSource
         reportsView.refreshControl.addTarget(self, action: #selector(refreshPulled), for: .valueChanged)
 
         Task { await loadReports() }
+    }
+
+    private func loadProfileAvatar() {
+        Task {
+            do {
+                let data = try await profileModel.fetchProfile()
+                await MainActor.run {
+                    PhysioNavBarStyle.updateProfileButton(self.profileButton, urlString: data.avatarURL)
+                }
+            } catch {
+                // ignore avatar load errors
+            }
+        }
+    }
+
+    @objc private func profileTapped() {
+        let vc = PhysioProfileViewController()
+        navigationController?.pushViewController(vc, animated: true)
     }
 
     @objc private func refreshPulled() {

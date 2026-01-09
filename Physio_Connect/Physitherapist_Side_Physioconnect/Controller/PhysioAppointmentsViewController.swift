@@ -10,6 +10,8 @@ import UIKit
 final class PhysioAppointmentsViewController: UIViewController, UITableViewDataSource, UITableViewDelegate, UISearchBarDelegate {
     private let contentView = PhysioAppointmentsView()
     private let model = PhysioAppointmentsModel()
+    private let profileModel = PhysioProfileModel()
+    private let profileButton = UIButton(type: .system)
     private var allAppointments: [PhysioAppointmentsView.AppointmentVM] = []
     private var filteredAppointments: [PhysioAppointmentsView.AppointmentVM] = []
     private var physioID: String?
@@ -19,8 +21,13 @@ final class PhysioAppointmentsViewController: UIViewController, UITableViewDataS
 
     override func viewDidLoad() {
         super.viewDidLoad()
-        title = "Appointments"
-        navigationController?.navigationBar.prefersLargeTitles = true
+        PhysioNavBarStyle.apply(
+            to: self,
+            title: "Appointments",
+            profileButton: profileButton,
+            profileAction: #selector(profileTapped)
+        )
+        loadProfileAvatar()
 
         contentView.tableView.dataSource = self
         contentView.tableView.delegate = self
@@ -31,6 +38,24 @@ final class PhysioAppointmentsViewController: UIViewController, UITableViewDataS
         contentView.addButton.addTarget(self, action: #selector(addTapped), for: .touchUpInside)
 
         Task { await loadAppointments() }
+    }
+
+    private func loadProfileAvatar() {
+        Task {
+            do {
+                let data = try await profileModel.fetchProfile()
+                await MainActor.run {
+                    PhysioNavBarStyle.updateProfileButton(self.profileButton, urlString: data.avatarURL)
+                }
+            } catch {
+                // ignore avatar load errors
+            }
+        }
+    }
+
+    @objc private func profileTapped() {
+        let vc = PhysioProfileViewController()
+        navigationController?.pushViewController(vc, animated: true)
     }
 
     @objc private func addTapped() {

@@ -19,9 +19,12 @@ final class PhysioHomeViewController: UIViewController {
 
     override func viewDidLoad() {
         super.viewDidLoad()
-        navigationController?.navigationBar.prefersLargeTitles = false
-        title = "Dashboard"
-        configureProfileButton(image: UIImage(systemName: "person.crop.circle"))
+        PhysioNavBarStyle.apply(
+            to: self,
+            title: "Dashboard",
+            profileButton: profileButton,
+            profileAction: #selector(profileTapped)
+        )
         loadProfileAvatar()
         Task { await loadDashboard() }
     }
@@ -85,59 +88,11 @@ final class PhysioHomeViewController: UIViewController {
         Task {
             do {
                 let data = try await profileModel.fetchProfile()
-                await MainActor.run { self.updateProfileButton(with: data.avatarURL) }
+                await MainActor.run {
+                    PhysioNavBarStyle.updateProfileButton(self.profileButton, urlString: data.avatarURL)
+                }
             } catch {
                 // ignore avatar load errors
-            }
-        }
-    }
-
-    private func configureProfileButton(image: UIImage?) {
-        let size: CGFloat = 36
-        profileButton.translatesAutoresizingMaskIntoConstraints = false
-        profileButton.setImage(image, for: .normal)
-        profileButton.imageView?.contentMode = .scaleAspectFill
-        profileButton.tintColor = UIColor(hex: "1E6EF7")
-        profileButton.backgroundColor = UIColor.white.withAlphaComponent(0.75)
-        profileButton.layer.cornerRadius = size / 2
-        profileButton.clipsToBounds = true
-        profileButton.adjustsImageWhenHighlighted = false
-        profileButton.contentHorizontalAlignment = .fill
-        profileButton.contentVerticalAlignment = .fill
-        profileButton.contentEdgeInsets = .zero
-        profileButton.imageEdgeInsets = .zero
-        profileButton.addTarget(self, action: #selector(profileTapped), for: .touchUpInside)
-
-        let barItem = UIBarButtonItem(customView: profileButton)
-        NSLayoutConstraint.activate([
-            profileButton.widthAnchor.constraint(equalToConstant: size),
-            profileButton.heightAnchor.constraint(equalToConstant: size)
-        ])
-        navigationItem.rightBarButtonItem = barItem
-    }
-
-    private func updateProfileButton(with urlString: String?) {
-        let placeholder = UIImage(systemName: "person.crop.circle")
-        configureProfileButton(image: placeholder)
-
-        guard let raw = urlString?.trimmingCharacters(in: .whitespacesAndNewlines), !raw.isEmpty else { return }
-
-        let url: URL?
-        if let absolute = URL(string: raw), absolute.scheme != nil {
-            url = absolute
-        } else if let built = PhysioService.shared.profileImageURL(pathOrUrl: raw, version: nil) {
-            url = built
-        } else {
-            let normalized = raw.trimmingCharacters(in: CharacterSet(charactersIn: "/"))
-            url = URL(string: "\(SupabaseConfig.url)/storage/v1/object/public/\(normalized)")
-        }
-        guard let finalURL = url else { return }
-
-        ImageLoader.shared.load(finalURL) { [weak self] image in
-            guard let self else { return }
-            let rounded = image?.withRenderingMode(.alwaysOriginal)
-            DispatchQueue.main.async {
-                self.configureProfileButton(image: rounded ?? placeholder)
             }
         }
     }

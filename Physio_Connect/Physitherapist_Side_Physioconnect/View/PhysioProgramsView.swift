@@ -9,8 +9,6 @@ import UIKit
 
 final class PhysioProgramsView: UIView {
 
-    let titleLabel = UILabel()
-    let subtitleLabel = UILabel()
     let createButton = UIButton(type: .system)
     let tableView = UITableView(frame: .zero, style: .plain)
     private let emptyLabel = UILabel()
@@ -44,16 +42,6 @@ final class PhysioProgramsView: UIView {
     }
 
     private func build() {
-        titleLabel.translatesAutoresizingMaskIntoConstraints = false
-        titleLabel.text = "Programs"
-        titleLabel.font = .systemFont(ofSize: 32, weight: .bold)
-        titleLabel.textColor = .black
-
-        subtitleLabel.translatesAutoresizingMaskIntoConstraints = false
-        subtitleLabel.text = "Create and manage exercise programs"
-        subtitleLabel.font = .systemFont(ofSize: 16, weight: .regular)
-        subtitleLabel.textColor = UIColor.black.withAlphaComponent(0.6)
-
         createButton.translatesAutoresizingMaskIntoConstraints = false
         createButton.setTitle("Create Program", for: .normal)
         createButton.setImage(UIImage(systemName: "plus"), for: .normal)
@@ -80,24 +68,14 @@ final class PhysioProgramsView: UIView {
         emptyLabel.textAlignment = .center
         emptyLabel.isHidden = true
 
-        addSubview(titleLabel)
-        addSubview(subtitleLabel)
         addSubview(createButton)
         addSubview(tableView)
         addSubview(emptyLabel)
 
         NSLayoutConstraint.activate([
-            titleLabel.topAnchor.constraint(equalTo: safeAreaLayoutGuide.topAnchor, constant: 10),
-            titleLabel.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 16),
-            titleLabel.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -16),
-
-            subtitleLabel.topAnchor.constraint(equalTo: titleLabel.bottomAnchor, constant: 6),
-            subtitleLabel.leadingAnchor.constraint(equalTo: titleLabel.leadingAnchor),
-            subtitleLabel.trailingAnchor.constraint(equalTo: titleLabel.trailingAnchor),
-
-            createButton.topAnchor.constraint(equalTo: subtitleLabel.bottomAnchor, constant: 12),
-            createButton.leadingAnchor.constraint(equalTo: titleLabel.leadingAnchor),
-            createButton.trailingAnchor.constraint(equalTo: titleLabel.trailingAnchor),
+            createButton.topAnchor.constraint(equalTo: safeAreaLayoutGuide.topAnchor, constant: 12),
+            createButton.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 16),
+            createButton.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -16),
             createButton.heightAnchor.constraint(equalToConstant: 50),
 
             tableView.topAnchor.constraint(equalTo: createButton.bottomAnchor, constant: 12),
