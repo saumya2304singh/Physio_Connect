@@ -17,13 +17,13 @@ final class PhysioProfileViewController: UIViewController {
 
     override func viewDidLoad() {
         super.viewDidLoad()
+        navigationItem.hidesBackButton = true
         profileView.onBack = { [weak self] in self?.navigationController?.popViewController(animated: true) }
-        profileView.onEdit = { [weak self] in self?.showEditUnavailable() }
+        profileView.onEdit = { [weak self] in self?.showEdit() }
         profileView.onSignOut = { [weak self] in self?.signOut() }
         profileView.onSwitchRole = { [weak self] in AppLogout.backToRoleSelection(from: self?.view) }
         profileView.onRefresh = { [weak self] in Task { await self?.loadProfile() } }
 
-        // Hide edit for now; physio profile editing not implemented.
         profileView.setLoggedIn(true)
         loadInitial()
     }
@@ -32,10 +32,12 @@ final class PhysioProfileViewController: UIViewController {
         Task { await loadProfile() }
     }
 
-    private func showEditUnavailable() {
-        let ac = UIAlertController(title: "Edit coming soon", message: "Editing physiotherapist profile will be available in the next update.", preferredStyle: .alert)
-        ac.addAction(UIAlertAction(title: "OK", style: .default))
-        present(ac, animated: true)
+    private func showEdit() {
+        let vc = PhysioEditProfileViewController()
+        vc.onProfileUpdated = { [weak self] in
+            Task { await self?.loadProfile() }
+        }
+        navigationController?.pushViewController(vc, animated: true)
     }
 
     private func signOut() {
