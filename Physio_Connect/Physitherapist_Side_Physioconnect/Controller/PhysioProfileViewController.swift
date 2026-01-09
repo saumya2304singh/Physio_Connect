@@ -27,7 +27,7 @@ final class PhysioProfileViewController: UIViewController {
         profileView.onBack = { [weak self] in self?.navigationController?.popViewController(animated: true) }
         profileView.onEdit = { [weak self] in self?.showEdit() }
         profileView.onSignOut = { [weak self] in self?.signOut() }
-        profileView.onSwitchRole = { [weak self] in AppLogout.backToRoleSelection(from: self?.view) }
+        profileView.onSwitchRole = { [weak self] in self?.confirmSwitchRole() }
         profileView.onRefresh = { [weak self] in Task { await self?.loadProfile() } }
 
         profileView.setLoggedIn(true)
@@ -58,9 +58,22 @@ final class PhysioProfileViewController: UIViewController {
                 // ignore
             }
             await MainActor.run {
-                AppLogout.backToRoleSelection(from: self.view)
+                AppLogout.backToRoleSelection(from: self.view, signOut: false)
             }
         }
+    }
+
+    private func confirmSwitchRole() {
+        let alert = UIAlertController(
+            title: "Switch role?",
+            message: "You’ll return to the role selection screen.",
+            preferredStyle: .alert
+        )
+        alert.addAction(UIAlertAction(title: "Cancel", style: .cancel))
+        alert.addAction(UIAlertAction(title: "Switch", style: .destructive, handler: { _ in
+            AppLogout.backToRoleSelection(from: self.view, signOut: false)
+        }))
+        present(alert, animated: true)
     }
 
     private func setLoading(_ loading: Bool) {

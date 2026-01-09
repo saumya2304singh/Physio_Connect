@@ -34,6 +34,13 @@ final class PhysioAuthViewController: UIViewController {
         show(mode: .login, animated: false)
     }
 
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+        // Ensure buttons are re-enabled after any previous attempts
+        loginView.setLoading(false)
+        loginView.showError(nil)
+    }
+
     private func layoutViews() {
         [loginView, signupView].forEach {
             $0.translatesAutoresizingMaskIntoConstraints = false
@@ -49,7 +56,10 @@ final class PhysioAuthViewController: UIViewController {
     }
 
     private func bind() {
-        loginView.onBack = { [weak self] in self?.popOrDismiss() }
+        loginView.onBack = { [weak self] in
+            // Always return to role selection to avoid no-op pops when this is root
+            AppLogout.backToRoleSelection(from: self?.view, signOut: false)
+        }
         loginView.onSignupTapped = { [weak self] in self?.show(mode: .signup, animated: true) }
         loginView.onLogin = { [weak self] email, password in
             self?.handleLogin(email: email, password: password)
@@ -77,7 +87,8 @@ final class PhysioAuthViewController: UIViewController {
     private func handleLogin(email: String, password: String) {
         let trimmedEmail = email.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmedEmail.isEmpty, !password.isEmpty else {
-            loginView.showError("Please enter your email and password.")
+            loginView.setLoading(false)
+            presentInlineAlert(title: "Missing Details", message: "Please enter your email and password.")
             return
         }
         loginView.showError(nil)
@@ -93,7 +104,7 @@ final class PhysioAuthViewController: UIViewController {
             } catch {
                 await MainActor.run {
                     self.loginView.setLoading(false)
-                    self.loginView.showError(error.localizedDescription)
+                    self.presentInlineAlert(title: "Login Failed", message: error.localizedDescription)
                 }
             }
         }
@@ -103,22 +114,27 @@ final class PhysioAuthViewController: UIViewController {
         let email = input.email.trimmingCharacters(in: .whitespacesAndNewlines)
         let name = input.name.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !name.isEmpty else {
+            signupView.setLoading(false)
             showInlineError("Please enter your full name.")
             return
         }
         guard !email.isEmpty else {
+            signupView.setLoading(false)
             showInlineError("Please enter your email.")
             return
         }
         guard !input.password.isEmpty, input.password.count >= 8 else {
+            signupView.setLoading(false)
             showInlineError("Password must be at least 8 characters.")
             return
         }
         guard input.password == input.confirmPassword else {
+            signupView.setLoading(false)
             showInlineError("Passwords do not match.")
             return
         }
         guard input.acceptedTerms else {
+            signupView.setLoading(false)
             showInlineError("Please accept the Terms to continue.")
             return
         }
@@ -137,7 +153,7 @@ final class PhysioAuthViewController: UIViewController {
             } catch {
                 await MainActor.run {
                     self.signupView.setLoading(false)
-                    self.showInlineError(error.localizedDescription)
+                    self.presentInlineAlert(title: "Signup Failed", message: error.localizedDescription)
                 }
             }
         }
@@ -149,6 +165,12 @@ final class PhysioAuthViewController: UIViewController {
         } else {
             signupView.showError(message)
         }
+    }
+
+    private func presentInlineAlert(title: String, message: String) {
+        let alert = UIAlertController(title: title, message: message, preferredStyle: .alert)
+        alert.addAction(UIAlertAction(title: "OK", style: .default))
+        present(alert, animated: true)
     }
 
     private func routeToHome() {

@@ -25,6 +25,12 @@ final class LoginViewController: UIViewController {
         addKeyboardDismissTap()
     }
 
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+        // Ensure button is tappable if a previous attempt disabled it
+        loginView.loginButton.isEnabled = true
+    }
+
     private func bind() {
         loginView.backButton.addTarget(self, action: #selector(backTapped), for: .touchUpInside)
         loginView.passwordEyeButton.addTarget(self, action: #selector(togglePassword), for: .touchUpInside)

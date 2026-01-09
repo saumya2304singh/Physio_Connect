@@ -10,6 +10,11 @@ import Supabase
 
 struct PhysioAuthModel {
     private let client = SupabaseManager.shared.client
+    
+    struct PhysioAuthError: LocalizedError {
+        let message: String
+        var errorDescription: String? { message }
+    }
 
     struct PhysioSignupInput {
         let name: String
@@ -19,7 +24,25 @@ struct PhysioAuthModel {
 
     func login(email: String, password: String) async throws -> User {
         let session = try await client.auth.signIn(email: email, password: password)
-        return session.user
+        let user = session.user
+
+        // Ensure physiotherapist profile exists; otherwise block login
+        struct Row: Decodable { let id: UUID }
+        let rows: [Row] = try await client
+            .from("physiotherapists")
+            .select("id")
+            .eq("id", value: user.id.uuidString)
+            .limit(1)
+            .execute()
+            .value
+
+        guard rows.first != nil else {
+            // No physio record => sign out and reject login
+            try? await client.auth.signOut()
+            throw PhysioAuthError(message: "No physiotherapist account found for this email.")
+        }
+
+        return user
     }
 
     func signup(input: PhysioSignupInput) async throws -> User {

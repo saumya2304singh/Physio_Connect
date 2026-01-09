@@ -8,13 +8,21 @@ import UIKit
 
 enum AppLogout {
 
-    static func backToRoleSelection(from view: UIView?) {
-        // 1) clear stored role
+    static func backToRoleSelection(from view: UIView?, signOut: Bool = true) {
+        let window = findWindow(from: view)
+
+        // Clear stored role
         RoleStore.shared.clear()
 
-        // 2) reset root
+        // Immediately route back to role selection so UI never hangs on sign-out
         let roleVC = RoleSelectionViewController()
-        RootRouter.setRoot(roleVC, window: findWindow(from: view))
+        RootRouter.setRoot(roleVC, window: window)
+
+        // Optionally sign out (used when leaving patient side; physio may keep session)
+        if signOut {
+            Task { try? await SupabaseManager.shared.client.auth.signOut() }
+        }
+
     }
 
     private static func findWindow(from view: UIView?) -> UIWindow? {
@@ -25,4 +33,3 @@ enum AppLogout {
             .first { $0.isKeyWindow }
     }
 }
-

@@ -26,7 +26,7 @@ final class RoleSelectionViewController: UIViewController {
 
     @objc private func patientTapped() {
         model.currentRole = .patient
-        switchToPatientApp()
+        Task { await switchToPatientApp() }
     }
 
     @objc private func physioTapped() {
@@ -34,15 +34,70 @@ final class RoleSelectionViewController: UIViewController {
         switchToPhysioApp()
     }
 
-    private func switchToPatientApp() {
-        let patientRoot = MainTabBarController() // ✅ your existing patient app
-        RootRouter.setRoot(patientRoot, window: currentWindow())
+    private func switchToPatientApp() async {
+        let window = await MainActor.run { self.currentWindow() }
+
+        // Ensure any existing session (e.g., doctor) is cleared before entering patient auth
+        try? await SupabaseManager.shared.client.auth.signOut()
+
+        await MainActor.run {
+            guard let window else { return }
+
+            let loginVC = LoginViewController()
+            loginVC.onLoginSuccess = { [weak self] in
+                self?.launchPatientHome()
+            }
+            loginVC.onSignupTapped = { [weak self, weak loginVC] in
+                self?.showPatientSignup(from: loginVC)
+            }
+
+            let nav = UINavigationController(rootViewController: loginVC)
+            RootRouter.setRoot(nav, window: window)
+        }
+    }
+
+    @MainActor
+    private func showPatientSignup(from loginVC: LoginViewController?) {
+        guard let nav = loginVC?.navigationController else { return }
+        let signupDraft = AppointmentDraft(
+            dateText: "—",
+            timeText: "—",
+            therapistName: "Physiotherapist",
+            addressText: "—"
+        )
+        let model = CreateAccountModel(appointment: signupDraft)
+        let signupVC = CreateAccountViewController(model: model)
+        signupVC.onSignupComplete = { [weak self] in
+            self?.launchPatientHome()
+        }
+        signupVC.onLoginTapped = { [weak nav] in
+            nav?.popViewController(animated: true)
+        }
+        nav.pushViewController(signupVC, animated: true)
+    }
+
+    @MainActor
+    private func launchPatientHome() {
+        RootRouter.setRoot(MainTabBarController(), window: currentWindow())
     }
 
     private func switchToPhysioApp() {
-        let physioRoot = PhysioAuthViewController()
-        let nav = UINavigationController(rootViewController: physioRoot)
-        RootRouter.setRoot(nav, window: currentWindow())
+        let window = currentWindow()
+        Task {
+            let hasSession = (try? await SupabaseManager.shared.client.auth.session) != nil
+            await MainActor.run {
+                guard let window else { return }
+                if hasSession {
+                    // Keep existing physio session
+                    let tab = PhysioTabBarController()
+                    RootRouter.setRoot(tab, window: window)
+                } else {
+                    let physioRoot = PhysioAuthViewController()
+                    let nav = UINavigationController(rootViewController: physioRoot)
+                    RootRouter.setRoot(nav, window: window)
+                }
+            }
+        }
     }
 
     @objc private func backTapped() {
