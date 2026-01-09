@@ -20,6 +20,7 @@ final class ProfileView: UIView {
     var onRefresh: (() -> Void)?
     var onSwitchRole: (() -> Void)?
     var onChangePassword: (() -> Void)?
+    var onAvailabilitySave: ((Date, Date, Date) -> Void)?
     private let switchRoleButton = UIButton(type: .system)
 
 
@@ -48,6 +49,16 @@ final class ProfileView: UIView {
 
     private let privacyButton = ProfileActionRowButton(title: "Privacy Policy")
     private let termsButton = ProfileActionRowButton(title: "Terms of Service")
+
+    private let availabilitySectionLabel = UILabel()
+    private let availabilityCard = UIView()
+    private let availabilityStack = UIStackView()
+    private let availabilityDatePicker = UIDatePicker()
+    private let availabilityStartPicker = UIDatePicker()
+    private let availabilityEndPicker = UIDatePicker()
+    private let availabilityHintLabel = UILabel()
+    private let availabilitySaveButton = UIButton(type: .system)
+    private var availabilityVisible = false
 
     private let authStack = UIStackView()
     private let signOutButton = UIButton(type: .system)
@@ -141,6 +152,7 @@ final class ProfileView: UIView {
         buildHeader()
         buildPersonalInfo()
         buildSettings()
+        buildAvailability()
         buildPrivacy()
         buildSignOut()
     }
@@ -305,6 +317,116 @@ final class ProfileView: UIView {
 
         stackView.addArrangedSubview(card)
     }
+
+    private func buildAvailability() {
+        availabilitySectionLabel.text = "Availability"
+        availabilitySectionLabel.font = .systemFont(ofSize: 16, weight: .semibold)
+        availabilitySectionLabel.textColor = UIColor.black
+        stackView.addArrangedSubview(availabilitySectionLabel)
+
+        availabilityCard.backgroundColor = UIColor.white
+        availabilityCard.layer.cornerRadius = 18
+        availabilityCard.layer.shadowColor = UIColor.black.cgColor
+        availabilityCard.layer.shadowOpacity = 0.05
+        availabilityCard.layer.shadowRadius = 10
+        availabilityCard.layer.shadowOffset = CGSize(width: 0, height: 6)
+
+        availabilityStack.axis = .vertical
+        availabilityStack.spacing = 12
+        availabilityStack.translatesAutoresizingMaskIntoConstraints = false
+
+        let dateRow = makeAvailabilityRow(title: "Date", picker: availabilityDatePicker, mode: .date)
+        let startRow = makeAvailabilityRow(title: "Start Time", picker: availabilityStartPicker, mode: .time)
+        let endRow = makeAvailabilityRow(title: "End Time", picker: availabilityEndPicker, mode: .time)
+
+        availabilityHintLabel.text = "Slots are created in 1-hour blocks."
+        availabilityHintLabel.font = .systemFont(ofSize: 12, weight: .semibold)
+        availabilityHintLabel.textColor = UIColor.black.withAlphaComponent(0.5)
+        availabilityHintLabel.translatesAutoresizingMaskIntoConstraints = false
+
+        availabilitySaveButton.setTitle("Save Availability", for: .normal)
+        availabilitySaveButton.setTitleColor(.white, for: .normal)
+        availabilitySaveButton.titleLabel?.font = .systemFont(ofSize: 15, weight: .semibold)
+        availabilitySaveButton.backgroundColor = UIColor(hex: "1E6EF7")
+        availabilitySaveButton.layer.cornerRadius = 16
+        availabilitySaveButton.layer.shadowColor = UIColor.black.cgColor
+        availabilitySaveButton.layer.shadowOpacity = 0.05
+        availabilitySaveButton.layer.shadowRadius = 10
+        availabilitySaveButton.layer.shadowOffset = CGSize(width: 0, height: 6)
+        availabilitySaveButton.heightAnchor.constraint(equalToConstant: 48).isActive = true
+        availabilitySaveButton.addTarget(self, action: #selector(saveAvailabilityTapped), for: .touchUpInside)
+        availabilitySaveButton.translatesAutoresizingMaskIntoConstraints = false
+
+        availabilityStack.addArrangedSubview(dateRow)
+        availabilityStack.addArrangedSubview(startRow)
+        availabilityStack.addArrangedSubview(endRow)
+        let hintContainer = UIView()
+        hintContainer.translatesAutoresizingMaskIntoConstraints = false
+        hintContainer.addSubview(availabilityHintLabel)
+        NSLayoutConstraint.activate([
+            availabilityHintLabel.leadingAnchor.constraint(equalTo: hintContainer.leadingAnchor, constant: 14),
+            availabilityHintLabel.trailingAnchor.constraint(equalTo: hintContainer.trailingAnchor, constant: -14),
+            availabilityHintLabel.topAnchor.constraint(equalTo: hintContainer.topAnchor),
+            availabilityHintLabel.bottomAnchor.constraint(equalTo: hintContainer.bottomAnchor)
+        ])
+        availabilityStack.addArrangedSubview(hintContainer)
+
+        let buttonContainer = UIView()
+        buttonContainer.translatesAutoresizingMaskIntoConstraints = false
+        buttonContainer.addSubview(availabilitySaveButton)
+        NSLayoutConstraint.activate([
+            availabilitySaveButton.leadingAnchor.constraint(equalTo: buttonContainer.leadingAnchor, constant: 12),
+            availabilitySaveButton.trailingAnchor.constraint(equalTo: buttonContainer.trailingAnchor, constant: -12),
+            availabilitySaveButton.topAnchor.constraint(equalTo: buttonContainer.topAnchor),
+            availabilitySaveButton.bottomAnchor.constraint(equalTo: buttonContainer.bottomAnchor)
+        ])
+        availabilityStack.addArrangedSubview(buttonContainer)
+
+        availabilityStack.isLayoutMarginsRelativeArrangement = true
+        availabilityStack.layoutMargins = UIEdgeInsets(top: 12, left: 0, bottom: 12, right: 0)
+        availabilityCard.addSubview(availabilityStack)
+        NSLayoutConstraint.activate([
+            availabilityStack.topAnchor.constraint(equalTo: availabilityCard.topAnchor),
+            availabilityStack.leadingAnchor.constraint(equalTo: availabilityCard.leadingAnchor),
+            availabilityStack.trailingAnchor.constraint(equalTo: availabilityCard.trailingAnchor),
+            availabilityStack.bottomAnchor.constraint(equalTo: availabilityCard.bottomAnchor)
+        ])
+        stackView.addArrangedSubview(availabilityCard)
+
+        setAvailabilityVisible(false)
+    }
+
+    private func makeAvailabilityRow(title: String, picker: UIDatePicker, mode: UIDatePicker.Mode) -> UIView {
+        let container = UIView()
+        container.translatesAutoresizingMaskIntoConstraints = false
+
+        let label = UILabel()
+        label.text = title
+        label.font = .systemFont(ofSize: 15, weight: .regular)
+        label.textColor = UIColor.black.withAlphaComponent(0.6)
+        label.translatesAutoresizingMaskIntoConstraints = false
+
+        picker.translatesAutoresizingMaskIntoConstraints = false
+        picker.datePickerMode = mode
+        picker.preferredDatePickerStyle = .compact
+        picker.backgroundColor = UIColor(hex: "F1F3F7")
+        picker.layer.cornerRadius = 16
+        picker.layer.masksToBounds = true
+
+        container.addSubview(label)
+        container.addSubview(picker)
+
+        NSLayoutConstraint.activate([
+            label.leadingAnchor.constraint(equalTo: container.leadingAnchor, constant: 14),
+            label.centerYAnchor.constraint(equalTo: picker.centerYAnchor),
+
+            picker.trailingAnchor.constraint(equalTo: container.trailingAnchor, constant: -14),
+            picker.topAnchor.constraint(equalTo: container.topAnchor, constant: 2),
+            picker.bottomAnchor.constraint(equalTo: container.bottomAnchor, constant: -2)
+        ])
+
+        return container
+    }
     
     func setLoggedIn(_ loggedIn: Bool) {
         isLoggedInState = loggedIn
@@ -318,6 +440,10 @@ final class ProfileView: UIView {
 
         notificationRow.isUserInteractionEnabled = loggedIn
         notificationRow.alpha = loggedIn ? 1.0 : 0.5
+
+        if !loggedIn {
+            setAvailabilityVisible(false)
+        }
     }
 
     func setShowsEditButton(_ show: Bool) {
@@ -441,6 +567,17 @@ final class ProfileView: UIView {
         return label
     }
 
+    func setAvailabilityVisible(_ visible: Bool) {
+        availabilityVisible = visible
+        availabilitySectionLabel.isHidden = !visible
+        availabilityCard.isHidden = !visible
+    }
+
+    func setAvailabilitySaving(_ saving: Bool) {
+        availabilitySaveButton.isEnabled = !saving
+        availabilitySaveButton.alpha = saving ? 0.7 : 1.0
+    }
+
     @objc private func backTapped() {
         onBack?()
     }
@@ -472,9 +609,13 @@ final class ProfileView: UIView {
     @objc private func refreshPulled() {
         onRefresh?()
     }
-    
+
     @objc private func switchRolePressed() {
         onSwitchRole?()
+    }
+
+    @objc private func saveAvailabilityTapped() {
+        onAvailabilitySave?(availabilityDatePicker.date, availabilityStartPicker.date, availabilityEndPicker.date)
     }
 
     

@@ -30,8 +30,20 @@ final class HomeView: UIView {
     let adherenceCard = HomeAdherenceCardView()
     private let upNextTitle = UILabel()
     let upNextCard = HomeUpNextCardView()
+    private var progressTitleHeightConstraint: NSLayoutConstraint?
+    private var painCardCollapsedConstraint: NSLayoutConstraint?
+    private var adherenceCardCollapsedConstraint: NSLayoutConstraint?
+    private var progressTopSpacingConstraint: NSLayoutConstraint?
+    private var painTopSpacingConstraint: NSLayoutConstraint?
+    private var adherenceTopSpacingConstraint: NSLayoutConstraint?
     private var upNextTitleHeightConstraint: NSLayoutConstraint?
     private var upNextCardHeightConstraint: NSLayoutConstraint?
+    private var upNextCardCollapsedConstraint: NSLayoutConstraint?
+    private var upNextTopSpacingConstraint: NSLayoutConstraint?
+    private var upNextCardTopConstraint: NSLayoutConstraint?
+    private var upNextBottomSpacingConstraint: NSLayoutConstraint?
+    private var isProgressVisible = true
+    private var isUpNextVisible = true
     private let articlesTitle = UILabel()
     let articlesSegmented = UISegmentedControl(items: ["Top Rated", "Most Relevant"])
     let articlesTableView = UITableView(frame: .zero, style: .plain)
@@ -193,27 +205,23 @@ final class HomeView: UIView {
             videosCollectionView.topAnchor.constraint(equalTo: videosHeader.bottomAnchor, constant: 12),
             videosCollectionView.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 16),
             videosCollectionView.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -16),
-            videosCollectionView.bottomAnchor.constraint(equalTo: progressTitle.topAnchor, constant: -22),
+            // spacing handled by progressTopSpacingConstraint
 
             progressTitle.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 16),
             progressTitle.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -16),
 
-            painCard.topAnchor.constraint(equalTo: progressTitle.bottomAnchor, constant: 12),
+            // spacing handled by painTopSpacingConstraint
             painCard.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 16),
             painCard.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -16),
 
-            adherenceCard.topAnchor.constraint(equalTo: painCard.bottomAnchor, constant: 16),
+            // spacing handled by adherenceTopSpacingConstraint
             adherenceCard.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 16),
             adherenceCard.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -16),
-            adherenceCard.bottomAnchor.constraint(equalTo: upNextTitle.topAnchor, constant: -22),
 
             upNextTitle.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 16),
             upNextTitle.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -16),
-
-            upNextCard.topAnchor.constraint(equalTo: upNextTitle.bottomAnchor, constant: 12),
             upNextCard.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 16),
             upNextCard.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -16),
-            upNextCard.bottomAnchor.constraint(equalTo: articlesTitle.topAnchor, constant: -22),
 
             articlesTitle.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 16),
             articlesTitle.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -16),
@@ -230,10 +238,31 @@ final class HomeView: UIView {
 
         videosHeightConstraint = videosCollectionView.heightAnchor.constraint(equalToConstant: 340)
         videosHeightConstraint?.isActive = true
+        progressTitleHeightConstraint = progressTitle.heightAnchor.constraint(equalToConstant: 24)
+        progressTitleHeightConstraint?.isActive = true
+        painCardCollapsedConstraint = painCard.heightAnchor.constraint(equalToConstant: 0)
+        painCardCollapsedConstraint?.isActive = false
+        adherenceCardCollapsedConstraint = adherenceCard.heightAnchor.constraint(equalToConstant: 0)
+        adherenceCardCollapsedConstraint?.isActive = false
+        progressTopSpacingConstraint = videosCollectionView.bottomAnchor.constraint(equalTo: progressTitle.topAnchor, constant: -22)
+        progressTopSpacingConstraint?.isActive = true
+        painTopSpacingConstraint = painCard.topAnchor.constraint(equalTo: progressTitle.bottomAnchor, constant: 12)
+        painTopSpacingConstraint?.isActive = true
+        adherenceTopSpacingConstraint = adherenceCard.topAnchor.constraint(equalTo: painCard.bottomAnchor, constant: 16)
+        adherenceTopSpacingConstraint?.isActive = true
         upNextTitleHeightConstraint = upNextTitle.heightAnchor.constraint(equalToConstant: 24)
         upNextTitleHeightConstraint?.isActive = true
         upNextCardHeightConstraint = upNextCard.heightAnchor.constraint(greaterThanOrEqualToConstant: 160)
+        upNextCardHeightConstraint?.priority = .defaultHigh
         upNextCardHeightConstraint?.isActive = true
+        upNextCardCollapsedConstraint = upNextCard.heightAnchor.constraint(equalToConstant: 0)
+        upNextCardCollapsedConstraint?.isActive = false
+        upNextTopSpacingConstraint = adherenceCard.bottomAnchor.constraint(equalTo: upNextTitle.topAnchor, constant: -22)
+        upNextTopSpacingConstraint?.isActive = true
+        upNextCardTopConstraint = upNextCard.topAnchor.constraint(equalTo: upNextTitle.bottomAnchor, constant: 12)
+        upNextCardTopConstraint?.isActive = true
+        upNextBottomSpacingConstraint = upNextCard.bottomAnchor.constraint(equalTo: articlesTitle.topAnchor, constant: -22)
+        upNextBottomSpacingConstraint?.isActive = true
         articlesHeightConstraint = articlesTableView.heightAnchor.constraint(equalToConstant: 260)
         articlesHeightConstraint?.isActive = true
     }
@@ -265,11 +294,31 @@ final class HomeView: UIView {
     }
 
     func setUpNextVisible(_ visible: Bool) {
+        isUpNextVisible = visible
         upNextTitle.isHidden = !visible
         upNextCard.isHidden = !visible
         upNextTitleHeightConstraint?.constant = visible ? 24 : 0
-        upNextCardHeightConstraint?.constant = visible ? 160 : 0
+        upNextCardCollapsedConstraint?.isActive = !visible
+        updateUpNextSpacing()
+        upNextCardTopConstraint?.constant = visible ? 12 : 0
+        upNextBottomSpacingConstraint?.constant = visible ? -22 : 0
         layoutIfNeeded()
+    }
+
+    func setPainVisible(_ visible: Bool) {
+        painCard.isHidden = !visible
+        painCardCollapsedConstraint?.isActive = !visible
+        painTopSpacingConstraint?.constant = visible ? 12 : 0
+        adherenceTopSpacingConstraint?.constant = visible ? 16 : 12
+        layoutIfNeeded()
+    }
+
+    private func updateUpNextSpacing() {
+        if isProgressVisible {
+            upNextTopSpacingConstraint?.constant = isUpNextVisible ? -22 : -24
+        } else {
+            upNextTopSpacingConstraint?.constant = isUpNextVisible ? -12 : -24
+        }
     }
 
     func updateArticlesHeight(rows: Int) {

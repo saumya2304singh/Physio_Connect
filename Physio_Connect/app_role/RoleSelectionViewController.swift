@@ -39,52 +39,19 @@ final class RoleSelectionViewController: UIViewController {
 
         await MainActor.run {
             guard let window else { return }
-
-            let loginVC = LoginViewController()
-            loginVC.onLoginSuccess = { [weak self] in
-                self?.launchPatientHome()
-            }
-            loginVC.onSignupTapped = { [weak self, weak loginVC] in
-                self?.showPatientSignup(from: loginVC)
-            }
-
-            let nav = UINavigationController(rootViewController: loginVC)
-            RootRouter.setRoot(nav, window: window)
+            RootRouter.setRoot(MainTabBarController(), window: window)
         }
 
-        // Clear any lingering session (e.g., doctor) in the background without blocking UI
-        Task { try? await SupabaseManager.shared.client.auth.signOut() }
-    }
-
-    @MainActor
-    private func showPatientSignup(from loginVC: LoginViewController?) {
-        guard let nav = loginVC?.navigationController else { return }
-        let signupDraft = AppointmentDraft(
-            dateText: "—",
-            timeText: "—",
-            therapistName: "Physiotherapist",
-            addressText: "—"
-        )
-        let model = CreateAccountModel(appointment: signupDraft)
-        let signupVC = CreateAccountViewController(model: model)
-        signupVC.onSignupComplete = { [weak self] in
-            self?.launchPatientHome()
+        let isPatient = await RoleAccessGate.isSessionValid(for: .patient)
+        if !isPatient {
+            try? await SupabaseManager.shared.client.auth.signOut()
         }
-        signupVC.onLoginTapped = { [weak nav] in
-            nav?.popViewController(animated: true)
-        }
-        nav.pushViewController(signupVC, animated: true)
-    }
-
-    @MainActor
-    private func launchPatientHome() {
-        RootRouter.setRoot(MainTabBarController(), window: currentWindow())
     }
 
     private func switchToPhysioApp() {
         let window = currentWindow()
         Task {
-            let hasSession = (try? await SupabaseManager.shared.client.auth.session) != nil
+            let hasSession = await RoleAccessGate.isSessionValid(for: .physiotherapist)
             await MainActor.run {
                 guard let window else { return }
                 if hasSession {

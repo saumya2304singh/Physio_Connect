@@ -18,10 +18,16 @@ final class PhysioHomeView: UIView {
 
     private let statsStack = UIStackView()
     private let sessionsCard = StatCardView()
-    private let tasksCard = StatCardView()
+    private let upcomingCard = StatCardView()
+    private let programsCard = StatCardView()
 
     private let upcomingTitle = UILabel()
-    private let upcomingCard = UpcomingSessionCard()
+    private let upcomingStack = UIStackView()
+    private let upcomingEmptyLabel = UILabel()
+
+    private let patientsTitle = UILabel()
+    private let patientsStack = UIStackView()
+    private let patientsEmptyLabel = UILabel()
 
     private let actionsTitle = UILabel()
     let actionsStack = UIStackView()
@@ -57,30 +63,58 @@ final class PhysioHomeView: UIView {
         statsStack.distribution = .fillEqually
         statsStack.translatesAutoresizingMaskIntoConstraints = false
         statsStack.addArrangedSubview(sessionsCard)
-        statsStack.addArrangedSubview(tasksCard)
+        statsStack.addArrangedSubview(upcomingCard)
+        statsStack.addArrangedSubview(programsCard)
         
-        // Header (centered)
+        // Header (left-aligned)
         titleLabel.text = "Dashboard"
         titleLabel.font = .systemFont(ofSize: 32, weight: .bold)
         titleLabel.textColor = UIColor(hex: "102A43")
-        titleLabel.textAlignment = .center
+        titleLabel.textAlignment = .left
 
         subtitleLabel.text = "Track sessions, patients, and tasks at a glance."
         subtitleLabel.font = .systemFont(ofSize: 15, weight: .semibold)
         subtitleLabel.textColor = UIColor.black.withAlphaComponent(0.55)
         subtitleLabel.numberOfLines = 0
-        subtitleLabel.textAlignment = .center
+        subtitleLabel.textAlignment = .left
 
         headerStack.addArrangedSubview(titleLabel)
         headerStack.addArrangedSubview(subtitleLabel)
+        headerStack.alignment = .leading
         contentStack.addArrangedSubview(headerStack)
         contentStack.addArrangedSubview(statsStack)
 
-        upcomingTitle.text = "Upcoming Session"
+        upcomingTitle.text = "Upcoming Sessions"
         upcomingTitle.font = .systemFont(ofSize: 18, weight: .bold)
         upcomingTitle.textColor = UIColor(hex: "102A43")
         contentStack.addArrangedSubview(upcomingTitle)
-        contentStack.addArrangedSubview(upcomingCard)
+
+        upcomingStack.axis = .vertical
+        upcomingStack.spacing = 12
+        upcomingStack.alignment = .fill
+        upcomingStack.translatesAutoresizingMaskIntoConstraints = false
+        contentStack.addArrangedSubview(upcomingStack)
+
+        upcomingEmptyLabel.text = "No upcoming sessions yet."
+        upcomingEmptyLabel.font = .systemFont(ofSize: 14, weight: .semibold)
+        upcomingEmptyLabel.textColor = UIColor.black.withAlphaComponent(0.45)
+        upcomingStack.addArrangedSubview(upcomingEmptyLabel)
+
+        patientsTitle.text = "Patients"
+        patientsTitle.font = .systemFont(ofSize: 18, weight: .bold)
+        patientsTitle.textColor = UIColor(hex: "102A43")
+        contentStack.addArrangedSubview(patientsTitle)
+
+        patientsStack.axis = .vertical
+        patientsStack.spacing = 10
+        patientsStack.alignment = .fill
+        patientsStack.translatesAutoresizingMaskIntoConstraints = false
+        contentStack.addArrangedSubview(patientsStack)
+
+        patientsEmptyLabel.text = "No patients assigned yet."
+        patientsEmptyLabel.font = .systemFont(ofSize: 14, weight: .semibold)
+        patientsEmptyLabel.textColor = UIColor.black.withAlphaComponent(0.45)
+        patientsStack.addArrangedSubview(patientsEmptyLabel)
 
         actionsTitle.text = "Quick Actions"
         actionsTitle.font = .systemFont(ofSize: 18, weight: .bold)
@@ -110,7 +144,6 @@ final class PhysioHomeView: UIView {
             contentStack.bottomAnchor.constraint(equalTo: scrollView.contentLayoutGuide.bottomAnchor, constant: -24),
             contentStack.widthAnchor.constraint(equalTo: scrollView.frameLayoutGuide.widthAnchor, constant: -32),
 
-            upcomingCard.heightAnchor.constraint(equalToConstant: 140),
             addSessionButton.heightAnchor.constraint(equalToConstant: 54),
             addNoteButton.heightAnchor.constraint(equalTo: addSessionButton.heightAnchor)
         ])
@@ -133,16 +166,67 @@ final class PhysioHomeView: UIView {
         button.imageEdgeInsets = UIEdgeInsets(top: 0, left: -6, bottom: 0, right: 6)
     }
 
-    func setSummary(todaySessions: Int, pendingTasks: Int) {
+    func setSummary(todaySessions: Int, upcomingAppointments: Int, activePrograms: Int) {
         sessionsCard.configure(title: "Today’s Sessions", value: "\(todaySessions)")
-        tasksCard.configure(title: "Pending Tasks", value: "\(pendingTasks)")
+        upcomingCard.configure(title: "Upcoming Appointments", value: "\(upcomingAppointments)")
+        programsCard.configure(title: "Active Programs", value: "\(activePrograms)")
     }
 
-    func setUpcoming(sessionTitle: String, patient: String, time: String, location: String) {
-        upcomingCard.configure(title: sessionTitle, patient: patient, time: time, location: location)
+    func setUpcoming(_ sessions: [UpcomingItem]) {
+        upcomingStack.arrangedSubviews.forEach { view in
+            upcomingStack.removeArrangedSubview(view)
+            view.removeFromSuperview()
+        }
+        if sessions.isEmpty {
+            upcomingStack.addArrangedSubview(upcomingEmptyLabel)
+            return
+        }
+        for session in sessions {
+            let card = UpcomingSessionCard()
+            card.configure(title: session.title, patient: session.patient, time: session.time, location: session.location)
+            upcomingStack.addArrangedSubview(card)
+        }
+    }
+
+    func setPatients(_ patients: [PatientItem]) {
+        patientsStack.arrangedSubviews.forEach { view in
+            patientsStack.removeArrangedSubview(view)
+            view.removeFromSuperview()
+        }
+        if patients.isEmpty {
+            patientsStack.addArrangedSubview(patientsEmptyLabel)
+            return
+        }
+        for patient in patients {
+            let card = PatientCardView()
+            card.configure(name: patient.name, contact: patient.contact, location: patient.location)
+            patientsStack.addArrangedSubview(card)
+        }
+    }
+
+    struct UpcomingItem {
+        let title: String
+        let patient: String
+        let time: String
+        let location: String
+    }
+
+    struct PatientItem {
+        let name: String
+        let contact: String
+        let location: String
     }
 
     func setAvatar(urlString: String?) { /* header avatar removed by design */ }
+
+    override func layoutSubviews() {
+        super.layoutSubviews()
+        let isCompact = bounds.width < 380
+        statsStack.axis = isCompact ? .vertical : .horizontal
+        statsStack.distribution = isCompact ? .fill : .fillEqually
+        actionsStack.axis = isCompact ? .vertical : .horizontal
+        actionsStack.distribution = .fillEqually
+    }
 }
 
 private final class StatCardView: UIView {
@@ -152,7 +236,7 @@ private final class StatCardView: UIView {
     override init(frame: CGRect) {
         super.init(frame: frame)
         translatesAutoresizingMaskIntoConstraints = false
-        backgroundColor = .white
+        backgroundColor = UIColor.white.withAlphaComponent(0.98)
         layer.cornerRadius = 16
         layer.shadowColor = UIColor.black.cgColor
         layer.shadowOpacity = 0.06
@@ -164,7 +248,7 @@ private final class StatCardView: UIView {
         valueLabel.textColor = UIColor(hex: "1E6EF7")
 
         titleLabel.translatesAutoresizingMaskIntoConstraints = false
-        titleLabel.font = .systemFont(ofSize: 13, weight: .semibold)
+        titleLabel.font = .systemFont(ofSize: 12, weight: .semibold)
         titleLabel.textColor = UIColor.black.withAlphaComponent(0.6)
 
         addSubview(valueLabel)
@@ -199,7 +283,7 @@ private final class UpcomingSessionCard: UIView {
     override init(frame: CGRect) {
         super.init(frame: frame)
         translatesAutoresizingMaskIntoConstraints = false
-        backgroundColor = .white
+        backgroundColor = UIColor.white.withAlphaComponent(0.98)
         layer.cornerRadius = 16
         layer.shadowColor = UIColor.black.cgColor
         layer.shadowOpacity = 0.06
@@ -249,6 +333,60 @@ private final class UpcomingSessionCard: UIView {
         titleLabel.text = title
         patientLabel.text = patient
         timeLabel.text = time
+        locationLabel.text = location
+    }
+}
+
+private final class PatientCardView: UIView {
+    private let nameLabel = UILabel()
+    private let contactLabel = UILabel()
+    private let locationLabel = UILabel()
+
+    override init(frame: CGRect) {
+        super.init(frame: frame)
+        translatesAutoresizingMaskIntoConstraints = false
+        backgroundColor = UIColor.white.withAlphaComponent(0.98)
+        layer.cornerRadius = 14
+        layer.shadowColor = UIColor.black.cgColor
+        layer.shadowOpacity = 0.05
+        layer.shadowRadius = 8
+        layer.shadowOffset = CGSize(width: 0, height: 4)
+
+        [nameLabel, contactLabel, locationLabel].forEach {
+            $0.translatesAutoresizingMaskIntoConstraints = false
+            addSubview($0)
+        }
+
+        nameLabel.font = .systemFont(ofSize: 15, weight: .bold)
+        nameLabel.textColor = UIColor(hex: "102A43")
+
+        contactLabel.font = .systemFont(ofSize: 13, weight: .semibold)
+        contactLabel.textColor = UIColor.black.withAlphaComponent(0.7)
+
+        locationLabel.font = .systemFont(ofSize: 12, weight: .regular)
+        locationLabel.textColor = UIColor.black.withAlphaComponent(0.55)
+
+        NSLayoutConstraint.activate([
+            nameLabel.topAnchor.constraint(equalTo: topAnchor, constant: 12),
+            nameLabel.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 12),
+            nameLabel.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -12),
+
+            contactLabel.topAnchor.constraint(equalTo: nameLabel.bottomAnchor, constant: 6),
+            contactLabel.leadingAnchor.constraint(equalTo: nameLabel.leadingAnchor),
+            contactLabel.trailingAnchor.constraint(equalTo: nameLabel.trailingAnchor),
+
+            locationLabel.topAnchor.constraint(equalTo: contactLabel.bottomAnchor, constant: 4),
+            locationLabel.leadingAnchor.constraint(equalTo: nameLabel.leadingAnchor),
+            locationLabel.trailingAnchor.constraint(equalTo: nameLabel.trailingAnchor),
+            locationLabel.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -12)
+        ])
+    }
+
+    required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
+
+    func configure(name: String, contact: String, location: String) {
+        nameLabel.text = name
+        contactLabel.text = contact
         locationLabel.text = location
     }
 }

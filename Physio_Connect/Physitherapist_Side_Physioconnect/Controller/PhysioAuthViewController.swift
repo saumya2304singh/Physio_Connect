@@ -18,6 +18,7 @@ final class PhysioAuthViewController: UIViewController {
     private let signupView = PhysioSignupView()
     private let model = PhysioAuthModel()
     private var mode: Mode = .login
+    private let onboardingKey = "physioconnect.physio_onboarded"
 
     override func loadView() {
         view = UIView()
@@ -31,7 +32,17 @@ final class PhysioAuthViewController: UIViewController {
 
         layoutViews()
         bind()
-        show(mode: .login, animated: false)
+        Task {
+            let hasSession = await RoleAccessGate.isSessionValid(for: .physiotherapist)
+            await MainActor.run {
+                if hasSession {
+                    self.routeToHome()
+                    return
+                }
+                let hasOnboarded = UserDefaults.standard.bool(forKey: self.onboardingKey)
+                self.show(mode: hasOnboarded ? .login : .signup, animated: false)
+            }
+        }
     }
 
     override func viewWillAppear(_ animated: Bool) {
@@ -99,6 +110,7 @@ final class PhysioAuthViewController: UIViewController {
                 _ = try await model.login(email: trimmedEmail, password: password)
                 await MainActor.run {
                     self.loginView.setLoading(false)
+                    UserDefaults.standard.set(true, forKey: self.onboardingKey)
                     self.routeToHome()
                 }
             } catch {
@@ -148,6 +160,7 @@ final class PhysioAuthViewController: UIViewController {
                 _ = try await model.signup(input: signupInput)
                 await MainActor.run {
                     self.signupView.setLoading(false)
+                    UserDefaults.standard.set(true, forKey: self.onboardingKey)
                     self.routeToHome()
                 }
             } catch {

@@ -98,9 +98,10 @@ final class HomeViewController: UIViewController, UICollectionViewDataSource, UI
 
         if isLoggedIn {
             upcoming = (try? await model.fetchUpcomingAppointments()) ?? []
-            progress = (try? await model.fetchProgressSummary()) ?? emptyProgress
             programRows = (try? await videosModel.fetchMyProgramExercises()) ?? []
             nextExercise = try? await resolveNextExercise(from: programRows)
+            let programID = programRows.first?.program_id
+            progress = (try? await model.fetchProgressSummary(programID: programID)) ?? emptyProgress
         }
 
         await MainActor.run {
@@ -121,7 +122,9 @@ final class HomeViewController: UIViewController, UICollectionViewDataSource, UI
             self.programExercises = programRows
             self.nextProgramExercise = nextExercise
             self.applyUpNext()
-            self.homeView.setUpNextVisible(isLoggedIn && nextExercise != nil)
+            let hasProgram = !programRows.isEmpty
+            self.homeView.setPainVisible(isLoggedIn && hasProgram)
+            self.homeView.setUpNextVisible(isLoggedIn && hasProgram && nextExercise != nil)
             self.articles = Array(fetchedArticles.prefix(4))
             self.articleImages = [:]
             self.homeView.articlesTableView.reloadData()

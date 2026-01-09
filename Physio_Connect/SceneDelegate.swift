@@ -24,6 +24,19 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
             }
 
             if let role = RoleStore.shared.currentRole {
+                let isValid = await RoleAccessGate.isSessionValid(for: role)
+                if !isValid {
+                    try? await SupabaseManager.shared.client.auth.signOut()
+                    switch role {
+                    case .patient:
+                        window?.rootViewController = MainTabBarController()
+                    case .physiotherapist:
+                        let nav = UINavigationController(rootViewController: PhysioAuthViewController())
+                        window?.rootViewController = nav
+                    }
+                    return
+                }
+
                 switch role {
                 case .patient:
                     window?.rootViewController = MainTabBarController()

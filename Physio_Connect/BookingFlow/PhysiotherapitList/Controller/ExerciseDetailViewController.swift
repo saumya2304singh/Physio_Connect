@@ -40,6 +40,7 @@ final class ExerciseDetailViewController: UIViewController {
     private let reps: Int?
     private let hold: Int?
     private let nextUpItems: [NextUpItem]
+    private let requiresPainFeedback: Bool
 
     private let detailView = ExerciseDetailView()
     private var isCompleted = false
@@ -76,6 +77,7 @@ final class ExerciseDetailViewController: UIViewController {
         self.reps = reps
         self.hold = hold
         self.nextUpItems = nextUpItems
+        self.requiresPainFeedback = programID != nil
         super.init(nibName: nil, bundle: nil)
     }
 
@@ -127,8 +129,11 @@ final class ExerciseDetailViewController: UIViewController {
 
     @objc private func backTapped() {
         if isCompleted {
-            recordCompletionLocally()
-            Task { await saveCompletionProgress() }
+            if requiresPainFeedback {
+                if hasSavedFeedback { recordCompletionLocally() }
+            } else {
+                Task { await saveCompletionProgress() }
+            }
         }
         navigationController?.popViewController(animated: true)
     }
@@ -172,25 +177,24 @@ final class ExerciseDetailViewController: UIViewController {
                 await MainActor.run {
                     if let progress {
                         let savedPain = progress.pain_level
-                        hasSavedFeedback = savedPain != nil
-                        if savedPain != nil {
-                            isCompleted = true
+                        if requiresPainFeedback {
+                            hasSavedFeedback = savedPain != nil
+                            isCompleted = hasSavedFeedback || (progress.is_completed ?? false)
+                            if let pain = savedPain {
+                                detailView.painSlider.value = Float(pain)
+                                detailView.updatePainUI(value: pain)
+                            }
+                            if let notes = progress.notes, !notes.isEmpty {
+                                detailView.notesTextView.text = notes
+                                textViewDidChange(detailView.notesTextView)
+                            }
                         } else {
                             isCompleted = progress.is_completed ?? false
-                        }
-
-                        if let pain = savedPain {
-                            detailView.painSlider.value = Float(pain)
-                            detailView.updatePainUI(value: pain)
-                        }
-
-                        if let notes = progress.notes, !notes.isEmpty {
-                            detailView.notesTextView.text = notes
-                            textViewDidChange(detailView.notesTextView)
+                            hasSavedFeedback = isCompleted
                         }
                     }
                     detailView.setCompletedState(isCompleted, locked: hasSavedFeedback)
-                    detailView.setFeedbackVisible(isCompleted && !hasSavedFeedback)
+                    detailView.setFeedbackVisible(requiresPainFeedback && isCompleted && !hasSavedFeedback)
                 }
             } catch {
                 return
@@ -202,10 +206,15 @@ final class ExerciseDetailViewController: UIViewController {
         if hasSavedFeedback { return }
         isCompleted.toggle()
         detailView.setCompletedState(isCompleted, locked: false)
-        detailView.setFeedbackVisible(isCompleted)
-        if isCompleted {
-            recordCompletionLocally()
-            Task { await saveCompletionProgress() }
+        if requiresPainFeedback {
+            detailView.setFeedbackVisible(isCompleted)
+        } else {
+            detailView.setFeedbackVisible(false)
+            if isCompleted {
+                Task { await saveCompletionProgress() }
+                hasSavedFeedback = true
+                detailView.setCompletedState(true, locked: true)
+            }
         }
     }
 
@@ -229,7 +238,7 @@ final class ExerciseDetailViewController: UIViewController {
 
     @objc private func saveTapped() {
         if isSaving { return }
-        guard isCompleted else { return }
+        guard requiresPainFeedback, isCompleted else { return }
         isSaving = true
         detailView.saveButton.isEnabled = false
         let painValue = Int(detailView.painSlider.value.rounded())

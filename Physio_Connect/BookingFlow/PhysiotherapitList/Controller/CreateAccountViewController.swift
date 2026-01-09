@@ -201,12 +201,11 @@ final class CreateAccountViewController: UIViewController, UITextFieldDelegate {
                     .upsert(payload)
                     .execute()
 
-                // ✅ IMPORTANT FIX:
-                // After signup, ensure we have a session by signing in.
-                _ = try await SupabaseManager.shared.client.auth.signIn(
-                    email: email,
-                    password: password
-                )
+                let isValid = await RoleAccessGate.isSessionValid(for: .patient)
+                if !isValid {
+                    try? await SupabaseManager.shared.client.auth.signOut()
+                    throw SignupError(message: "This account is registered for physiotherapists. Please sign up on the physio side.")
+                }
 
 
                 await MainActor.run {
@@ -304,4 +303,9 @@ final class CreateAccountViewController: UIViewController, UITextFieldDelegate {
         ac.addAction(UIAlertAction(title: "OK", style: .default))
         present(ac, animated: true)
     }
+}
+
+private struct SignupError: LocalizedError {
+    let message: String
+    var errorDescription: String? { message }
 }

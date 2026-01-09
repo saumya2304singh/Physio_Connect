@@ -11,6 +11,7 @@ final class PhysioProfileViewController: UIViewController {
 
     private let profileView = ProfileView()
     private let model = PhysioProfileModel()
+    private let availabilityModel = PhysioAvailabilityModel()
     private var isLoading = false
 
     override func loadView() { view = profileView }
@@ -30,6 +31,10 @@ final class PhysioProfileViewController: UIViewController {
         profileView.onSwitchRole = { [weak self] in self?.confirmSwitchRole() }
         profileView.onRefresh = { [weak self] in Task { await self?.loadProfile() } }
         profileView.setShowsEditButton(false) // Use nav button only to avoid duplicate UI
+        profileView.setAvailabilityVisible(true)
+        profileView.onAvailabilitySave = { [weak self] day, start, end in
+            self?.saveAvailability(day: day, start: start, end: end)
+        }
 
         profileView.setLoggedIn(true)
         loadInitial()
@@ -94,6 +99,43 @@ final class PhysioProfileViewController: UIViewController {
         } catch {
             await MainActor.run {
                 self.profileView.applyLoggedOut()
+            }
+        }
+    }
+
+    private func saveAvailability(day: Date, start: Date, end: Date) {
+        profileView.setAvailabilitySaving(true)
+        Task {
+            do {
+                let session = try await SupabaseManager.shared.client.auth.session
+                let physioID = session.user.id
+                let result = try await availabilityModel.createHourlySlots(
+                    physioID: physioID,
+                    day: day,
+                    startTime: start,
+                    endTime: end
+                )
+                await MainActor.run {
+                    self.profileView.setAvailabilitySaving(false)
+                    let ac = UIAlertController(
+                        title: "Availability Saved",
+                        message: "Added \(result.createdSlots) hourly slots.",
+                        preferredStyle: .alert
+                    )
+                    ac.addAction(UIAlertAction(title: "OK", style: .default))
+                    self.present(ac, animated: true)
+                }
+            } catch {
+                await MainActor.run {
+                    self.profileView.setAvailabilitySaving(false)
+                    let ac = UIAlertController(
+                        title: "Save Failed",
+                        message: error.localizedDescription,
+                        preferredStyle: .alert
+                    )
+                    ac.addAction(UIAlertAction(title: "OK", style: .default))
+                    self.present(ac, animated: true)
+                }
             }
         }
     }

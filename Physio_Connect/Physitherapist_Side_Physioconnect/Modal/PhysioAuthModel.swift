@@ -36,10 +36,23 @@ struct PhysioAuthModel {
             .execute()
             .value
 
+        let customerRows: [Row] = (try? await client
+            .from("customers")
+            .select("id")
+            .eq("id", value: user.id.uuidString)
+            .limit(1)
+            .execute()
+            .value) ?? []
+
         guard rows.first != nil else {
             // No physio record => sign out and reject login
             try? await client.auth.signOut()
             throw PhysioAuthError(message: "No physiotherapist account found for this email.")
+        }
+
+        if customerRows.first != nil {
+            try? await client.auth.signOut()
+            throw PhysioAuthError(message: "This account is registered as a patient. Please log in on the user side.")
         }
 
         return user
@@ -51,6 +64,7 @@ struct PhysioAuthModel {
 
         // Best effort: create/update physiotherapist profile row if schema supports it.
         try? await upsertPhysioProfile(userID: user.id, name: input.name, email: input.email)
+        _ = try await client.auth.signIn(email: input.email, password: input.password)
         return user
     }
 
