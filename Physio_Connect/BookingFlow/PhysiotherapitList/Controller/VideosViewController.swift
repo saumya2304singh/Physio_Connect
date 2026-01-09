@@ -29,6 +29,7 @@ final class VideosViewController: UIViewController, UITableViewDataSource, UITab
     private var programSections: [ProgramDaySection] = []
     private var completedRowKeys: Set<String> = []
     private var programTitle: String?
+    private var programStartDate: Date?
     private var programHeaderView: UIView?
     private var programFooterView: UIView?
 
@@ -117,14 +118,29 @@ final class VideosViewController: UIViewController, UITableViewDataSource, UITab
         let programID = notification.userInfo?["programID"] as? UUID
         let rowKeyValue = notification.userInfo?["rowKey"] as? String
         Task { @MainActor in
-            if let rowKeyValue {
+            let today = dateString(from: Date())
+            if let rowKeyValue,
+               let row = programExercises.first(where: { rowKey(for: $0) == rowKeyValue }),
+               scheduledDateString(for: row) == today {
                 completedRowKeys.insert(rowKeyValue)
-                if let programID { ProgramRowCompletionStore.add(rowKey: rowKeyValue, programID: programID) }
-            } else if let exerciseID {
-                if let first = programSections.flatMap({ $0.items }).first(where: { $0.exercise_id == exerciseID }) {
-                    let key = rowKey(for: first)
-                    completedRowKeys.insert(key)
-                    if let programID { ProgramRowCompletionStore.add(rowKey: key, programID: programID) }
+                if let programID {
+                    ProgramRowCompletionStore.add(
+                        rowKey: rowKeyValue,
+                        programID: programID,
+                        completionDate: today
+                    )
+                }
+            } else if let exerciseID,
+                      let first = programSections.flatMap({ $0.items }).first(where: { $0.exercise_id == exerciseID }),
+                      scheduledDateString(for: first) == today {
+                let key = rowKey(for: first)
+                completedRowKeys.insert(key)
+                if let programID {
+                    ProgramRowCompletionStore.add(
+                        rowKey: key,
+                        programID: programID,
+                        completionDate: today
+                    )
                 }
             }
             videosView.tableView.reloadData()
@@ -154,6 +170,7 @@ final class VideosViewController: UIViewController, UITableViewDataSource, UITab
                 let rows = try await model.fetchMyProgramExercises()
                 programExercises = rows
                 programTitle = rows.first?.program_title
+                programStartDate = nil
                 programSections = []
                 if rows.isEmpty {
                     completedRowKeys = []
@@ -164,18 +181,23 @@ final class VideosViewController: UIViewController, UITableViewDataSource, UITab
                         self.videosView.tableView.tableFooterView = nil
                     }
                 } else if let programID = rows.first?.program_id {
+                    let startDate = (try? await model.fetchProgramStartDate(programID: programID)) ?? Date()
+                    programStartDate = startDate
                     let progressRows = try await model.fetchProgress(programID: programID)
                     programSections = buildProgramSections(rows)
                     completedRowKeys = buildCompletedRowKeys(
                         rows: rows,
                         progressRows: progressRows,
-                        programID: programID
+                        programID: programID,
+                        programStartDate: startDate
                     )
                     let totalCount = rows.count
                     let completedCount = rows.filter { completedRowKeys.contains(rowKey(for: $0)) }.count
                     let weeklyMinutes = computeWeeklyMinutes(from: progressRows)
                     let adherencePercent = totalCount == 0 ? 0 : Int(Double(completedCount) / Double(totalCount) * 100.0)
-                    let series = buildSeries(from: progressRows)
+                    let series = buildSeries(from: progressRows,
+                                             totalDays: programSections.count,
+                                             programStartDate: startDate)
                     let completedDays = programSections.filter { isDayComplete($0) }.count
                     programCompleted = programSections.count > 0 && completedDays == programSections.count
                     await MainActor.run {
@@ -232,6 +254,7 @@ final class VideosViewController: UIViewController, UITableViewDataSource, UITab
                     self.videosView.tableView.tableHeaderView = nil
                     self.videosView.tableView.tableFooterView = nil
                 }
+                programStartDate = nil
                 let rows = try await model.fetchFreeExercises(search: videosView.searchBar.text)
                 freeExercises = rows
                 await MainActor.run {
@@ -400,9 +423,10 @@ final class VideosViewController: UIViewController, UITableViewDataSource, UITab
         guard let currentIndex = sorted.firstIndex(where: { $0.exercise_id == currentID }) else { return [] }
         let tail = sorted.dropFirst(currentIndex + 1)
         let nextRows = Array(tail.prefix(3))
-        return nextRows.map { row in
-            let sectionIndex = sectionIndex(for: row.exercise_id)
-            let locked = sectionIndex.map { isDayLocked($0) } ?? false
+        return nextRows.enumerated().map { offset, row in
+            let absoluteIndex = currentIndex + 1 + offset
+            let dayIndex = absoluteIndex / itemsPerDay
+            let locked = isDayLocked(dayIndex)
             return ExerciseDetailViewController.NextUpItem(
                 title: row.title,
                 subtitle: "\(row.target_area ?? "General")",
@@ -535,18 +559,11 @@ final class VideosViewController: UIViewController, UITableViewDataSource, UITab
     }
 
     private func isDayLocked(_ sectionIndex: Int) -> Bool {
+        let dayNumber = sectionIndex + 1
+        if dayNumber > availableDayCount() { return true }
         guard sectionIndex > 0 else { return false }
         let previousSection = programSections[sectionIndex - 1]
         return !isDayComplete(previousSection)
-    }
-
-    private func sectionIndex(for exerciseID: UUID) -> Int? {
-        for (index, section) in programSections.enumerated() {
-            if section.items.contains(where: { $0.exercise_id == exerciseID }) {
-                return index
-            }
-        }
-        return nil
     }
 
     private func rowKey(for row: MyProgramExerciseRow) -> String {
@@ -554,20 +571,55 @@ final class VideosViewController: UIViewController, UITableViewDataSource, UITab
         return "\(row.program_id.uuidString)-\(row.exercise_id.uuidString)-\(order)"
     }
 
+    private func availableDayCount() -> Int {
+        let calendar = Calendar.current
+        let start = calendar.startOfDay(for: programStartDate ?? Date())
+        let today = calendar.startOfDay(for: Date())
+        let days = calendar.dateComponents([.day], from: start, to: today).day ?? 0
+        return max(1, days + 1)
+    }
+
+    private func scheduledDateString(for row: MyProgramExerciseRow) -> String {
+        let calendar = Calendar.current
+        let start = calendar.startOfDay(for: programStartDate ?? Date())
+        let index = programExercises.firstIndex(where: { rowKey(for: $0) == rowKey(for: row) }) ?? 0
+        let dayOffset = index / itemsPerDay
+        let date = calendar.date(byAdding: .day, value: dayOffset, to: start) ?? start
+        return dateString(from: date)
+    }
+
+    private func dateString(from date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.calendar = Calendar(identifier: .gregorian)
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.timeZone = TimeZone.current
+        formatter.dateFormat = "yyyy-MM-dd"
+        return formatter.string(from: date)
+    }
+
     private func buildCompletedRowKeys(rows: [MyProgramExerciseRow],
                                        progressRows: [ExerciseProgressRow],
-                                       programID: UUID) -> Set<String> {
-        var keys = ProgramRowCompletionStore.completedRowKeys(programID: programID)
-        let completedIDs = Set(progressRows.filter { $0.is_completed == true }.map { $0.exercise_id })
-        var usedFromBackend: Set<UUID> = []
-        for row in rows {
-            let id = row.exercise_id
-            guard completedIDs.contains(id) else { continue }
-            if usedFromBackend.contains(id) { continue }
+                                       programID: UUID,
+                                       programStartDate: Date) -> Set<String> {
+        let storedMap = ProgramRowCompletionStore.completionMap(programID: programID)
+        let completedPairs = Set(progressRows.compactMap { row -> String? in
+            guard row.is_completed == true, let date = row.progress_date else { return nil }
+            return "\(row.exercise_id.uuidString)-\(date)"
+        })
+
+        var keys: Set<String> = []
+        let calendar = Calendar.current
+        let start = calendar.startOfDay(for: programStartDate)
+
+        for (index, row) in rows.enumerated() {
+            let dayOffset = index / itemsPerDay
+            let scheduledDate = calendar.date(byAdding: .day, value: dayOffset, to: start) ?? start
+            let scheduledString = dateString(from: scheduledDate)
             let key = rowKey(for: row)
-            if keys.contains(key) { continue }
-            keys.insert(key)
-            usedFromBackend.insert(id)
+            let pairKey = "\(row.exercise_id.uuidString)-\(scheduledString)"
+            if completedPairs.contains(pairKey) || storedMap[key] == scheduledString {
+                keys.insert(key)
+            }
         }
         return keys
     }
@@ -703,16 +755,19 @@ final class VideosViewController: UIViewController, UITableViewDataSource, UITab
         return max(1, totalSeconds / 60)
     }
 
-    private func buildSeries(from rows: [ExerciseProgressRow]) -> (pain: [Int], adherence: [Int]) {
+    private func buildSeries(from rows: [ExerciseProgressRow],
+                             totalDays: Int,
+                             programStartDate: Date) -> (pain: [Int], adherence: [Int]) {
         let df = DateFormatter()
         df.dateFormat = "yyyy-MM-dd"
         let calendar = Calendar.current
-        let today = calendar.startOfDay(for: Date())
+        let start = calendar.startOfDay(for: programStartDate)
+        let total = max(totalDays, 1)
         var painSeries: [Int] = []
         var adherenceSeries: [Int] = []
 
-        for i in (0...6).reversed() {
-            guard let day = calendar.date(byAdding: .day, value: -i, to: today) else { continue }
+        for dayIndex in 0..<total {
+            let day = calendar.date(byAdding: .day, value: dayIndex, to: start) ?? start
             let dayString = df.string(from: day)
             let dayRows = rows.filter { $0.progress_date == dayString }
             let painAvg: Int = {

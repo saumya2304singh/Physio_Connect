@@ -23,6 +23,7 @@ final class HomeViewController: UIViewController, UICollectionViewDataSource, UI
     private var articles: [ArticleRow] = []
     private var articleImages: [UUID: UIImage] = [:]
     private var selectedArticlesSort: ArticleSort = .topRated
+    private let itemsPerDay = 2
 
     override func loadView() { view = homeView }
 
@@ -158,11 +159,43 @@ final class HomeViewController: UIViewController, UICollectionViewDataSource, UI
     private func resolveNextExercise(from rows: [MyProgramExerciseRow]) async throws -> MyProgramExerciseRow? {
         guard let programID = rows.first?.program_id else { return nil }
         let progressRows = try await videosModel.fetchProgress(programID: programID)
-        let completed = Set(progressRows.filter { $0.is_completed == true }.map { $0.exercise_id })
-        if let next = rows.first(where: { !completed.contains($0.exercise_id) }) {
-            return next
+        let startDate = (try? await videosModel.fetchProgramStartDate(programID: programID)) ?? Date()
+        let availableDays = availableDayCount(startDate: startDate)
+        let completedPairs = Set(progressRows.compactMap { row -> String? in
+            guard row.is_completed == true, let date = row.progress_date else { return nil }
+            return "\(row.exercise_id.uuidString)-\(date)"
+        })
+
+        for (index, row) in rows.enumerated() {
+            let day = (index / itemsPerDay) + 1
+            guard day <= availableDays else { break }
+            let scheduledDate = scheduledDateString(startDate: startDate, dayIndex: day - 1)
+            let key = "\(row.exercise_id.uuidString)-\(scheduledDate)"
+            if !completedPairs.contains(key) {
+                return row
+            }
         }
-        return rows.last
+        return nil
+    }
+
+    private func availableDayCount(startDate: Date) -> Int {
+        let calendar = Calendar.current
+        let start = calendar.startOfDay(for: startDate)
+        let today = calendar.startOfDay(for: Date())
+        let days = calendar.dateComponents([.day], from: start, to: today).day ?? 0
+        return max(1, days + 1)
+    }
+
+    private func scheduledDateString(startDate: Date, dayIndex: Int) -> String {
+        let calendar = Calendar.current
+        let base = calendar.startOfDay(for: startDate)
+        let date = calendar.date(byAdding: .day, value: dayIndex, to: base) ?? base
+        let formatter = DateFormatter()
+        formatter.calendar = Calendar(identifier: .gregorian)
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.timeZone = TimeZone.current
+        formatter.dateFormat = "yyyy-MM-dd"
+        return formatter.string(from: date)
     }
 
     private func applyUpcoming(_ appts: [HomeUpcomingAppointment]) {

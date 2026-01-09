@@ -8,26 +8,43 @@
 import Foundation
 
 enum ProgramRowCompletionStore {
-    static func completedRowKeys(programID: UUID) -> Set<String> {
+    static func completionMap(programID: UUID) -> [String: String] {
         let defaults = UserDefaults.standard
         let key = storageKey(for: programID)
-        guard let values = defaults.array(forKey: key) as? [String] else { return [] }
-        return Set(values)
+        if let values = defaults.dictionary(forKey: key) as? [String: String] {
+            return values
+        }
+        if let legacy = defaults.array(forKey: key) as? [String] {
+            let today = todayString()
+            let upgraded = Dictionary(uniqueKeysWithValues: legacy.map { ($0, today) })
+            defaults.set(upgraded, forKey: key)
+            return upgraded
+        }
+        return [:]
     }
 
-    static func add(rowKey: String, programID: UUID) {
-        var keys = completedRowKeys(programID: programID)
-        keys.insert(rowKey)
-        save(keys, programID: programID)
+    static func add(rowKey: String, programID: UUID, completionDate: String) {
+        var map = completionMap(programID: programID)
+        map[rowKey] = completionDate
+        save(map, programID: programID)
     }
 
-    private static func save(_ keys: Set<String>, programID: UUID) {
+    private static func save(_ map: [String: String], programID: UUID) {
         let defaults = UserDefaults.standard
         let key = storageKey(for: programID)
-        defaults.set(Array(keys), forKey: key)
+        defaults.set(map, forKey: key)
     }
 
     private static func storageKey(for programID: UUID) -> String {
         "completed_program_rows.\(programID.uuidString)"
+    }
+
+    private static func todayString() -> String {
+        let formatter = DateFormatter()
+        formatter.calendar = Calendar(identifier: .gregorian)
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.timeZone = TimeZone.current
+        formatter.dateFormat = "yyyy-MM-dd"
+        return formatter.string(from: Date())
     }
 }

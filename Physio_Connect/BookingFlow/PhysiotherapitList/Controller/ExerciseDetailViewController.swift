@@ -40,6 +40,7 @@ final class ExerciseDetailViewController: UIViewController {
     private let reps: Int?
     private let hold: Int?
     private let nextUpItems: [NextUpItem]
+    private let displayNextUpItems: [NextUpItem]
     private let requiresPainFeedback: Bool
 
     private let detailView = ExerciseDetailView()
@@ -77,6 +78,7 @@ final class ExerciseDetailViewController: UIViewController {
         self.reps = reps
         self.hold = hold
         self.nextUpItems = nextUpItems
+        self.displayNextUpItems = nextUpItems.filter { !$0.locked }
         self.requiresPainFeedback = programID != nil
         super.init(nibName: nil, bundle: nil)
     }
@@ -117,9 +119,9 @@ final class ExerciseDetailViewController: UIViewController {
 
         detailView.setScaleVisible(false)
         isScaleVisible = false
-        detailView.setNextUpVisible(!nextUpItems.isEmpty)
-        let isNextLocked = nextUpItems.first?.locked ?? false
-        detailView.setContinueEnabled(!isNextLocked)
+        let hasNextUp = !displayNextUpItems.isEmpty
+        detailView.setNextUpVisible(hasNextUp)
+        detailView.setContinueEnabled(hasNextUp)
         detailView.setCompletedState(false, locked: false)
         detailView.setFeedbackVisible(false)
 
@@ -274,11 +276,7 @@ final class ExerciseDetailViewController: UIViewController {
     }
 
     @objc private func continueTapped() {
-        guard let first = nextUpItems.first else { return }
-        if first.locked {
-            showError("Locked", "Complete the current day to unlock this exercise.")
-            return
-        }
+        guard let first = displayNextUpItems.first else { return }
         let vc = ExerciseDetailViewController(
             headerTitleText: headerTitleText,
             titleText: first.title,
@@ -293,7 +291,7 @@ final class ExerciseDetailViewController: UIViewController {
             sets: nil,
             reps: nil,
             hold: nil,
-            nextUpItems: Array(nextUpItems.dropFirst())
+            nextUpItems: Array(displayNextUpItems.dropFirst())
         )
         vc.hidesBottomBarWhenPushed = true
         navigationController?.pushViewController(vc, animated: true)
@@ -326,7 +324,16 @@ final class ExerciseDetailViewController: UIViewController {
     private func recordCompletionLocally() {
         print("✅ Completed rowKey:", rowKey as Any, "programID:", programID as Any, "exerciseID:", exerciseID)
         if let programID, let rowKey {
-            ProgramRowCompletionStore.add(rowKey: rowKey, programID: programID)
+            let formatter = DateFormatter()
+            formatter.calendar = Calendar(identifier: .gregorian)
+            formatter.locale = Locale(identifier: "en_US_POSIX")
+            formatter.timeZone = TimeZone.current
+            formatter.dateFormat = "yyyy-MM-dd"
+            ProgramRowCompletionStore.add(
+                rowKey: rowKey,
+                programID: programID,
+                completionDate: formatter.string(from: Date())
+            )
         }
         NotificationCenter.default.post(
             name: ExerciseDetailViewController.progressUpdatedNotification,
@@ -349,12 +356,12 @@ extension ExerciseDetailViewController: UITextViewDelegate {
 
 extension ExerciseDetailViewController: UICollectionViewDataSource, UICollectionViewDelegateFlowLayout {
     func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
-        return nextUpItems.count
+        return displayNextUpItems.count
     }
 
     func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
         let cell = collectionView.dequeueReusableCell(withReuseIdentifier: NextUpCell.reuseID, for: indexPath) as! NextUpCell
-        let item = nextUpItems[indexPath.item]
+        let item = displayNextUpItems[indexPath.item]
         cell.configure(title: item.title, subtitle: item.subtitle, locked: item.locked)
         if let path = item.thumbnailPath {
             Task {
@@ -375,7 +382,7 @@ extension ExerciseDetailViewController: UICollectionViewDataSource, UICollection
     }
 
     func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
-        let item = nextUpItems[indexPath.item]
+        let item = displayNextUpItems[indexPath.item]
         if item.locked { return }
         let vc = ExerciseDetailViewController(
             headerTitleText: headerTitleText,
@@ -391,7 +398,7 @@ extension ExerciseDetailViewController: UICollectionViewDataSource, UICollection
             sets: nil,
             reps: nil,
             hold: nil,
-            nextUpItems: Array(nextUpItems.dropFirst(indexPath.item + 1))
+            nextUpItems: Array(displayNextUpItems.dropFirst(indexPath.item + 1))
         )
         vc.hidesBottomBarWhenPushed = true
         navigationController?.pushViewController(vc, animated: true)

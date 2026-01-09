@@ -64,6 +64,33 @@ struct ExerciseProgressRow: Decodable {
     let notes: String?
  }
 
+private struct VideoProgramRedemptionRow: Decodable {
+    let program_id: UUID
+    let code_id: UUID?
+    let redeemed_at: String?
+}
+
+private struct ProgramAccessCodeLookupRow: Decodable {
+    let id: UUID
+    let program_id: UUID
+    let is_active: Bool
+}
+
+private struct ProgramTitleRow: Decodable {
+    let title: String
+}
+
+private struct ProgramExerciseJoinedRow: Decodable {
+    let program_id: UUID
+    let sort_order: Int?
+    let sets: Int?
+    let reps: Int?
+    let hold_seconds: Int?
+    let notes: String?
+    let physio_videos: ExerciseVideoRow
+    let physio_programs: ProgramTitleRow
+}
+
 final class VideosModel {
     private let client = SupabaseManager.shared.client
 
@@ -89,20 +116,171 @@ final class VideosModel {
     }
 
     func fetchMyProgramExercises() async throws -> [MyProgramExerciseRow] {
-        let rows: [MyProgramExerciseRow] = try await client
-            .rpc("get_my_program_exercises")
+        let session = try await client.auth.session
+        let customerID = session.user.id.uuidString
+
+        let redemptionRows: [VideoProgramRedemptionRow] = try await client
+            .from("program_redemptions")
+            .select("program_id, code_id, redeemed_at")
+            .eq("customer_id", value: customerID)
             .execute()
             .value
-        return rows
+
+        let redeemedProgramIDs = redemptionRows
+            .filter { $0.redeemed_at != nil }
+            .map(\.program_id)
+
+        guard !redeemedProgramIDs.isEmpty else { return [] }
+
+        let rows: [ProgramExerciseJoinedRow] = try await client
+            .from("program_exercises")
+            .select("""
+                program_id,
+                sort_order,
+                sets,
+                reps,
+                hold_seconds,
+                notes,
+                physio_videos (
+                    id,
+                    physio_id,
+                    video_path,
+                    title,
+                    description,
+                    duration_seconds,
+                    thumbnail_path,
+                    target_area,
+                    purpose,
+                    difficulty,
+                    is_free,
+                    is_active,
+                    access_type
+                ),
+                physio_programs (
+                    title
+                )
+            """)
+            .in("program_id", values: redeemedProgramIDs.map { $0.uuidString })
+            .order("sort_order", ascending: true)
+            .execute()
+            .value
+
+        return rows.map { row in
+            MyProgramExerciseRow(
+                exercise_id: row.physio_videos.id,
+                title: row.physio_videos.title,
+                target_area: row.physio_videos.target_area,
+                purpose: row.physio_videos.purpose,
+                description: row.physio_videos.description,
+                duration_seconds: row.physio_videos.duration_seconds,
+                difficulty: row.physio_videos.difficulty,
+                thumbnail_path: row.physio_videos.thumbnail_path,
+                video_path: row.physio_videos.video_path,
+                sets: row.sets,
+                reps: row.reps,
+                hold_seconds: row.hold_seconds,
+                notes: row.notes,
+                sort_order: row.sort_order,
+                program_id: row.program_id,
+                program_title: row.physio_programs.title
+            )
+        }
+    }
+
+    func fetchProgramStartDate(programID: UUID) async throws -> Date? {
+        let session = try await client.auth.session
+        let customerID = session.user.id.uuidString
+
+        struct RedemptionRow: Decodable {
+            let redeemed_at: String?
+        }
+
+        let rows: [RedemptionRow] = try await client
+            .from("program_redemptions")
+            .select("redeemed_at")
+            .eq("customer_id", value: customerID)
+            .eq("program_id", value: programID.uuidString)
+            .order("redeemed_at", ascending: true)
+            .limit(1)
+            .execute()
+            .value
+
+        guard let redeemedAt = rows.first?.redeemed_at else { return nil }
+        let formatter = ISO8601DateFormatter()
+        return formatter.date(from: redeemedAt)
     }
 
     func redeemProgram(code: String) async throws -> UUID {
-        struct Args: Encodable { let p_code: String }
-        let response: UUID = try await client
-            .rpc("redeem_program_code", params: Args(p_code: code))
+        let session = try await client.auth.session
+        let customerID = session.user.id.uuidString
+
+        let trimmed = code.trimmingCharacters(in: .whitespacesAndNewlines).uppercased()
+        guard !trimmed.isEmpty else { throw NSError(domain: "redeem", code: 1) }
+
+        let codeRows: [ProgramAccessCodeLookupRow] = try await client
+            .from("program_access_codes")
+            .select("id, program_id, is_active")
+            .eq("code", value: trimmed)
+            .limit(1)
             .execute()
             .value
-        return response
+
+        guard let codeRow = codeRows.first, codeRow.is_active else {
+            throw NSError(domain: "redeem", code: 2)
+        }
+
+        let redemptionRows: [VideoProgramRedemptionRow] = try await client
+            .from("program_redemptions")
+            .select("program_id, code_id, redeemed_at")
+            .eq("customer_id", value: customerID)
+            .eq("code_id", value: codeRow.id.uuidString)
+            .limit(1)
+            .execute()
+            .value
+
+        let redemption: VideoProgramRedemptionRow
+        if let existing = redemptionRows.first {
+            redemption = existing
+        } else {
+            struct RedemptionInsert: Encodable {
+                let customer_id: String
+                let program_id: String
+                let code_id: String
+                let redeemed_at: String?
+            }
+
+            let payload = RedemptionInsert(
+                customer_id: customerID,
+                program_id: codeRow.program_id.uuidString,
+                code_id: codeRow.id.uuidString,
+                redeemed_at: nil
+            )
+
+            let inserted: [VideoProgramRedemptionRow] = try await client
+                .from("program_redemptions")
+                .insert(payload)
+                .select("program_id, code_id, redeemed_at")
+                .limit(1)
+                .execute()
+                .value
+
+            guard let created = inserted.first else {
+                throw NSError(domain: "redeem", code: 3)
+            }
+            redemption = created
+        }
+
+        if redemption.redeemed_at == nil {
+            let now = ISO8601DateFormatter().string(from: Date())
+            _ = try await client
+                .from("program_redemptions")
+                .update(["redeemed_at": now])
+                .eq("customer_id", value: customerID)
+                .eq("code_id", value: codeRow.id.uuidString)
+                .execute()
+        }
+
+        return codeRow.program_id
     }
 
     func signedVideoURL(path: String) async throws -> URL {

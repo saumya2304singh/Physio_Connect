@@ -53,8 +53,9 @@ final class PhysioAppointmentsModel {
 
         let slotsByID = try await fetchSlotsByID(ids: rows.compactMap(\.slot_id))
         let customersByID = try await fetchCustomersByID(ids: rows.compactMap(\.customer_id))
+        let normalizedRows = await completePastAppointmentsIfNeeded(rows: rows, slotsByID: slotsByID)
 
-        return rows.map { row in
+        return normalizedRows.map { row in
             let slot = row.slot_id.flatMap { slotsByID[$0] }
             let customer = row.customer_id.flatMap { customersByID[$0] }
             return PhysioAppointment(
@@ -80,10 +81,50 @@ final class PhysioAppointmentsModel {
     }
 
     func updateStatus(appointmentID: UUID, status: String) async throws {
-        _ = try await client
+        let finalStatus = try await updateStatusWithFallback(appointmentID: appointmentID, status: status)
+        if finalStatus == "cancelled" || finalStatus == "cancelled_by_physio" {
+            if let slotID = try await fetchSlotID(for: appointmentID) {
+                try await updateSlotBooking(slotID: slotID, isBooked: false)
+            }
+        }
+    }
+
+    private func updateStatusWithFallback(appointmentID: UUID, status: String) async throws -> String {
+        do {
+            _ = try await client
+                .from("appointments")
+                .update(["status": status])
+                .eq("id", value: appointmentID.uuidString)
+                .execute()
+            return status
+        } catch {
+            guard status == "cancelled_by_physio" else { throw error }
+            _ = try await client
+                .from("appointments")
+                .update(["status": "cancelled"])
+                .eq("id", value: appointmentID.uuidString)
+                .execute()
+            return "cancelled"
+        }
+    }
+
+    private func fetchSlotID(for appointmentID: UUID) async throws -> UUID? {
+        struct SlotRow: Decodable { let slot_id: UUID? }
+        let row: SlotRow = try await client
             .from("appointments")
-            .update(["status": status])
+            .select("slot_id")
             .eq("id", value: appointmentID.uuidString)
+            .single()
+            .execute()
+            .value
+        return row.slot_id
+    }
+
+    private func updateSlotBooking(slotID: UUID, isBooked: Bool) async throws {
+        _ = try await client
+            .from("physio_availability_slots")
+            .update(["is_booked": isBooked])
+            .eq("id", value: slotID.uuidString)
             .execute()
     }
 
@@ -109,6 +150,45 @@ final class PhysioAppointmentsModel {
             .execute()
             .value
         return Dictionary(uniqueKeysWithValues: rows.map { ($0.id, $0) })
+    }
+
+    private func completePastAppointmentsIfNeeded(rows: [AppointmentRow],
+                                                  slotsByID: [UUID: SlotRowFlat]) async -> [AppointmentRow] {
+        let now = Date()
+        var updatedRows: [AppointmentRow] = []
+        updatedRows.reserveCapacity(rows.count)
+
+        for row in rows {
+            let status = row.status.lowercased()
+            let isTerminal = status == "completed" || status == "cancelled" || status == "cancelled_by_physio"
+            guard !isTerminal, let slotID = row.slot_id, let slot = slotsByID[slotID] else {
+                updatedRows.append(row)
+                continue
+            }
+
+            let dueDate = slot.end_time ?? slot.start_time
+            guard dueDate <= now else {
+                updatedRows.append(row)
+                continue
+            }
+
+            do {
+                _ = try await updateStatusWithFallback(appointmentID: row.id, status: "completed")
+                updatedRows.append(AppointmentRow(
+                    id: row.id,
+                    status: "completed",
+                    service_mode: row.service_mode,
+                    address_text: row.address_text,
+                    created_at: row.created_at,
+                    slot_id: row.slot_id,
+                    customer_id: row.customer_id
+                ))
+            } catch {
+                updatedRows.append(row)
+            }
+        }
+
+        return updatedRows
     }
 }
 

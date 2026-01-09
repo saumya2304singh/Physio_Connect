@@ -17,12 +17,17 @@ final class ProgramTrendsView: UIView {
 
     private let yAxisLeft = UIStackView()
     private let yAxisRight = UIStackView()
+    private let scrollView = UIScrollView()
+    private let chartStack = UIStackView()
     private let chartContainer = UIView()
     private let xAxisStack = UIStackView()
 
     private let chartView = TrendChartView()
     private var chartHeightConstraint: NSLayoutConstraint?
     private let chartInset: CGFloat = 10
+    private let axisItemWidth: CGFloat = 36
+    private var chartWidthConstraint: NSLayoutConstraint?
+    private var dataCount: Int = 0
     override init(frame: CGRect) {
         super.init(frame: frame)
         build()
@@ -34,7 +39,10 @@ final class ProgramTrendsView: UIView {
 
     func configure(painSeries: [Int], adherenceSeries: [Int]) {
         chartView.setData(pain: painSeries, adherence: adherenceSeries)
-        updateXAxisLabels(count: max(painSeries.count, adherenceSeries.count))
+        let count = max(painSeries.count, adherenceSeries.count)
+        dataCount = count
+        updateXAxisLabels(count: count)
+        setNeedsLayout()
     }
 
     private func build() {
@@ -79,6 +87,14 @@ final class ProgramTrendsView: UIView {
             yAxisRight.addArrangedSubview(label)
         }
 
+        scrollView.translatesAutoresizingMaskIntoConstraints = false
+        scrollView.showsHorizontalScrollIndicator = false
+        scrollView.alwaysBounceHorizontal = true
+
+        chartStack.translatesAutoresizingMaskIntoConstraints = false
+        chartStack.axis = .vertical
+        chartStack.spacing = 6
+
         chartContainer.translatesAutoresizingMaskIntoConstraints = false
         chartContainer.backgroundColor = .clear
         chartContainer.layer.cornerRadius = 12
@@ -87,16 +103,18 @@ final class ProgramTrendsView: UIView {
 
         xAxisStack.translatesAutoresizingMaskIntoConstraints = false
         xAxisStack.axis = .horizontal
-        xAxisStack.distribution = .equalSpacing
+        xAxisStack.distribution = .fillEqually
 
         addSubview(titleLabel)
         addSubview(subtitleLabel)
         addSubview(legendStack)
         addSubview(yAxisLeft)
         addSubview(yAxisRight)
-        addSubview(chartContainer)
-        addSubview(xAxisStack)
+        addSubview(scrollView)
 
+        scrollView.addSubview(chartStack)
+        chartStack.addArrangedSubview(chartContainer)
+        chartStack.addArrangedSubview(xAxisStack)
         chartContainer.addSubview(chartView)
 
         NSLayoutConstraint.activate([
@@ -111,22 +129,17 @@ final class ProgramTrendsView: UIView {
             legendStack.topAnchor.constraint(equalTo: subtitleLabel.bottomAnchor, constant: 12),
             legendStack.leadingAnchor.constraint(equalTo: titleLabel.leadingAnchor),
 
-            chartContainer.topAnchor.constraint(equalTo: legendStack.bottomAnchor, constant: 12),
             yAxisLeft.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 16),
             yAxisRight.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -16),
-            chartContainer.leadingAnchor.constraint(equalTo: yAxisLeft.trailingAnchor, constant: 10),
-            chartContainer.trailingAnchor.constraint(equalTo: yAxisRight.leadingAnchor, constant: -10),
-            chartContainer.heightAnchor.constraint(equalToConstant: 140),
+            scrollView.topAnchor.constraint(equalTo: legendStack.bottomAnchor, constant: 12),
+            scrollView.leadingAnchor.constraint(equalTo: yAxisLeft.trailingAnchor, constant: 10),
+            scrollView.trailingAnchor.constraint(equalTo: yAxisRight.leadingAnchor, constant: -10),
+            scrollView.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -16),
 
             chartView.topAnchor.constraint(equalTo: chartContainer.topAnchor),
             chartView.leadingAnchor.constraint(equalTo: chartContainer.leadingAnchor),
             chartView.trailingAnchor.constraint(equalTo: chartContainer.trailingAnchor),
-            chartView.bottomAnchor.constraint(equalTo: chartContainer.bottomAnchor),
-
-            xAxisStack.topAnchor.constraint(equalTo: chartContainer.bottomAnchor, constant: 6),
-            xAxisStack.leadingAnchor.constraint(equalTo: chartContainer.leadingAnchor),
-            xAxisStack.trailingAnchor.constraint(equalTo: chartContainer.trailingAnchor),
-            xAxisStack.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -16)
+            chartView.bottomAnchor.constraint(equalTo: chartContainer.bottomAnchor)
         ])
 
         NSLayoutConstraint.activate([
@@ -135,13 +148,26 @@ final class ProgramTrendsView: UIView {
             yAxisRight.topAnchor.constraint(equalTo: chartContainer.topAnchor, constant: chartInset),
             yAxisRight.bottomAnchor.constraint(equalTo: chartContainer.bottomAnchor, constant: -chartInset)
         ])
+
+        NSLayoutConstraint.activate([
+            chartContainer.heightAnchor.constraint(equalToConstant: 140),
+            chartStack.topAnchor.constraint(equalTo: scrollView.contentLayoutGuide.topAnchor),
+            chartStack.bottomAnchor.constraint(equalTo: scrollView.contentLayoutGuide.bottomAnchor),
+            chartStack.leadingAnchor.constraint(equalTo: scrollView.contentLayoutGuide.leadingAnchor),
+            chartStack.trailingAnchor.constraint(equalTo: scrollView.contentLayoutGuide.trailingAnchor),
+            chartStack.heightAnchor.constraint(equalTo: scrollView.frameLayoutGuide.heightAnchor)
+        ])
+
+        chartWidthConstraint = chartContainer.widthAnchor.constraint(equalToConstant: 0)
+        chartWidthConstraint?.isActive = true
+        xAxisStack.widthAnchor.constraint(equalTo: chartContainer.widthAnchor).isActive = true
     }
 
     private func updateXAxisLabels(count: Int) {
         xAxisStack.arrangedSubviews.forEach { $0.removeFromSuperview() }
         let total = max(count, 1)
         for i in 1...total {
-            let label = axisLabel("W\(i)")
+            let label = axisLabel("D\(i)")
             label.font = .systemFont(ofSize: 11, weight: .medium)
             xAxisStack.addArrangedSubview(label)
         }
@@ -153,6 +179,14 @@ final class ProgramTrendsView: UIView {
         label.font = .systemFont(ofSize: 12, weight: .medium)
         label.textColor = UIColor.black.withAlphaComponent(0.4)
         return label
+    }
+
+    override func layoutSubviews() {
+        super.layoutSubviews()
+        let total = max(dataCount, 1)
+        let desiredWidth = CGFloat(total) * axisItemWidth
+        let visibleWidth = max(scrollView.bounds.width, 1)
+        chartWidthConstraint?.constant = max(desiredWidth, visibleWidth)
     }
 }
 
@@ -322,7 +356,7 @@ private final class TrendChartView: UIView {
     }
 
     private func updateChart() {
-        guard pain.count == adherence.count, pain.count >= 2 else { return }
+        guard pain.count == adherence.count, pain.count >= 1 else { return }
 
         let chartRect = bounds.insetBy(dx: chartInset, dy: chartInset)
         let stepX = chartRect.width / CGFloat(max(pain.count - 1, 1))
