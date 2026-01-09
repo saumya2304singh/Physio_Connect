@@ -37,9 +37,6 @@ final class RoleSelectionViewController: UIViewController {
     private func switchToPatientApp() async {
         let window = await MainActor.run { self.currentWindow() }
 
-        // Ensure any existing session (e.g., doctor) is cleared before entering patient auth
-        try? await SupabaseManager.shared.client.auth.signOut()
-
         await MainActor.run {
             guard let window else { return }
 
@@ -54,6 +51,9 @@ final class RoleSelectionViewController: UIViewController {
             let nav = UINavigationController(rootViewController: loginVC)
             RootRouter.setRoot(nav, window: window)
         }
+
+        // Clear any lingering session (e.g., doctor) in the background without blocking UI
+        Task { try? await SupabaseManager.shared.client.auth.signOut() }
     }
 
     @MainActor

@@ -29,6 +29,7 @@ final class PhysioProfileViewController: UIViewController {
         profileView.onSignOut = { [weak self] in self?.signOut() }
         profileView.onSwitchRole = { [weak self] in self?.confirmSwitchRole() }
         profileView.onRefresh = { [weak self] in Task { await self?.loadProfile() } }
+        profileView.setShowsEditButton(false) // Use nav button only to avoid duplicate UI
 
         profileView.setLoggedIn(true)
         loadInitial()

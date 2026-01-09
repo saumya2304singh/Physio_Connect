@@ -32,6 +32,8 @@ final class ProfileView: UIView {
     private let backButton = UIButton(type: .system)
     private let titleLabel = UILabel()
     private let editButton = UIButton(type: .system)
+    private var shouldShowEditButton = true
+    private var isLoggedInState = true
 
     private let avatarImageView = UIImageView()
     private let nameLabel = UILabel()
@@ -135,6 +137,7 @@ final class ProfileView: UIView {
             stackView.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -24)
         ])
 
+        buildTopBar()
         buildHeader()
         buildPersonalInfo()
         buildSettings()
@@ -229,6 +232,38 @@ final class ProfileView: UIView {
         stackView.addArrangedSubview(card)
     }
 
+    private func buildTopBar() {
+        let container = UIView()
+        container.translatesAutoresizingMaskIntoConstraints = false
+
+        backButton.translatesAutoresizingMaskIntoConstraints = false
+        backButton.setImage(UIImage(systemName: "chevron.left"), for: .normal)
+        backButton.tintColor = UIColor.black.withAlphaComponent(0.8)
+        backButton.addTarget(self, action: #selector(backTapped), for: .touchUpInside)
+
+        editButton.translatesAutoresizingMaskIntoConstraints = false
+        editButton.setTitle("Edit", for: .normal)
+        editButton.setTitleColor(UIColor(hex: "1E6EF7"), for: .normal)
+        editButton.titleLabel?.font = .systemFont(ofSize: 16, weight: .semibold)
+        editButton.addTarget(self, action: #selector(editTapped), for: .touchUpInside)
+
+        container.addSubview(backButton)
+        container.addSubview(editButton)
+
+        NSLayoutConstraint.activate([
+            backButton.leadingAnchor.constraint(equalTo: container.leadingAnchor),
+            backButton.centerYAnchor.constraint(equalTo: container.centerYAnchor),
+            backButton.widthAnchor.constraint(equalToConstant: 36),
+            backButton.heightAnchor.constraint(equalToConstant: 36),
+
+            editButton.trailingAnchor.constraint(equalTo: container.trailingAnchor),
+            editButton.centerYAnchor.constraint(equalTo: container.centerYAnchor)
+        ])
+
+        container.heightAnchor.constraint(equalToConstant: 44).isActive = true
+        stackView.addArrangedSubview(container)
+    }
+
     private func buildSettings() {
         let sectionLabel = makeSectionLabel("Settings")
         stackView.addArrangedSubview(sectionLabel)
@@ -272,16 +307,26 @@ final class ProfileView: UIView {
     }
     
     func setLoggedIn(_ loggedIn: Bool) {
+        isLoggedInState = loggedIn
         signOutButton.isHidden = !loggedIn
         loginButton.isHidden = loggedIn
         signUpButton.isHidden = loggedIn
-        editButton.isHidden = !loggedIn
+        updateEditVisibility()
 
         // ✅ allow switching role always
         switchRoleButton.isHidden = false
 
         notificationRow.isUserInteractionEnabled = loggedIn
         notificationRow.alpha = loggedIn ? 1.0 : 0.5
+    }
+
+    func setShowsEditButton(_ show: Bool) {
+        shouldShowEditButton = show
+        updateEditVisibility()
+    }
+
+    private func updateEditVisibility() {
+        editButton.isHidden = !isLoggedInState || !shouldShowEditButton
     }
 
 

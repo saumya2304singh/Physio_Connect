@@ -27,8 +27,13 @@ final class LoginViewController: UIViewController {
 
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
-        // Ensure button is tappable if a previous attempt disabled it
-        loginView.loginButton.isEnabled = true
+        resetLoginButtonState()
+    }
+
+    override func viewDidAppear(_ animated: Bool) {
+        super.viewDidAppear(animated)
+        // Double-safety to keep button active after role switches/navigation
+        resetLoginButtonState()
     }
 
     private func bind() {
@@ -59,12 +64,22 @@ final class LoginViewController: UIViewController {
 
         if email.isEmpty || password.isEmpty {
             showAlert(title: "Missing Details", message: "Please enter your email and password.")
+            resetLoginButtonState()
             return
+        }
+
+        // Timeout safety: never leave the button disabled if network hangs
+        Task { [weak self] in
+            try? await Task.sleep(nanoseconds: 12 * 1_000_000_000) // 12s
+            await MainActor.run { self?.resetLoginButtonState() }
         }
 
         Task {
             do {
-                await MainActor.run { self.loginView.loginButton.isEnabled = false }
+                await MainActor.run {
+                    self.loginView.loginButton.isEnabled = false
+                    self.loginView.loginButton.alpha = 0.8
+                }
                 try await model.signIn(email: email, password: password)
                 await MainActor.run {
                     self.onLoginSuccess?()
@@ -75,7 +90,7 @@ final class LoginViewController: UIViewController {
             } catch {
                 await MainActor.run {
                     self.showAlert(title: "Login failed", message: error.localizedDescription)
-                    self.loginView.loginButton.isEnabled = true
+                    self.resetLoginButtonState()
                 }
             }
         }
@@ -103,5 +118,11 @@ final class LoginViewController: UIViewController {
         let ac = UIAlertController(title: title, message: message, preferredStyle: .alert)
         ac.addAction(UIAlertAction(title: "OK", style: .default))
         present(ac, animated: true)
+    }
+
+    @MainActor
+    private func resetLoginButtonState() {
+        loginView.loginButton.isEnabled = true
+        loginView.loginButton.alpha = 1.0
     }
 }
