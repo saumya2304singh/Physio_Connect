@@ -111,14 +111,9 @@ final class PhysioReportsViewController: UIViewController, UITableViewDataSource
 
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         let patient = filteredPatients[indexPath.row]
-        let programs = patient.programText
-        let ac = UIAlertController(
-            title: patient.name,
-            message: "Age: \(patient.age)\nLocation: \(patient.location)\nProgram: \(programs)\nAdherence: \(patient.adherencePercent)%",
-            preferredStyle: .alert
-        )
-        ac.addAction(UIAlertAction(title: "OK", style: .cancel))
-        present(ac, animated: true)
+        let vc = PhysioPatientReportViewController(patientID: patient.id)
+        vc.hidesBottomBarWhenPushed = true
+        navigationController?.pushViewController(vc, animated: true)
     }
 
     // MARK: - Search
