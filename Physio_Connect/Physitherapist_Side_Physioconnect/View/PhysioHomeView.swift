@@ -25,10 +25,6 @@ final class PhysioHomeView: UIView {
     private let patientsStack = UIStackView()
     private let patientsEmptyLabel = UILabel()
 
-    private let actionsTitle = UILabel()
-    let actionsStack = UIStackView()
-    let addSessionButton = UIButton(type: .system)
-    let addNoteButton = UIButton(type: .system)
 
     override init(frame: CGRect) {
         super.init(frame: frame)
@@ -91,22 +87,6 @@ final class PhysioHomeView: UIView {
         patientsEmptyLabel.textColor = UIColor.black.withAlphaComponent(0.45)
         patientsStack.addArrangedSubview(patientsEmptyLabel)
 
-        actionsTitle.text = "Quick Actions"
-        actionsTitle.font = .systemFont(ofSize: 18, weight: .bold)
-        actionsTitle.textColor = UIColor(hex: "102A43")
-        contentStack.addArrangedSubview(actionsTitle)
-
-        actionsStack.axis = .horizontal
-        actionsStack.spacing = 12
-        actionsStack.distribution = .fillEqually
-        actionsStack.translatesAutoresizingMaskIntoConstraints = false
-
-        configureActionButton(addSessionButton, title: "New Session", systemName: "plus")
-        configureActionButton(addNoteButton, title: "Add Note", systemName: "square.and.pencil")
-        actionsStack.addArrangedSubview(addSessionButton)
-        actionsStack.addArrangedSubview(addNoteButton)
-        contentStack.addArrangedSubview(actionsStack)
-
         NSLayoutConstraint.activate([
             scrollView.topAnchor.constraint(equalTo: safeAreaLayoutGuide.topAnchor),
             scrollView.leadingAnchor.constraint(equalTo: leadingAnchor),
@@ -117,28 +97,8 @@ final class PhysioHomeView: UIView {
             contentStack.leadingAnchor.constraint(equalTo: scrollView.contentLayoutGuide.leadingAnchor, constant: 16),
             contentStack.trailingAnchor.constraint(equalTo: scrollView.contentLayoutGuide.trailingAnchor, constant: -16),
             contentStack.bottomAnchor.constraint(equalTo: scrollView.contentLayoutGuide.bottomAnchor, constant: -24),
-            contentStack.widthAnchor.constraint(equalTo: scrollView.frameLayoutGuide.widthAnchor, constant: -32),
-
-            addSessionButton.heightAnchor.constraint(equalToConstant: 54),
-            addNoteButton.heightAnchor.constraint(equalTo: addSessionButton.heightAnchor)
+            contentStack.widthAnchor.constraint(equalTo: scrollView.frameLayoutGuide.widthAnchor, constant: -32)
         ])
-    }
-
-    private func configureActionButton(_ button: UIButton, title: String, systemName: String) {
-        button.setTitle(title, for: .normal)
-        button.setTitleColor(.white, for: .normal)
-        button.titleLabel?.font = .systemFont(ofSize: 15, weight: .semibold)
-        button.backgroundColor = UIColor(hex: "1E6EF7")
-        button.layer.cornerRadius = 14
-        button.layer.shadowColor = UIColor.black.cgColor
-        button.layer.shadowOpacity = 0.08
-        button.layer.shadowRadius = 8
-        button.layer.shadowOffset = CGSize(width: 0, height: 4)
-
-        let icon = UIImage(systemName: systemName)
-        button.setImage(icon, for: .normal)
-        button.tintColor = .white
-        button.imageEdgeInsets = UIEdgeInsets(top: 0, left: -6, bottom: 0, right: 6)
     }
 
     func setSummary(todaySessions: Int, upcomingAppointments: Int, activePrograms: Int) {
@@ -199,8 +159,6 @@ final class PhysioHomeView: UIView {
         let isCompact = bounds.width < 380
         statsStack.axis = isCompact ? .vertical : .horizontal
         statsStack.distribution = isCompact ? .fill : .fillEqually
-        actionsStack.axis = isCompact ? .vertical : .horizontal
-        actionsStack.distribution = .fillEqually
     }
 }
 
@@ -219,25 +177,25 @@ private final class StatCardView: UIView {
         layer.shadowOffset = CGSize(width: 0, height: 6)
 
         valueLabel.translatesAutoresizingMaskIntoConstraints = false
-        valueLabel.font = .systemFont(ofSize: 28, weight: .bold)
+        valueLabel.font = .systemFont(ofSize: 16, weight: .semibold)
         valueLabel.textColor = UIColor(hex: "1E6EF7")
 
         titleLabel.translatesAutoresizingMaskIntoConstraints = false
-        titleLabel.font = .systemFont(ofSize: 12, weight: .semibold)
+        titleLabel.font = .systemFont(ofSize: 14, weight: .medium)
         titleLabel.textColor = UIColor.black.withAlphaComponent(0.6)
 
         addSubview(valueLabel)
         addSubview(titleLabel)
 
         NSLayoutConstraint.activate([
-            valueLabel.topAnchor.constraint(equalTo: topAnchor, constant: 14),
+            valueLabel.topAnchor.constraint(equalTo: topAnchor, constant: 12),
             valueLabel.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 14),
             valueLabel.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -14),
 
-            titleLabel.topAnchor.constraint(equalTo: valueLabel.bottomAnchor, constant: 6),
+            titleLabel.topAnchor.constraint(equalTo: valueLabel.bottomAnchor, constant: 8),
             titleLabel.leadingAnchor.constraint(equalTo: valueLabel.leadingAnchor),
             titleLabel.trailingAnchor.constraint(equalTo: valueLabel.trailingAnchor),
-            titleLabel.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -14)
+            titleLabel.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -12)
         ])
     }
 
@@ -270,16 +228,16 @@ private final class UpcomingSessionCard: UIView {
             addSubview($0)
         }
 
-        titleLabel.font = .systemFont(ofSize: 16, weight: .bold)
+        titleLabel.font = .systemFont(ofSize: 16, weight: .semibold)
         titleLabel.textColor = UIColor(hex: "102A43")
 
-        patientLabel.font = .systemFont(ofSize: 14, weight: .semibold)
+        patientLabel.font = .systemFont(ofSize: 14, weight: .medium)
         patientLabel.textColor = UIColor.black.withAlphaComponent(0.75)
 
-        timeLabel.font = .systemFont(ofSize: 13, weight: .semibold)
+        timeLabel.font = .systemFont(ofSize: 14, weight: .semibold)
         timeLabel.textColor = UIColor(hex: "1E6EF7")
 
-        locationLabel.font = .systemFont(ofSize: 13, weight: .regular)
+        locationLabel.font = .systemFont(ofSize: 13, weight: .medium)
         locationLabel.textColor = UIColor.black.withAlphaComponent(0.6)
 
         NSLayoutConstraint.activate([
@@ -291,11 +249,11 @@ private final class UpcomingSessionCard: UIView {
             patientLabel.leadingAnchor.constraint(equalTo: titleLabel.leadingAnchor),
             patientLabel.trailingAnchor.constraint(equalTo: titleLabel.trailingAnchor),
 
-            timeLabel.topAnchor.constraint(equalTo: patientLabel.bottomAnchor, constant: 6),
+            timeLabel.topAnchor.constraint(equalTo: patientLabel.bottomAnchor, constant: 8),
             timeLabel.leadingAnchor.constraint(equalTo: titleLabel.leadingAnchor),
             timeLabel.trailingAnchor.constraint(equalTo: titleLabel.trailingAnchor),
 
-            locationLabel.topAnchor.constraint(equalTo: timeLabel.bottomAnchor, constant: 4),
+            locationLabel.topAnchor.constraint(equalTo: timeLabel.bottomAnchor, constant: 6),
             locationLabel.leadingAnchor.constraint(equalTo: titleLabel.leadingAnchor),
             locationLabel.trailingAnchor.constraint(equalTo: titleLabel.trailingAnchor),
             locationLabel.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -14)
@@ -332,13 +290,13 @@ private final class PatientCardView: UIView {
             addSubview($0)
         }
 
-        nameLabel.font = .systemFont(ofSize: 15, weight: .bold)
+        nameLabel.font = .systemFont(ofSize: 16, weight: .semibold)
         nameLabel.textColor = UIColor(hex: "102A43")
 
-        contactLabel.font = .systemFont(ofSize: 13, weight: .semibold)
+        contactLabel.font = .systemFont(ofSize: 14, weight: .medium)
         contactLabel.textColor = UIColor.black.withAlphaComponent(0.7)
 
-        locationLabel.font = .systemFont(ofSize: 12, weight: .regular)
+        locationLabel.font = .systemFont(ofSize: 13, weight: .medium)
         locationLabel.textColor = UIColor.black.withAlphaComponent(0.55)
 
         NSLayoutConstraint.activate([
@@ -346,11 +304,11 @@ private final class PatientCardView: UIView {
             nameLabel.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 12),
             nameLabel.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -12),
 
-            contactLabel.topAnchor.constraint(equalTo: nameLabel.bottomAnchor, constant: 6),
+            contactLabel.topAnchor.constraint(equalTo: nameLabel.bottomAnchor, constant: 8),
             contactLabel.leadingAnchor.constraint(equalTo: nameLabel.leadingAnchor),
             contactLabel.trailingAnchor.constraint(equalTo: nameLabel.trailingAnchor),
 
-            locationLabel.topAnchor.constraint(equalTo: contactLabel.bottomAnchor, constant: 4),
+            locationLabel.topAnchor.constraint(equalTo: contactLabel.bottomAnchor, constant: 6),
             locationLabel.leadingAnchor.constraint(equalTo: nameLabel.leadingAnchor),
             locationLabel.trailingAnchor.constraint(equalTo: nameLabel.trailingAnchor),
             locationLabel.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -12)

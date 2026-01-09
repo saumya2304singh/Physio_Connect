@@ -51,7 +51,6 @@ final class PhysioAppointmentsView: UIView {
         }
     }
 
-    let addButton = UIButton(type: .system)
     let searchBar = UISearchBar()
     let segmentControl = UISegmentedControl(items: ["All", "Upcoming", "Completed"])
     let tableView = UITableView(frame: .zero, style: .plain)
@@ -65,15 +64,6 @@ final class PhysioAppointmentsView: UIView {
 
     private func build() {
         backgroundColor = UIColor(hex: "E6F1FF")
-
-        addButton.translatesAutoresizingMaskIntoConstraints = false
-        addButton.setTitle("  New Appointment", for: .normal)
-        addButton.setTitleColor(.white, for: .normal)
-        addButton.titleLabel?.font = .systemFont(ofSize: 15, weight: .semibold)
-        addButton.backgroundColor = UIColor(hex: "1E6EF7")
-        addButton.layer.cornerRadius = 14
-        addButton.setImage(UIImage(systemName: "calendar.badge.plus"), for: .normal)
-        addButton.tintColor = .white
 
         searchBar.translatesAutoresizingMaskIntoConstraints = false
         searchBar.searchBarStyle = .minimal
@@ -91,24 +81,18 @@ final class PhysioAppointmentsView: UIView {
         tableView.showsVerticalScrollIndicator = false
         tableView.register(PhysioAppointmentCell.self, forCellReuseIdentifier: "PhysioAppointmentCell")
 
-        addSubview(addButton)
         addSubview(searchBar)
         addSubview(segmentControl)
         addSubview(tableView)
 
         NSLayoutConstraint.activate([
-            addButton.topAnchor.constraint(equalTo: safeAreaLayoutGuide.topAnchor, constant: 12),
-            addButton.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 20),
-            addButton.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -20),
-            addButton.heightAnchor.constraint(equalToConstant: 48),
-
-            searchBar.topAnchor.constraint(equalTo: addButton.bottomAnchor, constant: 14),
-            searchBar.leadingAnchor.constraint(equalTo: addButton.leadingAnchor),
-            searchBar.trailingAnchor.constraint(equalTo: addButton.trailingAnchor),
+            searchBar.topAnchor.constraint(equalTo: safeAreaLayoutGuide.topAnchor, constant: 12),
+            searchBar.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 20),
+            searchBar.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -20),
 
             segmentControl.topAnchor.constraint(equalTo: searchBar.bottomAnchor, constant: 10),
-            segmentControl.leadingAnchor.constraint(equalTo: addButton.leadingAnchor),
-            segmentControl.trailingAnchor.constraint(equalTo: addButton.trailingAnchor),
+            segmentControl.leadingAnchor.constraint(equalTo: searchBar.leadingAnchor),
+            segmentControl.trailingAnchor.constraint(equalTo: searchBar.trailingAnchor),
             segmentControl.heightAnchor.constraint(equalToConstant: 34),
 
             tableView.topAnchor.constraint(equalTo: segmentControl.bottomAnchor, constant: 12),
@@ -171,19 +155,22 @@ final class PhysioAppointmentCell: UITableViewCell {
         patientLabel.translatesAutoresizingMaskIntoConstraints = false
         patientLabel.font = .systemFont(ofSize: 14, weight: .medium)
         patientLabel.textColor = UIColor.black.withAlphaComponent(0.7)
+        patientLabel.numberOfLines = 0
 
         timeLabel.translatesAutoresizingMaskIntoConstraints = false
         timeLabel.font = .systemFont(ofSize: 14, weight: .semibold)
         timeLabel.textColor = UIColor(hex: "1E6EF7")
+        timeLabel.numberOfLines = 0
 
         durationLabel.translatesAutoresizingMaskIntoConstraints = false
         durationLabel.font = .systemFont(ofSize: 13, weight: .medium)
         durationLabel.textColor = UIColor.black.withAlphaComponent(0.55)
+        durationLabel.numberOfLines = 0
 
         locationLabel.translatesAutoresizingMaskIntoConstraints = false
         locationLabel.font = .systemFont(ofSize: 13, weight: .medium)
         locationLabel.textColor = UIColor.black.withAlphaComponent(0.55)
-        locationLabel.numberOfLines = 2
+        locationLabel.numberOfLines = 0
 
         cancelButton.translatesAutoresizingMaskIntoConstraints = false
         cancelButton.setTitle("Cancel", for: .normal)
@@ -216,7 +203,7 @@ final class PhysioAppointmentCell: UITableViewCell {
         card.addSubview(locationLabel)
         card.addSubview(buttonStack)
 
-        buttonStackHeightConstraint = buttonStack.heightAnchor.constraint(equalToConstant: 40)
+        buttonStackHeightConstraint = buttonStack.heightAnchor.constraint(greaterThanOrEqualToConstant: 40)
         buttonStackBottomConstraint = buttonStack.bottomAnchor.constraint(equalTo: card.bottomAnchor, constant: -12)
         locationBottomConstraint = locationLabel.bottomAnchor.constraint(equalTo: card.bottomAnchor, constant: -12)
 

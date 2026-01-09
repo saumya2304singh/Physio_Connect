@@ -35,7 +35,6 @@ final class PhysioAppointmentsViewController: UIViewController, UITableViewDataS
         contentView.tableView.estimatedRowHeight = 220
         contentView.searchBar.delegate = self
         contentView.segmentControl.addTarget(self, action: #selector(segmentChanged), for: .valueChanged)
-        contentView.addButton.addTarget(self, action: #selector(addTapped), for: .touchUpInside)
 
         Task { await loadAppointments() }
     }
@@ -56,16 +55,6 @@ final class PhysioAppointmentsViewController: UIViewController, UITableViewDataS
     @objc private func profileTapped() {
         let vc = PhysioProfileViewController()
         navigationController?.pushViewController(vc, animated: true)
-    }
-
-    @objc private func addTapped() {
-        let alert = UIAlertController(
-            title: "New Appointment",
-            message: "Create appointments from your schedule or availability slots.",
-            preferredStyle: .alert
-        )
-        alert.addAction(UIAlertAction(title: "OK", style: .default))
-        present(alert, animated: true)
     }
 
     @objc private func segmentChanged() {
