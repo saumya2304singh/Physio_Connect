@@ -36,6 +36,11 @@ final class PhysioProfileViewController: UIViewController {
         loadInitial()
     }
 
+    override func viewWillDisappear(_ animated: Bool) {
+        super.viewWillDisappear(animated)
+        navigationController?.setNavigationBarHidden(false, animated: false)
+    }
+
     @objc private func editTapped() {
         showEdit()
     }
