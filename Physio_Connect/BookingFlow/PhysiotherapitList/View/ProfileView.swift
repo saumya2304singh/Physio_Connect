@@ -138,7 +138,7 @@ final class ProfileView: UIView {
         ])
 
         stackView.axis = .vertical
-        stackView.spacing = 16
+        stackView.spacing = 12
         stackView.alignment = .fill
 
         NSLayoutConstraint.activate([
@@ -184,13 +184,14 @@ final class ProfileView: UIView {
             avatarImageView.widthAnchor.constraint(equalToConstant: 92),
             avatarImageView.heightAnchor.constraint(equalToConstant: 92),
 
-            nameLabel.topAnchor.constraint(equalTo: avatarImageView.bottomAnchor, constant: 12),
+            nameLabel.topAnchor.constraint(equalTo: avatarImageView.bottomAnchor, constant: 8),
             nameLabel.leadingAnchor.constraint(equalTo: container.leadingAnchor),
             nameLabel.trailingAnchor.constraint(equalTo: container.trailingAnchor),
             nameLabel.bottomAnchor.constraint(equalTo: container.bottomAnchor)
         ])
 
         stackView.addArrangedSubview(container)
+        stackView.setCustomSpacing(8, after: container)
     }
 
     private func setAvatar(with urlString: String?) {
@@ -272,7 +273,7 @@ final class ProfileView: UIView {
             editButton.centerYAnchor.constraint(equalTo: container.centerYAnchor)
         ])
 
-        container.heightAnchor.constraint(equalToConstant: 44).isActive = true
+        container.heightAnchor.constraint(equalToConstant: 32).isActive = true
         stackView.addArrangedSubview(container)
     }
 

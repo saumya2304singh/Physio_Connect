@@ -18,19 +18,15 @@ final class PhysioProfileViewController: UIViewController {
 
     override func viewDidLoad() {
         super.viewDidLoad()
+        navigationController?.setNavigationBarHidden(true, animated: false)
         navigationItem.hidesBackButton = true
-        navigationItem.rightBarButtonItem = UIBarButtonItem(
-            title: "Edit",
-            style: .plain,
-            target: self,
-            action: #selector(editTapped)
-        )
+        navigationItem.rightBarButtonItem = nil
         profileView.onBack = { [weak self] in self?.navigationController?.popViewController(animated: true) }
         profileView.onEdit = { [weak self] in self?.showEdit() }
         profileView.onSignOut = { [weak self] in self?.signOut() }
         profileView.onSwitchRole = { [weak self] in self?.confirmSwitchRole() }
         profileView.onRefresh = { [weak self] in Task { await self?.loadProfile() } }
-        profileView.setShowsEditButton(false) // Use nav button only to avoid duplicate UI
+        profileView.setShowsEditButton(true)
         profileView.setAvailabilityVisible(true)
         profileView.onAvailabilitySave = { [weak self] day, start, end in
             self?.saveAvailability(day: day, start: start, end: end)
