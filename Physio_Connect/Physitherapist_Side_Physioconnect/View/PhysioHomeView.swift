@@ -183,6 +183,8 @@ private final class StatCardView: UIView {
         titleLabel.translatesAutoresizingMaskIntoConstraints = false
         titleLabel.font = .systemFont(ofSize: 14, weight: .medium)
         titleLabel.textColor = UIColor.black.withAlphaComponent(0.6)
+        titleLabel.numberOfLines = 2
+        titleLabel.lineBreakMode = .byWordWrapping
 
         addSubview(valueLabel)
         addSubview(titleLabel)
