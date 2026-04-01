@@ -10,6 +10,7 @@ import UIKit
 final class ExerciseDetailView: UIView, UIGestureRecognizerDelegate {
 
     struct ViewModel {
+        let headerTitle: String
         let title: String
         let durationMinutes: Int
         let description: String
@@ -18,6 +19,7 @@ final class ExerciseDetailView: UIView, UIGestureRecognizerDelegate {
     let scroll = UIScrollView()
     let content = UIStackView()
 
+    let backButton = UIButton(type: .system)
     let playButton = UIButton(type: .system)
     let completeButton = UIButton(type: .system)
     let painScaleToggle = UIButton(type: .system)
@@ -26,6 +28,9 @@ final class ExerciseDetailView: UIView, UIGestureRecognizerDelegate {
     let saveButton = UIButton(type: .system)
     let nextUpCollection: UICollectionView
     let continueButton = UIButton(type: .system)
+
+    private let topBar = UIView()
+    private let headerTitle = UILabel()
 
     private let videoCard = UIView()
     private let thumbnailImageView = UIImageView()
@@ -80,7 +85,7 @@ final class ExerciseDetailView: UIView, UIGestureRecognizerDelegate {
         layout.sectionInset = UIEdgeInsets(top: 0, left: 16, bottom: 0, right: 16)
         nextUpCollection = UICollectionView(frame: .zero, collectionViewLayout: layout)
         super.init(frame: frame)
-        backgroundColor = .systemGroupedBackground
+        backgroundColor = UIColor(hex: "E3F0FF")
         build()
         updatePainUI(value: Int(painSlider.value))
         setScaleVisible(false)
@@ -135,6 +140,7 @@ final class ExerciseDetailView: UIView, UIGestureRecognizerDelegate {
     }
 
     func configure(with viewModel: ViewModel) {
+        headerTitle.text = viewModel.headerTitle
         metaTitle.text = viewModel.title
         metaDuration.text = "\(max(1, viewModel.durationMinutes)) min"
         metaDesc.text = viewModel.description
@@ -156,10 +162,10 @@ final class ExerciseDetailView: UIView, UIGestureRecognizerDelegate {
         painSubtitleLabel.text = descriptor
 
         switch value {
-        case 0...2: painEmoji.text = "😌"; painSubtitleLabel.textColor = .systemGreen
-        case 3...5: painEmoji.text = "🙂"; painSubtitleLabel.textColor = .systemGreen
-        case 6...7: painEmoji.text = "😐"; painSubtitleLabel.textColor = .systemOrange
-        default: painEmoji.text = "😣"; painSubtitleLabel.textColor = .systemRed
+        case 0...2: painEmoji.text = "😌"; painSubtitleLabel.textColor = UIColor(hex: "22C55E")
+        case 3...5: painEmoji.text = "🙂"; painSubtitleLabel.textColor = UIColor(hex: "84CC16")
+        case 6...7: painEmoji.text = "😐"; painSubtitleLabel.textColor = UIColor(hex: "F59E0B")
+        default: painEmoji.text = "😣"; painSubtitleLabel.textColor = UIColor(hex: "EF4444")
         }
     }
 
@@ -182,7 +188,7 @@ final class ExerciseDetailView: UIView, UIGestureRecognizerDelegate {
     func setCompletedState(_ completed: Bool, locked: Bool) {
         let imageName = completed ? "checkmark.circle.fill" : "circle"
         completeButton.setImage(UIImage(systemName: imageName), for: .normal)
-        completeButton.tintColor = completed ? .systemGreen : .tertiaryLabel
+        completeButton.tintColor = completed ? UIColor(hex: "22C55E") : UIColor(hex: "94A3B8")
         completeButton.isEnabled = !locked
         completeButton.alpha = locked ? 0.6 : 1.0
         completeLabel.text = completed ? "Completed" : "Mark as Completed"
@@ -210,11 +216,42 @@ final class ExerciseDetailView: UIView, UIGestureRecognizerDelegate {
         content.axis = .vertical
         content.spacing = 16
 
+        topBar.translatesAutoresizingMaskIntoConstraints = false
+        topBar.backgroundColor = UIColor(hex: "E3F0FF")
+
+        backButton.translatesAutoresizingMaskIntoConstraints = false
+        backButton.setImage(UIImage(systemName: "chevron.left"), for: .normal)
+        backButton.tintColor = UIColor.black.withAlphaComponent(0.75)
+
+        headerTitle.translatesAutoresizingMaskIntoConstraints = false
+        headerTitle.font = .boldSystemFont(ofSize: 18)
+        headerTitle.textColor = .black
+
+        topBar.addSubview(backButton)
+        topBar.addSubview(headerTitle)
+
+        addSubview(topBar)
         addSubview(scroll)
         scroll.addSubview(content)
 
+        let topBarHeight = topBar.heightAnchor.constraint(equalToConstant: 36)
+        topBarHeight.priority = .defaultHigh
+
         NSLayoutConstraint.activate([
-            scroll.topAnchor.constraint(equalTo: safeAreaLayoutGuide.topAnchor),
+            topBar.topAnchor.constraint(equalTo: safeAreaLayoutGuide.topAnchor, constant: 6),
+            topBar.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 16),
+            topBar.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -16),
+            topBarHeight,
+
+            backButton.leadingAnchor.constraint(equalTo: topBar.leadingAnchor),
+            backButton.centerYAnchor.constraint(equalTo: topBar.centerYAnchor),
+            backButton.widthAnchor.constraint(equalToConstant: 32),
+            backButton.heightAnchor.constraint(equalToConstant: 32),
+
+            headerTitle.leadingAnchor.constraint(equalTo: backButton.trailingAnchor, constant: 8),
+            headerTitle.centerYAnchor.constraint(equalTo: topBar.centerYAnchor),
+
+            scroll.topAnchor.constraint(equalTo: topBar.bottomAnchor, constant: 10),
             scroll.leadingAnchor.constraint(equalTo: leadingAnchor),
             scroll.trailingAnchor.constraint(equalTo: trailingAnchor),
             scroll.bottomAnchor.constraint(equalTo: bottomAnchor),
@@ -248,7 +285,7 @@ final class ExerciseDetailView: UIView, UIGestureRecognizerDelegate {
 
     private func buildVideoCard() {
         videoCard.translatesAutoresizingMaskIntoConstraints = false
-        videoCard.backgroundColor = UITheme.Colors.surface
+        videoCard.backgroundColor = .white
         videoCard.layer.cornerRadius = 22
         videoCard.layer.shadowColor = UIColor.black.cgColor
         videoCard.layer.shadowOpacity = 0.06
@@ -256,10 +293,10 @@ final class ExerciseDetailView: UIView, UIGestureRecognizerDelegate {
         videoCard.layer.shadowOffset = CGSize(width: 0, height: 10)
 
         thumbnailImageView.translatesAutoresizingMaskIntoConstraints = false
-        thumbnailImageView.backgroundColor = .tertiarySystemFill
         thumbnailImageView.contentMode = .scaleAspectFill
         thumbnailImageView.clipsToBounds = true
         thumbnailImageView.layer.cornerRadius = 22
+        thumbnailImageView.backgroundColor = UIColor(hex: "E3F0FF")
 
         playButton.translatesAutoresizingMaskIntoConstraints = false
         playButton.setImage(UIImage(systemName: "play.fill"), for: .normal)
@@ -277,10 +314,10 @@ final class ExerciseDetailView: UIView, UIGestureRecognizerDelegate {
         NSLayoutConstraint.activate([
             videoCard.heightAnchor.constraint(equalToConstant: 220),
 
-        thumbnailImageView.topAnchor.constraint(equalTo: videoCard.topAnchor),
-        thumbnailImageView.leadingAnchor.constraint(equalTo: videoCard.leadingAnchor),
-        thumbnailImageView.trailingAnchor.constraint(equalTo: videoCard.trailingAnchor),
-        thumbnailImageView.bottomAnchor.constraint(equalTo: videoCard.bottomAnchor),
+            thumbnailImageView.topAnchor.constraint(equalTo: videoCard.topAnchor),
+            thumbnailImageView.leadingAnchor.constraint(equalTo: videoCard.leadingAnchor),
+            thumbnailImageView.trailingAnchor.constraint(equalTo: videoCard.trailingAnchor),
+            thumbnailImageView.bottomAnchor.constraint(equalTo: videoCard.bottomAnchor),
 
             playButton.centerXAnchor.constraint(equalTo: videoCard.centerXAnchor),
             playButton.centerYAnchor.constraint(equalTo: videoCard.centerYAnchor),
@@ -291,7 +328,7 @@ final class ExerciseDetailView: UIView, UIGestureRecognizerDelegate {
 
     private func buildInfoCard() {
         infoCard.translatesAutoresizingMaskIntoConstraints = false
-        infoCard.backgroundColor = UITheme.Colors.surface
+        infoCard.backgroundColor = .white
         infoCard.layer.cornerRadius = 20
         infoCard.layer.shadowColor = UIColor.black.cgColor
         infoCard.layer.shadowOpacity = 0.05
@@ -300,17 +337,16 @@ final class ExerciseDetailView: UIView, UIGestureRecognizerDelegate {
 
         metaTitle.translatesAutoresizingMaskIntoConstraints = false
         metaTitle.font = .systemFont(ofSize: 21, weight: .bold)
-        metaTitle.textColor = .label
-        metaTitle.text = "Current Status"
+        metaTitle.textColor = UIColor(hex: "1E2A44")
         metaTitle.numberOfLines = 2
 
         metaDuration.translatesAutoresizingMaskIntoConstraints = false
-        metaDuration.font = .systemFont(ofSize: 14, weight: .semibold)
-        metaDuration.textColor = UITheme.Colors.accent
+        metaDuration.font = .systemFont(ofSize: 13, weight: .bold)
+        metaDuration.textColor = UIColor(hex: "1E6EF7")
 
         metaDesc.translatesAutoresizingMaskIntoConstraints = false
         metaDesc.font = .systemFont(ofSize: 14, weight: .regular)
-        metaDesc.textColor = .secondaryLabel
+        metaDesc.textColor = UIColor.black.withAlphaComponent(0.68)
         metaDesc.numberOfLines = 0
 
         infoCard.addSubview(metaTitle)
@@ -336,13 +372,13 @@ final class ExerciseDetailView: UIView, UIGestureRecognizerDelegate {
         progressTitle.translatesAutoresizingMaskIntoConstraints = false
         progressTitle.text = "Log Your Progress"
         progressTitle.font = .systemFont(ofSize: 16, weight: .bold)
-        progressTitle.textColor = .label
+        progressTitle.textColor = UIColor(hex: "1E2A44")
 
         completeCard.translatesAutoresizingMaskIntoConstraints = false
-        completeCard.backgroundColor = UITheme.Colors.surface
-        completeCard.layer.cornerRadius = 16
+        completeCard.backgroundColor = UIColor(hex: "F8FAFF")
+        completeCard.layer.cornerRadius = 18
         completeCard.layer.borderWidth = 1
-        completeCard.layer.borderColor = UIColor.separator.cgColor
+        completeCard.layer.borderColor = UIColor(hex: "DCE8FF").cgColor
         completeCard.layer.shadowColor = UIColor.black.cgColor
         completeCard.layer.shadowOpacity = 0.04
         completeCard.layer.shadowRadius = 8
@@ -350,7 +386,7 @@ final class ExerciseDetailView: UIView, UIGestureRecognizerDelegate {
 
         completeButton.translatesAutoresizingMaskIntoConstraints = false
         completeButton.setImage(UIImage(systemName: "circle"), for: .normal)
-        completeButton.tintColor = .tertiaryLabel
+        completeButton.tintColor = UIColor(hex: "94A3B8")
 
         completeLabel.translatesAutoresizingMaskIntoConstraints = false
         completeLabel.text = "Mark as Completed"
@@ -376,7 +412,7 @@ final class ExerciseDetailView: UIView, UIGestureRecognizerDelegate {
 
     private func buildPainCard() {
         painCard.translatesAutoresizingMaskIntoConstraints = false
-        painCard.backgroundColor = UITheme.Colors.surface
+        painCard.backgroundColor = .white
         painCard.layer.cornerRadius = 20
         painCard.layer.shadowColor = UIColor.black.cgColor
         painCard.layer.shadowOpacity = 0.05
@@ -384,23 +420,22 @@ final class ExerciseDetailView: UIView, UIGestureRecognizerDelegate {
         painCard.layer.shadowOffset = CGSize(width: 0, height: 8)
 
         painTitle.translatesAutoresizingMaskIntoConstraints = false
-        painTitle.text = "Pain Level"
+        painTitle.text = "How are you feeling today?"
         painTitle.font = .systemFont(ofSize: 16, weight: .bold)
-        painTitle.textColor = .label
+        painTitle.textColor = UIColor(hex: "1E2A44")
 
         painScaleToggle.translatesAutoresizingMaskIntoConstraints = false
-        painScaleToggle.setTitle("What is this?", for: .normal)
-        painScaleToggle.setTitleColor(UITheme.Colors.accent, for: .normal)
+        painScaleToggle.setTitle("View Scale", for: .normal)
+        painScaleToggle.setTitleColor(UIColor(hex: "1E6EF7"), for: .normal)
         painScaleToggle.titleLabel?.font = .systemFont(ofSize: 13, weight: .semibold)
 
         painEmoji.translatesAutoresizingMaskIntoConstraints = false
-        painEmoji.text = "😌"
+        painEmoji.text = "😐"
         painEmoji.font = .systemFont(ofSize: 32)
 
         painValueLabel.translatesAutoresizingMaskIntoConstraints = false
         painValueLabel.font = .systemFont(ofSize: 24, weight: .bold)
-        painValueLabel.textColor = .label
-        painValueLabel.text = "0"
+        painValueLabel.textColor = UIColor(hex: "1E2A44")
 
         painSubtitleLabel.translatesAutoresizingMaskIntoConstraints = false
         painSubtitleLabel.font = .systemFont(ofSize: 14, weight: .semibold)
@@ -414,7 +449,7 @@ final class ExerciseDetailView: UIView, UIGestureRecognizerDelegate {
         painScaleTrack.addGestureRecognizer(painTrackTap)
         scroll.panGestureRecognizer.require(toFail: painTrackPan)
         let gradient = CAGradientLayer()
-        gradient.colors = [UIColor.systemGreen.cgColor, UIColor.systemOrange.cgColor, UIColor.systemRed.cgColor]
+        gradient.colors = [UIColor(hex: "22C55E").cgColor, UIColor(hex: "F59E0B").cgColor, UIColor(hex: "EF4444").cgColor]
         gradient.startPoint = CGPoint(x: 0, y: 0.5)
         gradient.endPoint = CGPoint(x: 1, y: 0.5)
         painScaleTrack.layer.addSublayer(gradient)
@@ -430,15 +465,15 @@ final class ExerciseDetailView: UIView, UIGestureRecognizerDelegate {
         painMinLabel.translatesAutoresizingMaskIntoConstraints = false
         painMinLabel.text = "No Pain"
         painMinLabel.font = .systemFont(ofSize: 12, weight: .semibold)
-        painMinLabel.textColor = .secondaryLabel
+        painMinLabel.textColor = UIColor.black.withAlphaComponent(0.45)
 
         painMaxLabel.translatesAutoresizingMaskIntoConstraints = false
         painMaxLabel.text = "Worst Pain"
         painMaxLabel.font = .systemFont(ofSize: 12, weight: .semibold)
-        painMaxLabel.textColor = .secondaryLabel
+        painMaxLabel.textColor = UIColor.black.withAlphaComponent(0.45)
 
         painScaleCard.translatesAutoresizingMaskIntoConstraints = false
-        painScaleCard.backgroundColor = UITheme.Colors.surface
+        painScaleCard.backgroundColor = UIColor(hex: "F8FAFC")
         painScaleCard.layer.cornerRadius = 16
         painScaleCard.isHidden = true
 
@@ -448,11 +483,11 @@ final class ExerciseDetailView: UIView, UIGestureRecognizerDelegate {
         painScaleStack.alignment = .fill
 
         let scaleRows: [(String, String, UIColor)] = [
-            ("0", "No pain", .systemGreen),
-            ("1-3", "Mild, manageable pain", .systemGreen),
-            ("4-6", "Moderate, noticeable pain", .systemOrange),
-            ("7-9", "Severe, limiting activities", .systemOrange),
-            ("10", "Worst possible pain", .systemRed)
+            ("0", "No pain", UIColor(hex: "16A34A")),
+            ("1-3", "Mild, manageable pain", UIColor(hex: "84CC16")),
+            ("4-6", "Moderate, noticeable pain", UIColor(hex: "F59E0B")),
+            ("7-9", "Severe, limiting activities", UIColor(hex: "F97316")),
+            ("10", "Worst possible pain", UIColor(hex: "EF4444"))
         ]
 
         scaleRows.forEach { (left, right, color) in
@@ -469,7 +504,7 @@ final class ExerciseDetailView: UIView, UIGestureRecognizerDelegate {
             rightLabel.translatesAutoresizingMaskIntoConstraints = false
             rightLabel.text = right
             rightLabel.font = .systemFont(ofSize: 13, weight: .semibold)
-            rightLabel.textColor = .secondaryLabel
+            rightLabel.textColor = UIColor.black.withAlphaComponent(0.7)
             rightLabel.textAlignment = .right
 
             row.addSubview(leftLabel)
@@ -554,7 +589,7 @@ final class ExerciseDetailView: UIView, UIGestureRecognizerDelegate {
 
     private func buildNotesCard() {
         notesCard.translatesAutoresizingMaskIntoConstraints = false
-        notesCard.backgroundColor = UITheme.Colors.surface
+        notesCard.backgroundColor = .white
         notesCard.layer.cornerRadius = 20
         notesCard.layer.shadowColor = UIColor.black.cgColor
         notesCard.layer.shadowOpacity = 0.05
@@ -603,7 +638,7 @@ final class ExerciseDetailView: UIView, UIGestureRecognizerDelegate {
         saveButton.translatesAutoresizingMaskIntoConstraints = false
         saveButton.setTitle("Save", for: .normal)
         saveButton.titleLabel?.font = .systemFont(ofSize: 16, weight: .bold)
-        saveButton.backgroundColor = UITheme.Colors.accent
+        saveButton.backgroundColor = UIColor(hex: "1E6EF7")
         saveButton.setTitleColor(.white, for: .normal)
         saveButton.layer.cornerRadius = 18
         saveButton.contentEdgeInsets = UIEdgeInsets(top: 14, left: 16, bottom: 14, right: 16)
@@ -617,16 +652,16 @@ final class ExerciseDetailView: UIView, UIGestureRecognizerDelegate {
         nextUpTitle.translatesAutoresizingMaskIntoConstraints = false
         nextUpTitle.text = "Next Up"
         nextUpTitle.font = .systemFont(ofSize: 16, weight: .bold)
-        nextUpTitle.textColor = .label
+        nextUpTitle.textColor = UIColor(hex: "1E2A44")
 
         nextUpCollection.translatesAutoresizingMaskIntoConstraints = false
         nextUpCollection.backgroundColor = .clear
         nextUpCollection.showsHorizontalScrollIndicator = false
 
         continueButton.translatesAutoresizingMaskIntoConstraints = false
-        continueButton.setTitle("Continue Protocol", for: .normal)
-        continueButton.titleLabel?.font = .systemFont(ofSize: 16, weight: .semibold)
-        continueButton.backgroundColor = UITheme.Colors.accent
+        continueButton.setTitle("Continue to Next Exercise", for: .normal)
+        continueButton.titleLabel?.font = .systemFont(ofSize: 16, weight: .bold)
+        continueButton.backgroundColor = UIColor(hex: "1E6EF7")
         continueButton.setTitleColor(.white, for: .normal)
         continueButton.layer.cornerRadius = 18
         continueButton.contentEdgeInsets = UIEdgeInsets(top: 14, left: 16, bottom: 14, right: 16)

@@ -26,11 +26,16 @@ final class PaymentViewController: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
 
-        UITheme.applyNativeNavBar(to: self, title: "Payment")
+        navigationController?.setNavigationBarHidden(true, animated: false)
 
         paymentView.render(model: model)
 
+        paymentView.backButton.addTarget(self, action: #selector(backTapped), for: .touchUpInside)
         paymentView.payButton.addTarget(self, action: #selector(payTapped), for: .touchUpInside)
+    }
+
+    @objc private func backTapped() {
+        navigationController?.popViewController(animated: true)
     }
 
     @objc private func payTapped() {

@@ -29,12 +29,21 @@ final class PhysioSignupView: UIView, UITextFieldDelegate {
     var onPickIdProof: (() -> Void)?
     var onPickLicenseProof: (() -> Void)?
 
-    private let primaryBlue = UITheme.Colors.accent
+    // MARK: - Theme
+    private let bg = UIColor(hex: "E6F1FF")
+    private let primaryBlue = UIColor(hex: "1E6EF7")
+    private let cardBg = UIColor.white
 
     // MARK: - Scroll
-    private let scrollView = UIScrollView()
+    let scrollView = UIScrollView()
     private let contentView = UIView()
     private let stack = UIStackView()
+
+    // MARK: - Header
+    let backButton = UIButton(type: .system)
+    private let titleLabel = UILabel()
+    private let subtitleLabel = UILabel()
+    private let divider = UIView()
 
     // MARK: - Form
     private let sectionTitle = UILabel()
@@ -95,7 +104,7 @@ final class PhysioSignupView: UIView, UITextFieldDelegate {
 
     override init(frame: CGRect) {
         super.init(frame: frame)
-        backgroundColor = UITheme.Colors.background
+        backgroundColor = bg
         build()
     }
 
@@ -137,20 +146,62 @@ final class PhysioSignupView: UIView, UITextFieldDelegate {
             stack.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -24)
         ])
 
+        let headerRow = UIView()
+        headerRow.translatesAutoresizingMaskIntoConstraints = false
+
+        backButton.translatesAutoresizingMaskIntoConstraints = false
+        backButton.setImage(UIImage(systemName: "chevron.left"), for: .normal)
+        backButton.tintColor = primaryBlue
+        backButton.contentEdgeInsets = UIEdgeInsets(top: 8, left: 6, bottom: 8, right: 6)
+        backButton.addTarget(self, action: #selector(handleBack), for: .touchUpInside)
+
+        titleLabel.translatesAutoresizingMaskIntoConstraints = false
+        titleLabel.text = "Create Your Account"
+        titleLabel.font = .boldSystemFont(ofSize: 22)
+        titleLabel.textAlignment = .center
+
+        subtitleLabel.translatesAutoresizingMaskIntoConstraints = false
+        subtitleLabel.text = "Join us to complete your booking"
+        subtitleLabel.font = .systemFont(ofSize: 15, weight: .medium)
+        subtitleLabel.textColor = UIColor.black.withAlphaComponent(0.6)
+        subtitleLabel.textAlignment = .center
+
+        divider.translatesAutoresizingMaskIntoConstraints = false
+        divider.backgroundColor = UIColor.black.withAlphaComponent(0.08)
+
+        headerRow.addSubview(backButton)
+        headerRow.addSubview(titleLabel)
+
+        NSLayoutConstraint.activate([
+            headerRow.heightAnchor.constraint(equalToConstant: 40),
+            backButton.leadingAnchor.constraint(equalTo: headerRow.leadingAnchor),
+            backButton.centerYAnchor.constraint(equalTo: headerRow.centerYAnchor),
+            titleLabel.centerXAnchor.constraint(equalTo: headerRow.centerXAnchor),
+            titleLabel.centerYAnchor.constraint(equalTo: headerRow.centerYAnchor)
+        ])
+
+        stack.addArrangedSubview(headerRow)
+        stack.addArrangedSubview(subtitleLabel)
+        stack.addArrangedSubview(divider)
+        divider.heightAnchor.constraint(equalToConstant: 1).isActive = true
+
         // Section title
         sectionTitle.text = "Sign up with email"
         sectionTitle.font = .systemFont(ofSize: 18, weight: .bold)
-        sectionTitle.textColor = UITheme.Colors.textPrimary
+        sectionTitle.textColor = .black
         stack.addArrangedSubview(sectionTitle)
 
         // Fields
-        fullNameField.placeholder = "Full Name"
+        fullNameField.titleText = "Full Name *"
+        fullNameField.placeholder = "Enter your full name"
 
-        emailField.placeholder = "Email Address"
+        emailField.titleText = "Email Address *"
+        emailField.placeholder = "your.email@example.com"
         emailField.textField.keyboardType = .emailAddress
         emailField.textField.autocapitalizationType = .none
 
-        phoneField.placeholder = "Phone Number"
+        phoneField.titleText = "Phone Number *"
+        phoneField.placeholder = "+91 XXXXX XXXXX"
         phoneField.textField.keyboardType = .numberPad
         phoneField.textField.autocorrectionType = .no
         phoneField.textField.autocapitalizationType = .none
@@ -159,7 +210,8 @@ final class PhysioSignupView: UIView, UITextFieldDelegate {
             phoneField.textField.text = phonePrefix
         }
 
-        passwordField.placeholder = "Password"
+        passwordField.titleText = "Password *"
+        passwordField.placeholder = "Create a strong password"
         passwordField.textField.isSecureTextEntry = true
         passwordField.textField.autocapitalizationType = .none
         passwordField.textField.autocorrectionType = .no
@@ -168,7 +220,8 @@ final class PhysioSignupView: UIView, UITextFieldDelegate {
         passwordField.textField.textContentType = UITextContentType(rawValue: "")
         passwordField.textField.clearsOnBeginEditing = false
 
-        confirmPasswordField.placeholder = "Confirm Password"
+        confirmPasswordField.titleText = "Confirm Password *"
+        confirmPasswordField.placeholder = "Re-enter your password"
         confirmPasswordField.textField.isSecureTextEntry = true
         confirmPasswordField.textField.autocapitalizationType = .none
         confirmPasswordField.textField.autocorrectionType = .no
@@ -193,14 +246,14 @@ final class PhysioSignupView: UIView, UITextFieldDelegate {
 
         passwordHint.text = "Must be at least 8 characters"
         passwordHint.font = .systemFont(ofSize: 12, weight: .medium)
-        passwordHint.textColor = UITheme.Colors.textSecondary
+        passwordHint.textColor = .gray
         stack.addArrangedSubview(passwordHint)
 
         stack.addArrangedSubview(confirmPasswordField)
 
         proofTitle.text = "Verification documents"
         proofTitle.font = .systemFont(ofSize: 18, weight: .bold)
-        proofTitle.textColor = UITheme.Colors.textPrimary
+        proofTitle.textColor = .black
         stack.addArrangedSubview(proofTitle)
 
         idProofRow.onTap = { [weak self] in self?.onPickIdProof?() }
@@ -210,7 +263,7 @@ final class PhysioSignupView: UIView, UITextFieldDelegate {
 
         // Terms card
         styleCard(termsCard)
-        termsCard.backgroundColor = UITheme.Colors.surface
+        termsCard.backgroundColor = UIColor.black.withAlphaComponent(0.03)
         termsCard.layer.shadowOpacity = 0
 
         termsCheckButton.translatesAutoresizingMaskIntoConstraints = false
@@ -220,8 +273,8 @@ final class PhysioSignupView: UIView, UITextFieldDelegate {
 
         termsLabel.translatesAutoresizingMaskIntoConstraints = false
         termsLabel.numberOfLines = 0
-        termsLabel.font = .systemFont(ofSize: 14)
-        termsLabel.textColor = UITheme.Colors.textSecondary
+        termsLabel.font = .systemFont(ofSize: 13, weight: .medium)
+        termsLabel.textColor = UIColor.black.withAlphaComponent(0.75)
         termsLabel.text = "I agree to the Terms of Service and Privacy Policy"
 
         termsCard.addSubview(termsCheckButton)
@@ -245,7 +298,7 @@ final class PhysioSignupView: UIView, UITextFieldDelegate {
 
         statusLabel.translatesAutoresizingMaskIntoConstraints = false
         statusLabel.font = .systemFont(ofSize: 13, weight: .semibold)
-        statusLabel.textColor = .systemRed
+        statusLabel.textColor = UIColor.red.withAlphaComponent(0.85)
         statusLabel.numberOfLines = 0
         statusLabel.isHidden = true
         stack.addArrangedSubview(statusLabel)
@@ -303,7 +356,7 @@ final class PhysioSignupView: UIView, UITextFieldDelegate {
         securityText.translatesAutoresizingMaskIntoConstraints = false
         securityText.numberOfLines = 0
         securityText.font = .systemFont(ofSize: 12, weight: .medium)
-        securityText.textColor = UITheme.Colors.textSecondary
+        securityText.textColor = UIColor.black.withAlphaComponent(0.75)
         securityText.text = "Your information is encrypted and secure. We never share your data with third parties."
 
         securityCard.addSubview(securityIcon)
@@ -326,7 +379,7 @@ final class PhysioSignupView: UIView, UITextFieldDelegate {
 
     // MARK: - Helpers
     private func configureEyeButton(_ b: UIButton, selector: Selector) {
-        b.tintColor = UITheme.Colors.textSecondary
+        b.tintColor = UIColor.black.withAlphaComponent(0.35)
         b.setImage(UIImage(systemName: "eye"), for: .normal)
         b.frame = CGRect(x: 0, y: 0, width: 30, height: 30)
         b.contentMode = .center
@@ -366,7 +419,7 @@ final class PhysioSignupView: UIView, UITextFieldDelegate {
 
     private func styleCard(_ v: UIView) {
         v.translatesAutoresizingMaskIntoConstraints = false
-        v.backgroundColor = UITheme.Colors.surface
+        v.backgroundColor = cardBg
         v.layer.cornerRadius = 18
         v.layer.shadowColor = UIColor.black.cgColor
         v.layer.shadowOpacity = 0.06
@@ -377,18 +430,20 @@ final class PhysioSignupView: UIView, UITextFieldDelegate {
     private func styleOutlineSocialButton(_ b: UIButton, title: String, iconSystemName: String) {
         b.translatesAutoresizingMaskIntoConstraints = false
         b.setTitle("  \(title)", for: .normal)
-        b.setTitleColor(UITheme.Colors.textPrimary, for: .normal)
+        b.setTitleColor(.black, for: .normal)
         b.titleLabel?.font = .systemFont(ofSize: 15, weight: .semibold)
         b.layer.cornerRadius = 14
-        b.layer.borderWidth = 0.5
-        b.layer.borderColor = UITheme.Colors.border.cgColor
-        b.backgroundColor = UITheme.Colors.surface
+        b.layer.borderWidth = 1.5
+        b.layer.borderColor = UIColor.black.withAlphaComponent(0.12).cgColor
+        b.backgroundColor = .white
         b.heightAnchor.constraint(equalToConstant: 52).isActive = true
         b.setImage(UIImage(systemName: iconSystemName), for: .normal)
-        b.tintColor = UITheme.Colors.textSecondary
+        b.tintColor = UIColor.black.withAlphaComponent(0.75)
     }
 
     // MARK: - Actions
+    @objc private func handleBack() { onBack?() }
+
     @objc private func loginTapped() { onLoginLink?() }
 
     @objc private func createTapped() {
@@ -496,13 +551,13 @@ private final class OrDividerView: UIView {
 
         line1.translatesAutoresizingMaskIntoConstraints = false
         line2.translatesAutoresizingMaskIntoConstraints = false
-        line1.backgroundColor = UITheme.Colors.border
-        line2.backgroundColor = UITheme.Colors.border
+        line1.backgroundColor = UIColor.black.withAlphaComponent(0.12)
+        line2.backgroundColor = UIColor.black.withAlphaComponent(0.12)
 
         label.translatesAutoresizingMaskIntoConstraints = false
         label.text = "or continue with"
         label.font = .systemFont(ofSize: 12, weight: .medium)
-        label.textColor = .placeholderText
+        label.textColor = .gray
 
         addSubview(line1)
         addSubview(line2)
@@ -543,36 +598,36 @@ private final class ProofUploadRow: UIView {
 
     func setSelected(filename: String) {
         statusLabel.text = filename
-        statusLabel.textColor = UITheme.Colors.textPrimary
+        statusLabel.textColor = UIColor.black.withAlphaComponent(0.75)
         actionButton.setTitle("Change", for: .normal)
     }
 
     private func build() {
         translatesAutoresizingMaskIntoConstraints = false
         layer.cornerRadius = 18
-        backgroundColor = UITheme.Colors.surface
+        backgroundColor = .white
         layer.borderWidth = 1
-        layer.borderColor = UITheme.Colors.border.cgColor
-        layer.shadowColor = UIColor.black.cgColor
-        layer.shadowOpacity = 0.06
+        layer.borderColor = UIColor.black.withAlphaComponent(0.06).cgColor
+        layer.shadowColor = UIColor.black.withAlphaComponent(0.06).cgColor
+        layer.shadowOpacity = 1
         layer.shadowRadius = 8
         layer.shadowOffset = CGSize(width: 0, height: 4)
 
         titleLabel.font = .systemFont(ofSize: 15, weight: .semibold)
-        titleLabel.textColor = UITheme.Colors.textPrimary
+        titleLabel.textColor = UIColor.black.withAlphaComponent(0.85)
         titleLabel.translatesAutoresizingMaskIntoConstraints = false
 
         subtitleLabel.font = .systemFont(ofSize: 12, weight: .medium)
-        subtitleLabel.textColor = UITheme.Colors.textSecondary
+        subtitleLabel.textColor = UIColor.black.withAlphaComponent(0.5)
         subtitleLabel.translatesAutoresizingMaskIntoConstraints = false
 
         statusLabel.font = .systemFont(ofSize: 12, weight: .semibold)
-        statusLabel.textColor = UITheme.Colors.textMuted
+        statusLabel.textColor = UIColor.black.withAlphaComponent(0.4)
         statusLabel.text = "No file selected"
         statusLabel.translatesAutoresizingMaskIntoConstraints = false
 
         actionButton.setTitle("Upload", for: .normal)
-        actionButton.setTitleColor(UITheme.Colors.accent, for: .normal)
+        actionButton.setTitleColor(UIColor(hex: "1E6EF7"), for: .normal)
         actionButton.titleLabel?.font = .systemFont(ofSize: 14, weight: .semibold)
         actionButton.addTarget(self, action: #selector(tapped), for: .touchUpInside)
         actionButton.translatesAutoresizingMaskIntoConstraints = false

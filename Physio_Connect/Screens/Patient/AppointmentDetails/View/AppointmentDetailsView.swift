@@ -9,6 +9,7 @@ import UIKit
 final class AppointmentDetailsView: UIView {
 
     // MARK: - UI
+    let backButton = UIButton(type: .system)
     private let scrollView = UIScrollView()
     private let contentView = UIView()
 
@@ -45,26 +46,43 @@ final class AppointmentDetailsView: UIView {
 
     override init(frame: CGRect) {
         super.init(frame: frame)
-        backgroundColor = UITheme.Colors.background
+        backgroundColor = UIColor(hex: "E3F0FF")
         build()
     }
 
     required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
 
     private func cardStyle(_ v: UIView) {
-        UITheme.applyCardStyle(v)
+        v.backgroundColor = .white
+        v.layer.cornerRadius = 22
+        v.layer.borderWidth = 1
+        v.layer.borderColor = UIColor(hex: "D4E3FE").cgColor
+        v.layer.shadowColor = UIColor.black.cgColor
+        v.layer.shadowOpacity = 0.08
+        v.layer.shadowRadius = 10
+        v.layer.shadowOffset = CGSize(width: 0, height: 6)
     }
 
     private func build() {
         // Scroll
         scrollView.translatesAutoresizingMaskIntoConstraints = false
         contentView.translatesAutoresizingMaskIntoConstraints = false
+        backButton.translatesAutoresizingMaskIntoConstraints = false
+        backButton.setImage(UIImage(systemName: "chevron.left"), for: .normal)
+        backButton.tintColor = UIColor.black.withAlphaComponent(0.8)
+        backButton.backgroundColor = .clear
+        addSubview(backButton)
 
         addSubview(scrollView)
         scrollView.addSubview(contentView)
 
         NSLayoutConstraint.activate([
-            scrollView.topAnchor.constraint(equalTo: safeAreaLayoutGuide.topAnchor),
+            backButton.topAnchor.constraint(equalTo: safeAreaLayoutGuide.topAnchor, constant: 8),
+            backButton.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 16),
+            backButton.widthAnchor.constraint(equalToConstant: 36),
+            backButton.heightAnchor.constraint(equalToConstant: 36),
+
+            scrollView.topAnchor.constraint(equalTo: backButton.bottomAnchor, constant: 8),
             scrollView.leadingAnchor.constraint(equalTo: leadingAnchor),
             scrollView.trailingAnchor.constraint(equalTo: trailingAnchor),
             scrollView.bottomAnchor.constraint(equalTo: bottomAnchor),
@@ -85,9 +103,9 @@ final class AppointmentDetailsView: UIView {
         avatarImageView.clipsToBounds = true
         avatarImageView.layer.cornerRadius = 18
         avatarImageView.contentMode = .scaleAspectFill
-        avatarImageView.backgroundColor = .tertiarySystemFill
+        avatarImageView.backgroundColor = .systemGray5
         avatarImageView.image = UIImage(named: "doctor_placeholder") ?? UIImage(systemName: "person.fill")
-        avatarImageView.tintColor = .tertiaryLabel
+        avatarImageView.tintColor = .gray
         doctorCard.addSubview(avatarImageView)
 
         func makeLabel(_ font: UIFont, _ color: UIColor) -> UILabel {
@@ -100,19 +118,19 @@ final class AppointmentDetailsView: UIView {
 
         nameLabel.translatesAutoresizingMaskIntoConstraints = false
         nameLabel.font = .boldSystemFont(ofSize: 18)
-        nameLabel.textColor = .label
+        nameLabel.textColor = .black
 
         ratingLabel.translatesAutoresizingMaskIntoConstraints = false
         ratingLabel.font = .systemFont(ofSize: 14, weight: .medium)
-        ratingLabel.textColor = .secondaryLabel
+        ratingLabel.textColor = .darkGray
 
         specLabel.translatesAutoresizingMaskIntoConstraints = false
         specLabel.font = .systemFont(ofSize: 15, weight: .semibold)
-        specLabel.textColor = .secondaryLabel
+        specLabel.textColor = UIColor.black.withAlphaComponent(0.8)
 
         feeLabel.translatesAutoresizingMaskIntoConstraints = false
         feeLabel.font = .systemFont(ofSize: 15, weight: .semibold)
-        feeLabel.textColor = UITheme.Colors.accent
+        feeLabel.textColor = UIColor(hex: "1E6EF7")
 
         [nameLabel, ratingLabel, specLabel, feeLabel].forEach { doctorCard.addSubview($0) }
 
@@ -124,11 +142,11 @@ final class AppointmentDetailsView: UIView {
 
         messageButton.translatesAutoresizingMaskIntoConstraints = false
         messageButton.setImage(UIImage(systemName: "message"), for: .normal)
-        messageButton.tintColor = .secondaryLabel
+        messageButton.tintColor = UIColor.black.withAlphaComponent(0.75)
 
         callButton.translatesAutoresizingMaskIntoConstraints = false
         callButton.setImage(UIImage(systemName: "phone"), for: .normal)
-        callButton.tintColor = .secondaryLabel
+        callButton.tintColor = UIColor.black.withAlphaComponent(0.75)
         actionStack.addArrangedSubview(messageButton)
         actionStack.addArrangedSubview(callButton)
 
@@ -139,7 +157,7 @@ final class AppointmentDetailsView: UIView {
 
         summaryTitleLabel.translatesAutoresizingMaskIntoConstraints = false
         summaryTitleLabel.font = .boldSystemFont(ofSize: 18)
-        summaryTitleLabel.textColor = .label
+        summaryTitleLabel.textColor = .black
         summaryTitleLabel.text = "Appointment Summary"
         summaryCard.addSubview(summaryTitleLabel)
 
@@ -147,7 +165,7 @@ final class AppointmentDetailsView: UIView {
             let l = UILabel()
             l.translatesAutoresizingMaskIntoConstraints = false
             l.font = .systemFont(ofSize: 15, weight: .semibold)
-            l.textColor = .label
+            l.textColor = UIColor.black.withAlphaComponent(0.85)
             l.text = t
             return l
         }
@@ -159,14 +177,14 @@ final class AppointmentDetailsView: UIView {
         [dateTitleLabel, locationTitleLabel, statusTitleLabel].forEach {
             $0.translatesAutoresizingMaskIntoConstraints = false
             $0.font = .systemFont(ofSize: 15, weight: .semibold)
-            $0.textColor = .label
+            $0.textColor = UIColor.black.withAlphaComponent(0.85)
             summaryCard.addSubview($0)
         }
 
         [dateValueLabel, locationValueLabel, statusValueLabel].forEach {
             $0.translatesAutoresizingMaskIntoConstraints = false
             $0.font = .systemFont(ofSize: 15, weight: .semibold)
-            $0.textColor = .secondaryLabel
+            $0.textColor = UIColor.black.withAlphaComponent(0.8)
             $0.textAlignment = .right
             $0.numberOfLines = 0
             summaryCard.addSubview($0)
@@ -180,13 +198,13 @@ final class AppointmentDetailsView: UIView {
 
         notesTitleLabel.translatesAutoresizingMaskIntoConstraints = false
         notesTitleLabel.font = .boldSystemFont(ofSize: 18)
-        notesTitleLabel.textColor = .label
+        notesTitleLabel.textColor = .black
         notesTitleLabel.text = "Session Notes"
         notesCard.addSubview(notesTitleLabel)
 
         notesTextView.translatesAutoresizingMaskIntoConstraints = false
         notesTextView.font = .systemFont(ofSize: 16)
-        notesTextView.backgroundColor = UITheme.Colors.neutralFill
+        notesTextView.backgroundColor = UIColor(hex: "EAF3FF")
         notesTextView.layer.cornerRadius = 14
         notesTextView.textContainerInset = UIEdgeInsets(top: 18, left: 18, bottom: 18, right: 48)
         notesCard.addSubview(notesTextView)
@@ -296,7 +314,7 @@ final class AppointmentDetailsView: UIView {
             avatarImageView.tintColor = .clear
         } else {
             avatarImageView.image = UIImage(named: "doctor_placeholder") ?? UIImage(systemName: "person.fill")
-            avatarImageView.tintColor = .tertiaryLabel
+            avatarImageView.tintColor = .gray
         }
     }
 

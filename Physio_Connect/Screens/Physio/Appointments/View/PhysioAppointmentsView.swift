@@ -63,7 +63,7 @@ final class PhysioAppointmentsView: UIView {
     required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
 
     private func build() {
-        backgroundColor = .systemGroupedBackground
+        backgroundColor = UIColor(hex: "E6F1FF")
 
         searchBar.translatesAutoresizingMaskIntoConstraints = false
         searchBar.searchBarStyle = .minimal
@@ -71,9 +71,9 @@ final class PhysioAppointmentsView: UIView {
 
         segmentControl.translatesAutoresizingMaskIntoConstraints = false
         segmentControl.selectedSegmentIndex = 0
-        segmentControl.selectedSegmentTintColor = UITheme.Colors.accent
+        segmentControl.selectedSegmentTintColor = UIColor(hex: "1E6EF7")
         segmentControl.setTitleTextAttributes([.foregroundColor: UIColor.white], for: .selected)
-        segmentControl.setTitleTextAttributes([.foregroundColor: UIColor.secondaryLabel], for: .normal)
+        segmentControl.setTitleTextAttributes([.foregroundColor: UIColor.black.withAlphaComponent(0.65)], for: .normal)
 
         tableView.translatesAutoresizingMaskIntoConstraints = false
         tableView.backgroundColor = .clear
@@ -133,12 +133,12 @@ final class PhysioAppointmentCell: UITableViewCell {
         backgroundColor = .clear
 
         card.translatesAutoresizingMaskIntoConstraints = false
-        card.backgroundColor = .secondarySystemGroupedBackground
-        card.layer.cornerRadius = UITheme.Metrics.cardCornerRadius
+        card.backgroundColor = .white
+        card.layer.cornerRadius = 16
         card.layer.shadowColor = UIColor.black.cgColor
-        card.layer.shadowOpacity = UITheme.Metrics.cardShadowOpacity
-        card.layer.shadowRadius = UITheme.Metrics.cardShadowRadius
-        card.layer.shadowOffset = UITheme.Metrics.cardShadowOffset
+        card.layer.shadowOpacity = 0.06
+        card.layer.shadowRadius = 8
+        card.layer.shadowOffset = CGSize(width: 0, height: 3)
         contentView.addSubview(card)
 
         statusPill.translatesAutoresizingMaskIntoConstraints = false
@@ -150,26 +150,26 @@ final class PhysioAppointmentCell: UITableViewCell {
 
         titleLabel.translatesAutoresizingMaskIntoConstraints = false
         titleLabel.font = .systemFont(ofSize: 16, weight: .semibold)
-        titleLabel.textColor = .label
+        titleLabel.textColor = UIColor(hex: "102A43")
 
         patientLabel.translatesAutoresizingMaskIntoConstraints = false
         patientLabel.font = .systemFont(ofSize: 14, weight: .medium)
-        patientLabel.textColor = .secondaryLabel
+        patientLabel.textColor = UIColor.black.withAlphaComponent(0.7)
         patientLabel.numberOfLines = 0
 
         timeLabel.translatesAutoresizingMaskIntoConstraints = false
         timeLabel.font = .systemFont(ofSize: 14, weight: .semibold)
-        timeLabel.textColor = UITheme.Colors.accent
+        timeLabel.textColor = UIColor(hex: "1E6EF7")
         timeLabel.numberOfLines = 0
 
         durationLabel.translatesAutoresizingMaskIntoConstraints = false
         durationLabel.font = .systemFont(ofSize: 13, weight: .medium)
-        durationLabel.textColor = .tertiaryLabel
+        durationLabel.textColor = UIColor.black.withAlphaComponent(0.55)
         durationLabel.numberOfLines = 0
 
         locationLabel.translatesAutoresizingMaskIntoConstraints = false
         locationLabel.font = .systemFont(ofSize: 13, weight: .medium)
-        locationLabel.textColor = .tertiaryLabel
+        locationLabel.textColor = UIColor.black.withAlphaComponent(0.55)
         locationLabel.numberOfLines = 0
 
         cancelButton.translatesAutoresizingMaskIntoConstraints = false

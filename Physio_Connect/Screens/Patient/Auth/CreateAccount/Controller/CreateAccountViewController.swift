@@ -35,13 +35,15 @@ final class CreateAccountViewController: UIViewController, UITextFieldDelegate {
 
     override func viewDidLoad() {
         super.viewDidLoad()
-        UITheme.applyNativeNavBar(to: self, title: "Create Account")
+        navigationItem.hidesBackButton = true
+        navigationController?.setNavigationBarHidden(true, animated: false)
         bind()
         applyAppointmentBanner()
         addKeyboardDismissTap()
     }
 
     private func bind() {
+        createView.backButton.addTarget(self, action: #selector(backTapped), for: .touchUpInside)
         createView.termsCheckButton.addTarget(self, action: #selector(termsTapped), for: .touchUpInside)
 
         createView.passwordEyeButton.addTarget(self, action: #selector(togglePassword), for: .touchUpInside)
@@ -71,6 +73,10 @@ final class CreateAccountViewController: UIViewController, UITextFieldDelegate {
     }
 
     // MARK: - Actions
+    @objc private func backTapped() {
+        navigationController?.popViewController(animated: true)
+    }
+
     @objc private func termsTapped() {
         createView.setTermsChecked(!createView.isTermsChecked)
     }

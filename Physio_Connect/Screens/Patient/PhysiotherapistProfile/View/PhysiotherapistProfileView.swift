@@ -10,8 +10,8 @@ import UIKit
 final class PhysiotherapistProfileView: UIView {
 
     // MARK: Colors
-    private let bg = UITheme.Colors.background
-    private let primaryBlue = UITheme.Colors.accent
+    private let bg = UIColor(hex: "E3F0FF")
+    private let primaryBlue = UIColor(hex: "1E6EF7")
 
     // MARK: Scroll
     let scrollView = UIScrollView()
@@ -21,6 +21,7 @@ final class PhysiotherapistProfileView: UIView {
     private let header = UIView()
     private let headerGradient = CAGradientLayer()
 
+    let backButton = UIButton(type: .system)
 
     private let profileCard = UIView()
     private let avatar = UIImageView()
@@ -105,7 +106,7 @@ final class PhysiotherapistProfileView: UIView {
 
         label.translatesAutoresizingMaskIntoConstraints = false
         label.font = .systemFont(ofSize: 13, weight: .semibold)
-        label.textColor = UITheme.Colors.textPrimary
+        label.textColor = .black
         label.numberOfLines = 2
         label.textAlignment = .center
 
@@ -156,14 +157,25 @@ final class PhysiotherapistProfileView: UIView {
         contentView.addSubview(header)
 
         headerGradient.colors = [
-            UITheme.Colors.accent.cgColor,
-            UITheme.Colors.accent.withAlphaComponent(0.8).cgColor
+            UIColor(hex: "1E6EF7").cgColor,
+            UIColor(hex: "1E6EF7").cgColor
         ]
         header.layer.insertSublayer(headerGradient, at: 0)
 
+        // Back button (chevron only)
+        backButton.translatesAutoresizingMaskIntoConstraints = false
+        backButton.setImage(UIImage(systemName: "chevron.left"), for: .normal)
+        backButton.tintColor = .white
+        backButton.backgroundColor = .clear
+
         // Profile card
         profileCard.translatesAutoresizingMaskIntoConstraints = false
-        UITheme.applyCardStyle(profileCard)
+        profileCard.backgroundColor = .white
+        profileCard.layer.cornerRadius = 20
+        profileCard.layer.shadowColor = UIColor.black.cgColor
+        profileCard.layer.shadowOpacity = 0.08
+        profileCard.layer.shadowRadius = 10
+        profileCard.layer.shadowOffset = CGSize(width: 0, height: 6)
         contentView.addSubview(profileCard)
 
         // Avatar
@@ -171,30 +183,31 @@ final class PhysiotherapistProfileView: UIView {
         avatar.layer.cornerRadius = 14
         avatar.clipsToBounds = true
         avatar.contentMode = .scaleAspectFill
-        avatar.backgroundColor = UITheme.Colors.neutralFill
+        avatar.backgroundColor = UIColor.black.withAlphaComponent(0.05)
         avatar.image = UIImage(named: "doctor_placeholder") ?? UIImage(systemName: "person.fill")
         avatar.tintColor = .lightGray
 
         // Name + specialization + location
         nameLabel.translatesAutoresizingMaskIntoConstraints = false
         nameLabel.font = .boldSystemFont(ofSize: 20)
-        nameLabel.textColor = UITheme.Colors.textPrimary
+        nameLabel.textColor = .black
 
         specializationLabel.translatesAutoresizingMaskIntoConstraints = false
         specializationLabel.font = .systemFont(ofSize: 14, weight: .medium)
-        specializationLabel.textColor = UITheme.Colors.textSecondary
+        specializationLabel.textColor = UIColor.black.withAlphaComponent(0.7)
 
         servicePlaceLabel.translatesAutoresizingMaskIntoConstraints = false
         servicePlaceLabel.font = .systemFont(ofSize: 13, weight: .medium)
-        servicePlaceLabel.textColor = UITheme.Colors.textMuted
+        servicePlaceLabel.textColor = UIColor.black.withAlphaComponent(0.55)
 
         locationIcon.translatesAutoresizingMaskIntoConstraints = false
         locationIcon.image = UIImage(systemName: "mappin.and.ellipse")
-        locationIcon.tintColor = UITheme.Colors.textMuted
+        locationIcon.tintColor = UIColor.black.withAlphaComponent(0.4)
 
         statsDivider.translatesAutoresizingMaskIntoConstraints = false
         statsDivider.backgroundColor = UIColor.clear
 
+        [backButton].forEach { header.addSubview($0) }
         [avatar, nameLabel, specializationLabel, locationIcon, servicePlaceLabel, statsDivider].forEach { profileCard.addSubview($0) }
 
         NSLayoutConstraint.activate([
@@ -203,6 +216,11 @@ final class PhysiotherapistProfileView: UIView {
             header.trailingAnchor.constraint(equalTo: contentView.trailingAnchor),
             header.heightAnchor.constraint(equalToConstant: 160),
 
+            // Back button down a bit
+            backButton.leadingAnchor.constraint(equalTo: header.leadingAnchor, constant: 12),
+            backButton.topAnchor.constraint(equalTo: header.safeAreaLayoutGuide.topAnchor, constant: 14),
+            backButton.widthAnchor.constraint(equalToConstant: 44),
+            backButton.heightAnchor.constraint(equalToConstant: 44),
 
             profileCard.topAnchor.constraint(equalTo: header.bottomAnchor, constant: -46),
             profileCard.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 16),
@@ -259,16 +277,21 @@ final class PhysiotherapistProfileView: UIView {
 
         // About card (expandable) — FIXED ORDER (prevents crash)
         aboutCard.translatesAutoresizingMaskIntoConstraints = false
-        UITheme.applyCardStyle(aboutCard)
+        aboutCard.backgroundColor = .white
+        aboutCard.layer.cornerRadius = 18
+        aboutCard.layer.shadowColor = UIColor.black.cgColor
+        aboutCard.layer.shadowOpacity = 0.04
+        aboutCard.layer.shadowRadius = 8
+        aboutCard.layer.shadowOffset = CGSize(width: 0, height: 4)
 
         aboutTitle.translatesAutoresizingMaskIntoConstraints = false
         aboutTitle.text = "About"
         aboutTitle.font = .boldSystemFont(ofSize: 18)
-        aboutTitle.textColor = UITheme.Colors.textPrimary
+        aboutTitle.textColor = .black
 
         aboutText.translatesAutoresizingMaskIntoConstraints = false
         aboutText.font = .systemFont(ofSize: 13)
-        aboutText.textColor = UITheme.Colors.textSecondary
+        aboutText.textColor = .darkGray
         aboutText.numberOfLines = 3
 
         aboutMoreButton.translatesAutoresizingMaskIntoConstraints = false
@@ -303,19 +326,24 @@ final class PhysiotherapistProfileView: UIView {
 
         // Consultation fee card
         specFeeCard.translatesAutoresizingMaskIntoConstraints = false
-        UITheme.applyCardStyle(specFeeCard)
+        specFeeCard.backgroundColor = .white
+        specFeeCard.layer.cornerRadius = 18
+        specFeeCard.layer.shadowColor = UIColor.black.cgColor
+        specFeeCard.layer.shadowOpacity = 0.04
+        specFeeCard.layer.shadowRadius = 8
+        specFeeCard.layer.shadowOffset = CGSize(width: 0, height: 4)
 
         specTitle.text = "Consultation Fee"
         specTitle.font = .systemFont(ofSize: 16, weight: .bold)
-        specTitle.textColor = UITheme.Colors.textPrimary
+        specTitle.textColor = .black
         specTitle.translatesAutoresizingMaskIntoConstraints = false
 
         consultRow.translatesAutoresizingMaskIntoConstraints = false
-        consultRow.backgroundColor = UITheme.Colors.accent.withAlphaComponent(0.12)
+        consultRow.backgroundColor = UIColor(hex: "EEF5FF")
         consultRow.layer.cornerRadius = 14
 
         consultIconContainer.translatesAutoresizingMaskIntoConstraints = false
-        consultIconContainer.backgroundColor = UITheme.Colors.accent
+        consultIconContainer.backgroundColor = UIColor(hex: "4A90E2")
         consultIconContainer.layer.cornerRadius = 18
 
         consultIcon.translatesAutoresizingMaskIntoConstraints = false
@@ -325,15 +353,15 @@ final class PhysiotherapistProfileView: UIView {
         consultName.translatesAutoresizingMaskIntoConstraints = false
         consultName.text = "Consultation"
         consultName.font = .systemFont(ofSize: 14, weight: .semibold)
-        consultName.textColor = UITheme.Colors.textPrimary
+        consultName.textColor = .black
 
         consultSubtitle.translatesAutoresizingMaskIntoConstraints = false
         consultSubtitle.text = "Per hour session"
         consultSubtitle.font = .systemFont(ofSize: 12, weight: .medium)
-        consultSubtitle.textColor = UITheme.Colors.textMuted
+        consultSubtitle.textColor = UIColor.black.withAlphaComponent(0.55)
 
         feeValue.font = .systemFont(ofSize: 16, weight: .bold)
-        feeValue.textColor = UITheme.Colors.textPrimary
+        feeValue.textColor = .black
         feeValue.translatesAutoresizingMaskIntoConstraints = false
 
         consultIconContainer.addSubview(consultIcon)
@@ -388,7 +416,7 @@ final class PhysiotherapistProfileView: UIView {
         bookButton.setTitleColor(.white, for: .highlighted)
         bookButton.setTitleColor(.white, for: .disabled)
         bookButton.titleLabel?.font = .systemFont(ofSize: 16, weight: .bold)
-        bookButton.backgroundColor = UITheme.Colors.accent
+        bookButton.backgroundColor = UIColor(hex: "2F6BFF")
         bookButton.layer.cornerRadius = 26
         bookButton.clipsToBounds = true
 
@@ -408,7 +436,7 @@ final class PhysiotherapistProfileView: UIView {
 
         reviewsTitle.text = "Reviews"
         reviewsTitle.font = .boldSystemFont(ofSize: 18)
-        reviewsTitle.textColor = UITheme.Colors.textPrimary
+        reviewsTitle.textColor = .black
 
         seeAllButton.setTitle("See All  >", for: .normal)
         seeAllButton.setTitleColor(primaryBlue, for: .normal)

@@ -51,8 +51,7 @@ final class VideosViewController: UIViewController, UITableViewDataSource, UITab
 
     override func viewDidLoad() {
         super.viewDidLoad()
-        UITheme.applyNativeNavBar(to: self, title: "Exercises")
-        navigationItem.rightBarButtonItem = UIBarButtonItem(customView: videosView.profileButton)
+        navigationController?.setNavigationBarHidden(true, animated: false)
 
         videosView.tableView.dataSource = self
         videosView.tableView.delegate = self

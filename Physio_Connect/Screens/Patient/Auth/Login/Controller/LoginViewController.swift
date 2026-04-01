@@ -20,14 +20,7 @@ final class LoginViewController: UIViewController {
 
     override func viewDidLoad() {
         super.viewDidLoad()
-        UITheme.applyNativeNavBar(to: self, title: "Log In")
-        // Custom back action — goes to role selection, not pop
-        navigationItem.leftBarButtonItem = UIBarButtonItem(
-            image: UIImage(systemName: "chevron.left"),
-            style: .plain,
-            target: self,
-            action: #selector(backTapped)
-        )
+        navigationController?.setNavigationBarHidden(true, animated: false)
         bind()
         addKeyboardDismissTap()
     }
@@ -44,6 +37,7 @@ final class LoginViewController: UIViewController {
     }
 
     private func bind() {
+        loginView.backButton.addTarget(self, action: #selector(backTapped), for: .touchUpInside)
         loginView.passwordEyeButton.addTarget(self, action: #selector(togglePassword), for: .touchUpInside)
         loginView.loginButton.addTarget(self, action: #selector(loginTapped), for: .touchUpInside)
         loginView.signUpButton.addTarget(self, action: #selector(signupTapped), for: .touchUpInside)

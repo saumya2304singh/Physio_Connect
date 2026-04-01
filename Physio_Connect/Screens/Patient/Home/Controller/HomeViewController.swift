@@ -30,8 +30,9 @@ final class HomeViewController: UIViewController, UICollectionViewDataSource, UI
 
     override func viewDidLoad() {
         super.viewDidLoad()
-        UITheme.applyNativeNavBar(to: self, title: "Home")
-        setupNavigationItems()
+        navigationController?.setNavigationBarHidden(true, animated: false)
+
+        homeView.profileButton.addTarget(self, action: #selector(profileTapped), for: .touchUpInside)
         homeView.videosCollectionView.dataSource = self
         homeView.videosCollectionView.delegate = self
         homeView.videosCollectionView.register(HomeVideoCardCell.self, forCellWithReuseIdentifier: HomeVideoCardCell.reuseID)
@@ -57,10 +58,10 @@ final class HomeViewController: UIViewController, UICollectionViewDataSource, UI
 
         locationService.onLocationUpdate = { [weak self] name, _ in
             DispatchQueue.main.async {
-                self?.locationLabel.text = name
+                self?.homeView.setLocationText(name)
             }
         }
-        locationLabel.text = "Locating..."
+        homeView.setLocationText("Locating...")
         locationService.requestLocation()
 
         Task { await refreshCards() }
@@ -262,45 +263,16 @@ final class HomeViewController: UIViewController, UICollectionViewDataSource, UI
         navigationController?.pushViewController(vc, animated: true)
     }
 
-    private let locationLabel = UILabel()
-    private let profileButton = UIButton(type: .system)
-
-    private func setupNavigationItems() {
-        // Location Stack (Left)
-        let locationIcon = UIImageView(image: UIImage(systemName: "location"))
-        locationIcon.tintColor = UITheme.Colors.accent
-        locationIcon.translatesAutoresizingMaskIntoConstraints = false
-        locationIcon.widthAnchor.constraint(equalToConstant: 18).isActive = true
-        locationIcon.heightAnchor.constraint(equalToConstant: 18).isActive = true
-
-        locationLabel.font = .systemFont(ofSize: 13, weight: .semibold)
-        locationLabel.textColor = .secondaryLabel
-
-        let locationStack = UIStackView(arrangedSubviews: [locationIcon, locationLabel])
-        locationStack.spacing = 6
-        locationStack.alignment = .center
-
-        navigationItem.leftBarButtonItem = UIBarButtonItem(customView: locationStack)
-
-        // Profile Button (Right)
-        let profileConfig = UIImage.SymbolConfiguration(pointSize: 32, weight: .light)
-        profileButton.setImage(UIImage(systemName: "person.crop.circle.fill", withConfiguration: profileConfig), for: .normal)
-        profileButton.tintColor = .secondaryLabel
-        profileButton.addTarget(self, action: #selector(profileTapped), for: .touchUpInside)
-
-        navigationItem.rightBarButtonItem = UIBarButtonItem(customView: profileButton)
-    }
-
     private func refreshProfileAvatar() async {
         await MainActor.run {
             PatientNavAvatarStyle.updateProfileButton(
-                self.profileButton,
+                self.homeView.profileButton,
                 urlString: ProfileModel.cachedAvatarURL()
             )
         }
         guard let profile = try? await profileModel.fetchCurrentProfile() else { return }
         await MainActor.run {
-            PatientNavAvatarStyle.updateProfileButton(self.profileButton, urlString: profile.avatarURL)
+            PatientNavAvatarStyle.updateProfileButton(self.homeView.profileButton, urlString: profile.avatarURL)
         }
     }
 
