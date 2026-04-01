@@ -16,7 +16,7 @@ final class PhysioProgramsView: UIView {
 
     override init(frame: CGRect) {
         super.init(frame: frame)
-        backgroundColor = .systemGroupedBackground
+        backgroundColor = UIColor(hex: "E6F1FF")
         build()
     }
 
@@ -47,8 +47,8 @@ final class PhysioProgramsView: UIView {
         createButton.setImage(UIImage(systemName: "plus"), for: .normal)
         createButton.titleLabel?.font = .systemFont(ofSize: 16, weight: .semibold)
         createButton.tintColor = .white
-        createButton.backgroundColor = UITheme.Colors.accent
-        createButton.layer.cornerRadius = UITheme.Metrics.buttonCornerRadius
+        createButton.backgroundColor = UIColor(hex: "1E6EF7")
+        createButton.layer.cornerRadius = 16
         createButton.contentEdgeInsets = UIEdgeInsets(top: 12, left: 16, bottom: 12, right: 16)
         createButton.imageEdgeInsets = UIEdgeInsets(top: 0, left: -6, bottom: 0, right: 0)
 
@@ -63,7 +63,7 @@ final class PhysioProgramsView: UIView {
 
         emptyLabel.translatesAutoresizingMaskIntoConstraints = false
         emptyLabel.text = "No programs yet."
-        emptyLabel.textColor = .tertiaryLabel
+        emptyLabel.textColor = UIColor.black.withAlphaComponent(0.5)
         emptyLabel.font = .systemFont(ofSize: 16, weight: .semibold)
         emptyLabel.textAlignment = .center
         emptyLabel.isHidden = true
@@ -157,16 +157,16 @@ final class ProgramCardCell: UITableViewCell {
 
     private func build() {
         card.translatesAutoresizingMaskIntoConstraints = false
-        card.backgroundColor = .secondarySystemGroupedBackground
-        card.layer.cornerRadius = UITheme.Metrics.cardCornerRadius
+        card.backgroundColor = .white
+        card.layer.cornerRadius = 18
         card.layer.shadowColor = UIColor.black.cgColor
-        card.layer.shadowOpacity = UITheme.Metrics.cardShadowOpacity
-        card.layer.shadowRadius = UITheme.Metrics.cardShadowRadius
-        card.layer.shadowOffset = UITheme.Metrics.cardShadowOffset
+        card.layer.shadowOpacity = 0.06
+        card.layer.shadowRadius = 10
+        card.layer.shadowOffset = CGSize(width: 0, height: 6)
 
         titleLabel.translatesAutoresizingMaskIntoConstraints = false
         titleLabel.font = .systemFont(ofSize: 17, weight: .bold)
-        titleLabel.textColor = .label
+        titleLabel.textColor = .black
 
         statusPill.translatesAutoresizingMaskIntoConstraints = false
         statusPill.font = .systemFont(ofSize: 12, weight: .semibold)
@@ -182,7 +182,7 @@ final class ProgramCardCell: UITableViewCell {
         assignedLabel.translatesAutoresizingMaskIntoConstraints = false
         assignedLabel.text = "Assigned to:"
         assignedLabel.font = .systemFont(ofSize: 13, weight: .semibold)
-        assignedLabel.textColor = .secondaryLabel
+        assignedLabel.textColor = UIColor.black.withAlphaComponent(0.6)
 
         chipsStack.translatesAutoresizingMaskIntoConstraints = false
         chipsStack.axis = .horizontal
@@ -202,16 +202,16 @@ final class ProgramCardCell: UITableViewCell {
         assignButton.translatesAutoresizingMaskIntoConstraints = false
         assignButton.setTitle("Assign to Patients", for: .normal)
         assignButton.titleLabel?.font = .systemFont(ofSize: 15, weight: .semibold)
-        assignButton.setTitleColor(UITheme.Colors.accent, for: .normal)
-        assignButton.backgroundColor = UITheme.Colors.accent.withAlphaComponent(0.1)
+        assignButton.setTitleColor(UIColor(hex: "1E6EF7"), for: .normal)
+        assignButton.backgroundColor = UIColor(hex: "EDF4FF")
         assignButton.layer.cornerRadius = 12
         assignButton.addTarget(self, action: #selector(assignTapped), for: .touchUpInside)
 
         detailsButton.translatesAutoresizingMaskIntoConstraints = false
         detailsButton.setTitle("View Details", for: .normal)
         detailsButton.titleLabel?.font = .systemFont(ofSize: 15, weight: .semibold)
-        detailsButton.setTitleColor(.secondaryLabel, for: .normal)
-        detailsButton.backgroundColor = UIColor.tertiarySystemFill
+        detailsButton.setTitleColor(UIColor.black.withAlphaComponent(0.7), for: .normal)
+        detailsButton.backgroundColor = UIColor(hex: "F3F6FB")
         detailsButton.layer.cornerRadius = 12
         detailsButton.addTarget(self, action: #selector(detailsTapped), for: .touchUpInside)
 
@@ -219,7 +219,7 @@ final class ProgramCardCell: UITableViewCell {
         deleteButton.setTitle("Delete Program", for: .normal)
         deleteButton.titleLabel?.font = .systemFont(ofSize: 15, weight: .semibold)
         deleteButton.setTitleColor(.white, for: .normal)
-        deleteButton.backgroundColor = .systemRed
+        deleteButton.backgroundColor = UIColor(hex: "E5484D")
         deleteButton.layer.cornerRadius = 12
         deleteButton.addTarget(self, action: #selector(deleteTapped), for: .touchUpInside)
 
@@ -284,12 +284,12 @@ final class ProgramCardCell: UITableViewCell {
         row.alignment = .center
 
         let iconView = UIImageView(image: UIImage(systemName: icon))
-        iconView.tintColor = .tertiaryLabel
+        iconView.tintColor = UIColor.black.withAlphaComponent(0.55)
         iconView.setContentHuggingPriority(.required, for: .horizontal)
 
         let label = UILabel()
         label.font = .systemFont(ofSize: 13, weight: .medium)
-        label.textColor = .secondaryLabel
+        label.textColor = UIColor.black.withAlphaComponent(0.65)
         label.text = text
 
         row.addArrangedSubview(iconView)
@@ -300,8 +300,8 @@ final class ProgramCardCell: UITableViewCell {
     private func makeChipLabel(text: String) -> UILabel {
         let label = UILabel()
         label.font = .systemFont(ofSize: 12, weight: .semibold)
-        label.textColor = .secondaryLabel
-        label.backgroundColor = UIColor.tertiarySystemFill
+        label.textColor = UIColor.black.withAlphaComponent(0.7)
+        label.backgroundColor = UIColor(hex: "F2F4F7")
         label.layer.cornerRadius = 12
         label.clipsToBounds = true
         label.textAlignment = .center

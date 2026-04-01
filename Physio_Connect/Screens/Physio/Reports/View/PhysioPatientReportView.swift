@@ -31,6 +31,7 @@ final class PhysioPatientReportView: UIView {
         let sessionNotes: [SessionNoteVM]
     }
 
+    let backButton = UIButton(type: .system)
 
     private let scrollView = UIScrollView()
     private let contentStack = UIStackView()
@@ -68,17 +69,17 @@ final class PhysioPatientReportView: UIView {
         nameLabel.text = vm.patientName
         subtitleLabel.text = vm.subtitleText
         sessionsPill.configure(title: "Sessions", value: vm.sessionsText)
-        adherencePill.configure(title: "Adherence", value: vm.adherenceText, accentColor: .systemGreen)
+        adherencePill.configure(title: "Adherence", value: vm.adherenceText, accentColor: UIColor(hex: "22C55E"))
 
         adherenceValue.text = "\(vm.adherencePercent)%"
         adherenceBar.setProgress(Float(vm.adherencePercent) / 100.0, animated: false)
 
         metricsRow1.arrangedSubviews.forEach { $0.removeFromSuperview() }
         metricsRow2.arrangedSubviews.forEach { $0.removeFromSuperview() }
-        metricsRow1.addArrangedSubview(MetricView(title: "Completed Sessions", value: vm.completedSessionsText, color: .systemBlue))
-        metricsRow1.addArrangedSubview(MetricView(title: "Exercises Done", value: vm.exercisesDoneText, color: .systemGreen))
-        metricsRow2.addArrangedSubview(MetricView(title: "Missed Sessions", value: vm.missedSessionsText, color: .systemOrange))
-        metricsRow2.addArrangedSubview(MetricView(title: "Total Hours", value: vm.totalHoursText, color: .systemPurple))
+        metricsRow1.addArrangedSubview(MetricView(title: "Completed Sessions", value: vm.completedSessionsText, color: UIColor(hex: "2563EB")))
+        metricsRow1.addArrangedSubview(MetricView(title: "Exercises Done", value: vm.exercisesDoneText, color: UIColor(hex: "16A34A")))
+        metricsRow2.addArrangedSubview(MetricView(title: "Missed Sessions", value: vm.missedSessionsText, color: UIColor(hex: "EA580C")))
+        metricsRow2.addArrangedSubview(MetricView(title: "Total Hours", value: vm.totalHoursText, color: UIColor(hex: "7C3AED")))
 
         notesStack.arrangedSubviews.forEach { $0.removeFromSuperview() }
         if vm.sessionNotes.isEmpty {
@@ -92,7 +93,17 @@ final class PhysioPatientReportView: UIView {
     }
 
     private func build() {
-        backgroundColor = .systemGroupedBackground
+        backgroundColor = UIColor(hex: "E6F1FF")
+
+        backButton.translatesAutoresizingMaskIntoConstraints = false
+        backButton.setTitle("Back to Patients", for: .normal)
+        backButton.setTitleColor(UIColor(hex: "1E6EF7"), for: .normal)
+        backButton.titleLabel?.font = .systemFont(ofSize: 15, weight: .semibold)
+        backButton.setImage(UIImage(systemName: "chevron.left"), for: .normal)
+        backButton.tintColor = UIColor(hex: "1E6EF7")
+        backButton.contentHorizontalAlignment = .leading
+        backButton.semanticContentAttribute = .forceLeftToRight
+        backButton.imageEdgeInsets = UIEdgeInsets(top: 0, left: -4, bottom: 0, right: 4)
 
         scrollView.translatesAutoresizingMaskIntoConstraints = false
         scrollView.showsVerticalScrollIndicator = false
@@ -102,15 +113,20 @@ final class PhysioPatientReportView: UIView {
         contentStack.spacing = 16
 
         headerCard.translatesAutoresizingMaskIntoConstraints = false
-        UITheme.applyCardStyle(headerCard)
+        headerCard.backgroundColor = .white
+        headerCard.layer.cornerRadius = 18
+        headerCard.layer.shadowColor = UIColor.black.cgColor
+        headerCard.layer.shadowOpacity = 0.05
+        headerCard.layer.shadowRadius = 10
+        headerCard.layer.shadowOffset = CGSize(width: 0, height: 4)
 
         nameLabel.translatesAutoresizingMaskIntoConstraints = false
         nameLabel.font = .systemFont(ofSize: 20, weight: .bold)
-        nameLabel.textColor = .label
+        nameLabel.textColor = UIColor(hex: "0F172A")
 
         subtitleLabel.translatesAutoresizingMaskIntoConstraints = false
         subtitleLabel.font = .systemFont(ofSize: 14, weight: .medium)
-        subtitleLabel.textColor = UITheme.Colors.textSecondary
+        subtitleLabel.textColor = UIColor.black.withAlphaComponent(0.6)
 
         sessionsPill.translatesAutoresizingMaskIntoConstraints = false
         adherencePill.translatesAutoresizingMaskIntoConstraints = false
@@ -126,21 +142,25 @@ final class PhysioPatientReportView: UIView {
         headerCard.addSubview(pillsStack)
 
         adherenceCard.translatesAutoresizingMaskIntoConstraints = false
-        UITheme.applyCardStyle(adherenceCard)
+        adherenceCard.backgroundColor = .white
+        adherenceCard.layer.cornerRadius = 18
+        adherenceCard.layer.shadowColor = UIColor.black.cgColor
+        adherenceCard.layer.shadowOpacity = 0.05
+        adherenceCard.layer.shadowRadius = 10
+        adherenceCard.layer.shadowOffset = CGSize(width: 0, height: 4)
 
         adherenceTitle.translatesAutoresizingMaskIntoConstraints = false
         adherenceTitle.font = .systemFont(ofSize: 16, weight: .bold)
-        adherenceTitle.textColor = .label
+        adherenceTitle.textColor = UIColor(hex: "0F172A")
         adherenceTitle.text = "Exercise Adherence"
 
         adherenceValue.translatesAutoresizingMaskIntoConstraints = false
         adherenceValue.font = .systemFont(ofSize: 16, weight: .bold)
-        adherenceValue.textColor = UITheme.Colors.accent
-        adherenceValue.textAlignment = .right
+        adherenceValue.textColor = UIColor(hex: "1E6EF7")
 
         adherenceBar.translatesAutoresizingMaskIntoConstraints = false
-        adherenceBar.trackTintColor = UITheme.Colors.neutralFill
-        adherenceBar.progressTintColor = UITheme.Colors.accent
+        adherenceBar.trackTintColor = UIColor.black.withAlphaComponent(0.08)
+        adherenceBar.progressTintColor = UIColor(hex: "1E6EF7")
         adherenceBar.layer.cornerRadius = 4
         adherenceBar.clipsToBounds = true
 
@@ -165,17 +185,27 @@ final class PhysioPatientReportView: UIView {
         adherenceCard.addSubview(metricsStack)
 
         chartCard.translatesAutoresizingMaskIntoConstraints = false
-        UITheme.applyCardStyle(chartCard)
+        chartCard.backgroundColor = .white
+        chartCard.layer.cornerRadius = 18
+        chartCard.layer.shadowColor = UIColor.black.cgColor
+        chartCard.layer.shadowOpacity = 0.05
+        chartCard.layer.shadowRadius = 10
+        chartCard.layer.shadowOffset = CGSize(width: 0, height: 4)
 
         chartView.translatesAutoresizingMaskIntoConstraints = false
         chartCard.addSubview(chartView)
 
         notesCard.translatesAutoresizingMaskIntoConstraints = false
-        UITheme.applyCardStyle(notesCard)
+        notesCard.backgroundColor = .white
+        notesCard.layer.cornerRadius = 18
+        notesCard.layer.shadowColor = UIColor.black.cgColor
+        notesCard.layer.shadowOpacity = 0.05
+        notesCard.layer.shadowRadius = 10
+        notesCard.layer.shadowOffset = CGSize(width: 0, height: 4)
 
         notesTitle.translatesAutoresizingMaskIntoConstraints = false
         notesTitle.font = .systemFont(ofSize: 16, weight: .bold)
-        notesTitle.textColor = .label
+        notesTitle.textColor = UIColor(hex: "0F172A")
         notesTitle.text = "Session Notes"
 
         notesStack.translatesAutoresizingMaskIntoConstraints = false
@@ -184,7 +214,7 @@ final class PhysioPatientReportView: UIView {
 
         emptyNotesLabel.translatesAutoresizingMaskIntoConstraints = false
         emptyNotesLabel.font = .systemFont(ofSize: 14, weight: .medium)
-        emptyNotesLabel.textColor = UITheme.Colors.textSecondary
+        emptyNotesLabel.textColor = UIColor.black.withAlphaComponent(0.5)
         emptyNotesLabel.text = "No session notes yet."
         emptyNotesLabel.isHidden = true
 
@@ -192,6 +222,7 @@ final class PhysioPatientReportView: UIView {
         notesCard.addSubview(notesStack)
         notesCard.addSubview(emptyNotesLabel)
 
+        addSubview(backButton)
         addSubview(scrollView)
         scrollView.addSubview(contentStack)
 
@@ -201,7 +232,11 @@ final class PhysioPatientReportView: UIView {
         contentStack.addArrangedSubview(notesCard)
 
         NSLayoutConstraint.activate([
-            scrollView.topAnchor.constraint(equalTo: safeAreaLayoutGuide.topAnchor, constant: 6),
+            backButton.topAnchor.constraint(equalTo: safeAreaLayoutGuide.topAnchor, constant: 8),
+            backButton.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 16),
+            backButton.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -16),
+
+            scrollView.topAnchor.constraint(equalTo: backButton.bottomAnchor, constant: 6),
             scrollView.leadingAnchor.constraint(equalTo: leadingAnchor),
             scrollView.trailingAnchor.constraint(equalTo: trailingAnchor),
             scrollView.bottomAnchor.constraint(equalTo: bottomAnchor),
@@ -281,7 +316,7 @@ private final class PillView: UIView {
 
     required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
 
-    func configure(title: String, value: String, accentColor: UIColor = UITheme.Colors.accent) {
+    func configure(title: String, value: String, accentColor: UIColor = UIColor(hex: "1E6EF7")) {
         titleLabel.text = title
         valueLabel.text = value
         valueLabel.textColor = accentColor
@@ -290,12 +325,12 @@ private final class PillView: UIView {
 
     private func build() {
         translatesAutoresizingMaskIntoConstraints = false
-        backgroundColor = .systemGroupedBackground
+        backgroundColor = UIColor(hex: "E6F1FF")
         layer.cornerRadius = 14
 
         titleLabel.translatesAutoresizingMaskIntoConstraints = false
         titleLabel.font = .systemFont(ofSize: 12, weight: .semibold)
-        titleLabel.textColor = UITheme.Colors.textSecondary
+        titleLabel.textColor = UIColor.black.withAlphaComponent(0.6)
 
         valueLabel.translatesAutoresizingMaskIntoConstraints = false
         valueLabel.font = .systemFont(ofSize: 18, weight: .bold)
@@ -332,7 +367,7 @@ private final class MetricView: UIView {
 
     private func build() {
         translatesAutoresizingMaskIntoConstraints = false
-        backgroundColor = UITheme.Colors.surface
+        backgroundColor = UIColor(hex: "F8FAFC")
         layer.cornerRadius = 12
 
         valueLabel.translatesAutoresizingMaskIntoConstraints = false
@@ -340,7 +375,7 @@ private final class MetricView: UIView {
 
         titleLabel.translatesAutoresizingMaskIntoConstraints = false
         titleLabel.font = .systemFont(ofSize: 12, weight: .medium)
-        titleLabel.textColor = UITheme.Colors.textSecondary
+        titleLabel.textColor = UIColor.black.withAlphaComponent(0.6)
         titleLabel.numberOfLines = 2
 
         addSubview(valueLabel)
@@ -378,28 +413,28 @@ private final class SessionNoteCard: UIView {
 
     private func build() {
         translatesAutoresizingMaskIntoConstraints = false
-        backgroundColor = UITheme.Colors.surface
+        backgroundColor = UIColor(hex: "F8FAFC")
         layer.cornerRadius = 14
 
         dateLabel.translatesAutoresizingMaskIntoConstraints = false
         dateLabel.font = .systemFont(ofSize: 14, weight: .semibold)
-        dateLabel.textColor = .label
+        dateLabel.textColor = UIColor(hex: "0F172A")
 
         detailLabel.translatesAutoresizingMaskIntoConstraints = false
         detailLabel.font = .systemFont(ofSize: 12, weight: .medium)
-        detailLabel.textColor = UITheme.Colors.textSecondary
+        detailLabel.textColor = UIColor.black.withAlphaComponent(0.55)
 
         painPill.translatesAutoresizingMaskIntoConstraints = false
         painPill.font = .systemFont(ofSize: 12, weight: .semibold)
-        painPill.textColor = .systemOrange
-        painPill.backgroundColor = UIColor.systemOrange.withAlphaComponent(0.15)
+        painPill.textColor = UIColor(hex: "B45309")
+        painPill.backgroundColor = UIColor(hex: "FEF3C7")
         painPill.textAlignment = .center
         painPill.layer.cornerRadius = 12
         painPill.clipsToBounds = true
 
         exercisesLabel.translatesAutoresizingMaskIntoConstraints = false
         exercisesLabel.font = .systemFont(ofSize: 12, weight: .semibold)
-        exercisesLabel.textColor = UITheme.Colors.textSecondary
+        exercisesLabel.textColor = UIColor.black.withAlphaComponent(0.6)
         exercisesLabel.text = "Exercises:"
 
         exercisesStack.translatesAutoresizingMaskIntoConstraints = false
@@ -410,11 +445,11 @@ private final class SessionNoteCard: UIView {
 
         notesLabel.translatesAutoresizingMaskIntoConstraints = false
         notesLabel.font = .systemFont(ofSize: 13, weight: .regular)
-        notesLabel.textColor = UITheme.Colors.textSecondary
+        notesLabel.textColor = UIColor.black.withAlphaComponent(0.7)
         notesLabel.numberOfLines = 0
 
         divider.translatesAutoresizingMaskIntoConstraints = false
-        divider.backgroundColor = UITheme.Colors.border
+        divider.backgroundColor = UIColor.black.withAlphaComponent(0.05)
 
         addSubview(dateLabel)
         addSubview(detailLabel)
@@ -472,8 +507,8 @@ private final class SessionNoteCard: UIView {
         let label = PaddingLabel(insets: UIEdgeInsets(top: 6, left: 10, bottom: 6, right: 10))
         label.text = text
         label.font = .systemFont(ofSize: 12, weight: .semibold)
-        label.textColor = UITheme.Colors.accent
-        label.backgroundColor = UITheme.Colors.accent.withAlphaComponent(0.12)
+        label.textColor = UIColor(hex: "1E6EF7")
+        label.backgroundColor = UIColor(hex: "E6F1FF")
         label.layer.cornerRadius = 10
         label.clipsToBounds = true
         return label

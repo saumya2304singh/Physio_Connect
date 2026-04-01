@@ -44,12 +44,13 @@ final class PhysioAuthViewController: UIViewController {
 
     override func loadView() {
         view = UIView()
-        view.backgroundColor = UITheme.Colors.background
+        view.backgroundColor = UIColor(hex: "E6F1FF")
     }
 
     override func viewDidLoad() {
         super.viewDidLoad()
-        UITheme.applyNativeNavBar(to: self, title: "Physio Access")
+        navigationController?.navigationBar.prefersLargeTitles = false
+        title = "Physio Access"
 
         layoutViews()
         bind()
@@ -92,16 +93,16 @@ final class PhysioAuthViewController: UIViewController {
     }
 
     private func bind() {
-        // Native navigation bar handles pop automatically if we're pushed.
-        // We can hook into viewWillDisappear or provide a custom leftBarButtonItem for back.
-        let backItem = UIBarButtonItem(image: UIImage(systemName: "chevron.left"), style: .plain, target: self, action: #selector(handleBackNavigation))
-        navigationItem.leftBarButtonItem = backItem
-
+        loginView.onBack = { [weak self] in
+            // Always return to role selection to avoid no-op pops when this is root
+            AppLogout.backToRoleSelection(from: self?.view, signOut: false)
+        }
         loginView.onSignupTapped = { [weak self] in self?.show(mode: .signup, animated: true) }
         loginView.onLogin = { [weak self] email, password in
             self?.handleLogin(email: email, password: password)
         }
 
+        signupView.onBack = { [weak self] in self?.popOrDismiss() }
         signupView.onLoginLink = { [weak self] in self?.show(mode: .login, animated: true) }
         signupView.onCreateAccount = { [weak self] input in
             self?.handleSignup(input: input)
@@ -113,7 +114,6 @@ final class PhysioAuthViewController: UIViewController {
     private func show(mode: Mode, animated: Bool) {
         self.mode = mode
         let showLogin = (mode == .login)
-        self.title = showLogin ? "Log In" : "Create Account"
         let duration: TimeInterval = animated ? 0.2 : 0.0
         loginView.showError(nil)
         signupView.showError(nil)
@@ -251,10 +251,6 @@ final class PhysioAuthViewController: UIViewController {
         } else {
             RootRouter.setRoot(tab, window: view.window)
         }
-    }
-
-    @objc private func handleBackNavigation() {
-        AppLogout.backToRoleSelection(from: view, signOut: false)
     }
 
     private func popOrDismiss() {

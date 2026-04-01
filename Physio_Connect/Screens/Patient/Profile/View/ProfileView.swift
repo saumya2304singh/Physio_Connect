@@ -9,6 +9,8 @@ import UIKit
 
 final class ProfileView: UIView {
 
+    var onBack: (() -> Void)?
+    var onEdit: (() -> Void)?
     var onPrivacyTapped: (() -> Void)?
     var onTermsTapped: (() -> Void)?
     var onSignOut: (() -> Void)?
@@ -28,6 +30,11 @@ final class ProfileView: UIView {
     private let stackView = UIStackView()
     private let refreshControl = UIRefreshControl()
 
+    private let topBar = UIView()
+    private let backButton = UIButton(type: .system)
+    private let titleLabel = UILabel()
+    private let editButton = UIButton(type: .system)
+    private var shouldShowEditButton = true
     private var isLoggedInState = true
 
     private let avatarImageView = UIImageView()
@@ -67,7 +74,7 @@ final class ProfileView: UIView {
 
     override init(frame: CGRect) {
         super.init(frame: frame)
-        backgroundColor = .systemGroupedBackground
+        backgroundColor = UIColor(hex: "E8EEF5")
         build()
     }
 
@@ -158,6 +165,7 @@ final class ProfileView: UIView {
             stackView.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -24)
         ])
 
+        buildTopBar()
         buildHeader()
         buildPersonalInfo()
         buildSettings()
@@ -171,29 +179,29 @@ final class ProfileView: UIView {
         container.translatesAutoresizingMaskIntoConstraints = false
 
         avatarImageView.image = UIImage(systemName: "person.crop.circle.fill")
-        avatarImageView.tintColor = .tertiaryLabel
+        avatarImageView.tintColor = UIColor(hex: "96A7BD")
         avatarImageView.contentMode = .scaleAspectFill
         avatarImageView.layer.cornerRadius = 46
         avatarImageView.layer.masksToBounds = true
         avatarImageView.layer.borderWidth = 4
-        avatarImageView.layer.borderColor = UIColor.systemGray4.cgColor
+        avatarImageView.layer.borderColor = UIColor(hex: "D1D9E5").cgColor
         avatarImageView.translatesAutoresizingMaskIntoConstraints = false
         avatarImageView.isUserInteractionEnabled = true
 
         avatarEditButton.translatesAutoresizingMaskIntoConstraints = false
         avatarEditButton.setImage(UIImage(systemName: "plus"), for: .normal)
         avatarEditButton.tintColor = .white
-        avatarEditButton.backgroundColor = UITheme.Colors.accent
+        avatarEditButton.backgroundColor = UIColor(hex: "1E6EF7")
         avatarEditButton.layer.cornerRadius = 14
         avatarEditButton.layer.borderWidth = 2
-        avatarEditButton.layer.borderColor = UITheme.Colors.surface.cgColor
+        avatarEditButton.layer.borderColor = UIColor.white.cgColor
         avatarEditButton.addTarget(self, action: #selector(avatarTapped), for: .touchUpInside)
 
         let avatarTap = UITapGestureRecognizer(target: self, action: #selector(avatarTapped))
         avatarImageView.addGestureRecognizer(avatarTap)
 
         nameLabel.font = .systemFont(ofSize: 18, weight: .semibold)
-        nameLabel.textColor = .label
+        nameLabel.textColor = UIColor.black
         nameLabel.textAlignment = .center
         nameLabel.translatesAutoresizingMaskIntoConstraints = false
 
@@ -229,7 +237,7 @@ final class ProfileView: UIView {
         guard let trimmed = urlString?.trimmingCharacters(in: .whitespacesAndNewlines),
               !trimmed.isEmpty else {
             avatarImageView.image = placeholder
-            avatarImageView.tintColor = .tertiaryLabel
+            avatarImageView.tintColor = UIColor(hex: "96A7BD")
             return
         }
 
@@ -241,7 +249,7 @@ final class ProfileView: UIView {
 
         if avatarImageView.image == nil {
             avatarImageView.image = placeholder
-            avatarImageView.tintColor = .tertiaryLabel
+            avatarImageView.tintColor = UIColor(hex: "96A7BD")
         }
 
         let url: URL?
@@ -267,7 +275,7 @@ final class ProfileView: UIView {
                 self.avatarImageView.tintColor = .clear
             } else {
                 self.avatarImageView.image = placeholder
-                self.avatarImageView.tintColor = .tertiaryLabel
+                self.avatarImageView.tintColor = UIColor(hex: "96A7BD")
                 self.loadSignedAvatarIfNeeded(raw: trimmed, expectedKey: urlString, placeholder: placeholder)
             }
         }
@@ -291,7 +299,7 @@ final class ProfileView: UIView {
                         Self.avatarImageCache.setObject(image, forKey: raw as NSString)
                     }
                     self.avatarImageView.image = image ?? placeholder
-                    self.avatarImageView.tintColor = image == nil ? .tertiaryLabel : .clear
+                    self.avatarImageView.tintColor = image == nil ? UIColor(hex: "96A7BD") : .clear
                 }
             }
         }
@@ -335,6 +343,37 @@ final class ProfileView: UIView {
     }
 
 
+    private func buildTopBar() {
+        let container = UIView()
+        container.translatesAutoresizingMaskIntoConstraints = false
+
+        backButton.translatesAutoresizingMaskIntoConstraints = false
+        backButton.setImage(UIImage(systemName: "chevron.left"), for: .normal)
+        backButton.tintColor = UIColor.black.withAlphaComponent(0.8)
+        backButton.addTarget(self, action: #selector(backTapped), for: .touchUpInside)
+
+        editButton.translatesAutoresizingMaskIntoConstraints = false
+        editButton.setTitle("Edit", for: .normal)
+        editButton.setTitleColor(UIColor(hex: "1E6EF7"), for: .normal)
+        editButton.titleLabel?.font = .systemFont(ofSize: 16, weight: .semibold)
+        editButton.addTarget(self, action: #selector(editTapped), for: .touchUpInside)
+
+        container.addSubview(backButton)
+        container.addSubview(editButton)
+
+        NSLayoutConstraint.activate([
+            backButton.leadingAnchor.constraint(equalTo: container.leadingAnchor),
+            backButton.centerYAnchor.constraint(equalTo: container.centerYAnchor),
+            backButton.widthAnchor.constraint(equalToConstant: 36),
+            backButton.heightAnchor.constraint(equalToConstant: 36),
+
+            editButton.trailingAnchor.constraint(equalTo: container.trailingAnchor),
+            editButton.centerYAnchor.constraint(equalTo: container.centerYAnchor)
+        ])
+
+        container.heightAnchor.constraint(equalToConstant: 32).isActive = true
+        stackView.addArrangedSubview(container)
+    }
 
     private func buildSettings() {
         let sectionLabel = makeSectionLabel("Settings")
@@ -383,11 +422,15 @@ final class ProfileView: UIView {
     private func buildAvailability() {
         availabilitySectionLabel.text = "Availability"
         availabilitySectionLabel.font = .systemFont(ofSize: 16, weight: .semibold)
-        availabilitySectionLabel.textColor = .label
+        availabilitySectionLabel.textColor = UIColor.black
         stackView.addArrangedSubview(availabilitySectionLabel)
 
-        availabilityCard.translatesAutoresizingMaskIntoConstraints = false
-        UITheme.applyCardStyle(availabilityCard)
+        availabilityCard.backgroundColor = UIColor.white
+        availabilityCard.layer.cornerRadius = 18
+        availabilityCard.layer.shadowColor = UIColor.black.cgColor
+        availabilityCard.layer.shadowOpacity = 0.05
+        availabilityCard.layer.shadowRadius = 10
+        availabilityCard.layer.shadowOffset = CGSize(width: 0, height: 6)
 
         availabilityStack.axis = .vertical
         availabilityStack.spacing = 12
@@ -401,13 +444,13 @@ final class ProfileView: UIView {
 
         availabilityHintLabel.text = "Slots are created in 1-hour blocks."
         availabilityHintLabel.font = .systemFont(ofSize: 12, weight: .semibold)
-        availabilityHintLabel.textColor = .secondaryLabel
+        availabilityHintLabel.textColor = UIColor.black.withAlphaComponent(0.5)
         availabilityHintLabel.translatesAutoresizingMaskIntoConstraints = false
 
         availabilitySaveButton.setTitle("Save Availability", for: .normal)
         availabilitySaveButton.setTitleColor(.white, for: .normal)
         availabilitySaveButton.titleLabel?.font = .systemFont(ofSize: 15, weight: .semibold)
-        availabilitySaveButton.backgroundColor = UITheme.Colors.accent
+        availabilitySaveButton.backgroundColor = UIColor(hex: "1E6EF7")
         availabilitySaveButton.layer.cornerRadius = 16
         availabilitySaveButton.layer.shadowColor = UIColor.black.cgColor
         availabilitySaveButton.layer.shadowOpacity = 0.05
@@ -463,13 +506,13 @@ final class ProfileView: UIView {
         let label = UILabel()
         label.text = title
         label.font = .systemFont(ofSize: 15, weight: .regular)
-        label.textColor = .secondaryLabel
+        label.textColor = UIColor.black.withAlphaComponent(0.6)
         label.translatesAutoresizingMaskIntoConstraints = false
 
         picker.translatesAutoresizingMaskIntoConstraints = false
         picker.datePickerMode = mode
         picker.preferredDatePickerStyle = .compact
-        picker.backgroundColor = .tertiarySystemFill
+        picker.backgroundColor = UIColor(hex: "F1F3F7")
         picker.layer.cornerRadius = 16
         picker.layer.masksToBounds = true
 
@@ -493,8 +536,11 @@ final class ProfileView: UIView {
         signOutButton.isHidden = !loggedIn
         loginButton.isHidden = loggedIn
         signUpButton.isHidden = loggedIn
+        updateEditVisibility()
 
+        // ✅ allow switching role always
         switchRoleButton.isHidden = false
+
         notificationRow.isUserInteractionEnabled = loggedIn
         notificationRow.alpha = loggedIn ? 1.0 : 0.5
         avatarEditButton.isHidden = !loggedIn
@@ -504,12 +550,21 @@ final class ProfileView: UIView {
         }
     }
 
+    func setShowsEditButton(_ show: Bool) {
+        shouldShowEditButton = show
+        updateEditVisibility()
+    }
+
+    private func updateEditVisibility() {
+        editButton.isHidden = !isLoggedInState || !shouldShowEditButton
+    }
+
 
     private func buildSignOut() {
         signOutButton.setTitle("Sign Out", for: .normal)
-        signOutButton.setTitleColor(.systemRed, for: .normal)
+        signOutButton.setTitleColor(UIColor(hex: "E54848"), for: .normal)
         signOutButton.titleLabel?.font = .systemFont(ofSize: 16, weight: .semibold)
-        signOutButton.backgroundColor = UITheme.Colors.surface
+        signOutButton.backgroundColor = UIColor.white
         signOutButton.layer.cornerRadius = 16
         signOutButton.layer.shadowColor = UIColor.black.cgColor
         signOutButton.layer.shadowOpacity = 0.05
@@ -521,7 +576,7 @@ final class ProfileView: UIView {
         loginButton.setTitle("Log In", for: .normal)
         loginButton.setTitleColor(.white, for: .normal)
         loginButton.titleLabel?.font = .systemFont(ofSize: 16, weight: .bold)
-        loginButton.backgroundColor = UITheme.Colors.accent
+        loginButton.backgroundColor = UIColor(hex: "1E6EF7")
         loginButton.layer.cornerRadius = 16
         loginButton.layer.shadowColor = UIColor.black.cgColor
         loginButton.layer.shadowOpacity = 0.05
@@ -531,9 +586,9 @@ final class ProfileView: UIView {
         loginButton.addTarget(self, action: #selector(loginTapped), for: .touchUpInside)
 
         signUpButton.setTitle("Sign Up", for: .normal)
-        signUpButton.setTitleColor(UITheme.Colors.accent, for: .normal)
+        signUpButton.setTitleColor(UIColor(hex: "1E6EF7"), for: .normal)
         signUpButton.titleLabel?.font = .systemFont(ofSize: 16, weight: .semibold)
-        signUpButton.backgroundColor = UITheme.Colors.surface
+        signUpButton.backgroundColor = UIColor.white
         signUpButton.layer.cornerRadius = 16
         signUpButton.layer.shadowColor = UIColor.black.cgColor
         signUpButton.layer.shadowOpacity = 0.05
@@ -544,9 +599,9 @@ final class ProfileView: UIView {
 
         // ✅ Switch Role button (secondary style)
         switchRoleButton.setTitle("Switch Role", for: .normal)
-        switchRoleButton.setTitleColor(UITheme.Colors.accent, for: .normal)
+        switchRoleButton.setTitleColor(UIColor(hex: "1E6EF7"), for: .normal)
         switchRoleButton.titleLabel?.font = .systemFont(ofSize: 16, weight: .semibold)
-        switchRoleButton.backgroundColor = UITheme.Colors.surface
+        switchRoleButton.backgroundColor = UIColor.white
         switchRoleButton.layer.cornerRadius = 16
         switchRoleButton.layer.shadowColor = UIColor.black.cgColor
         switchRoleButton.layer.shadowOpacity = 0.05
@@ -574,8 +629,12 @@ final class ProfileView: UIView {
 
     private func makeCardView() -> UIView {
         let view = UIView()
-        view.translatesAutoresizingMaskIntoConstraints = false
-        UITheme.applyCardStyle(view)
+        view.backgroundColor = UIColor.white
+        view.layer.cornerRadius = 18
+        view.layer.shadowColor = UIColor.black.cgColor
+        view.layer.shadowOpacity = 0.05
+        view.layer.shadowRadius = 10
+        view.layer.shadowOffset = CGSize(width: 0, height: 6)
         return view
     }
 
@@ -598,7 +657,7 @@ final class ProfileView: UIView {
 
     private func makeSeparator() -> UIView {
         let sep = UIView()
-        sep.backgroundColor = .separator
+        sep.backgroundColor = UIColor.black.withAlphaComponent(0.06)
         sep.translatesAutoresizingMaskIntoConstraints = false
         sep.heightAnchor.constraint(equalToConstant: 1).isActive = true
         return sep
@@ -608,7 +667,7 @@ final class ProfileView: UIView {
         let label = UILabel()
         label.text = text
         label.font = .systemFont(ofSize: 16, weight: .semibold)
-        label.textColor = .label
+        label.textColor = UIColor.black
         return label
     }
 
@@ -623,6 +682,13 @@ final class ProfileView: UIView {
         availabilitySaveButton.alpha = saving ? 0.7 : 1.0
     }
 
+    @objc private func backTapped() {
+        onBack?()
+    }
+
+    @objc private func editTapped() {
+        onEdit?()
+    }
 
     @objc private func privacyTapped() {
         onPrivacyTapped?()
@@ -673,10 +739,10 @@ final class ProfileRowView: UIView {
 
         titleLabel.text = title
         titleLabel.font = .systemFont(ofSize: 15, weight: .regular)
-        titleLabel.textColor = .secondaryLabel
+        titleLabel.textColor = UIColor.black.withAlphaComponent(0.55)
 
         valueLabel.font = .systemFont(ofSize: 15, weight: .semibold)
-        valueLabel.textColor = .label
+        valueLabel.textColor = UIColor.black.withAlphaComponent(0.9)
         valueLabel.textAlignment = .right
         valueLabel.numberOfLines = 2
 
@@ -718,9 +784,9 @@ final class ProfileToggleRowView: UIView {
 
         titleLabel.text = title
         titleLabel.font = .systemFont(ofSize: 15, weight: .regular)
-        titleLabel.textColor = .secondaryLabel
+        titleLabel.textColor = UIColor.black.withAlphaComponent(0.55)
 
-        toggle.onTintColor = .systemGreen
+        toggle.onTintColor = UIColor(hex: "38A169")
         toggle.addTarget(self, action: #selector(toggleChanged), for: .valueChanged)
 
         let stack = UIStackView(arrangedSubviews: [titleLabel, toggle])
@@ -760,12 +826,12 @@ final class ProfileActionRowButton: UIButton {
         super.init(frame: .zero)
 
         setTitle(title, for: .normal)
-        setTitleColor(UITheme.Colors.accent, for: .normal)
+        setTitleColor(UIColor(hex: "1E6EF7"), for: .normal)
         titleLabel?.font = .systemFont(ofSize: 15, weight: .semibold)
         contentHorizontalAlignment = .left
 
         let chevron = UIImageView(image: UIImage(systemName: "chevron.right"))
-        chevron.tintColor = .tertiaryLabel
+        chevron.tintColor = UIColor.black.withAlphaComponent(0.35)
         chevron.translatesAutoresizingMaskIntoConstraints = false
 
         addSubview(chevron)

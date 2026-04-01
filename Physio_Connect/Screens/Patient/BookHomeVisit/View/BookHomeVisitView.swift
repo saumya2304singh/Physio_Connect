@@ -10,14 +10,30 @@ import UIKit
 final class BookHomeVisitView: UIView {
 
     // MARK: - Theme (match your app)
-    private let bg = UITheme.Colors.background
-    private let primaryBlue = UITheme.Colors.accent
-    private let cardBg = UITheme.Colors.surface
+    private let bg = UIColor(hex: "E3F0FF")
+    private let primaryBlue = UIColor(hex: "1E6EF7")
+    private let cardBg = UIColor.white
+
+    // Green tint palette (for appointment summary)
+    private let summaryGreenBg = UIColor(red: 0.90, green: 0.98, blue: 0.95, alpha: 1.0)
+    private let summaryGreenBorder = UIColor(red: 0.62, green: 0.88, blue: 0.78, alpha: 1.0)
+    private let summaryGreenIcon = UIColor(red: 0.20, green: 0.62, blue: 0.45, alpha: 1.0)
+
+    // Blue tint palette (for what to prepare)
+    private let prepareBlueBg = UIColor(red: 0.92, green: 0.96, blue: 1.0, alpha: 1.0)
+    private let prepareBlueBorder = UIColor(red: 0.70, green: 0.82, blue: 1.0, alpha: 1.0)
+    private let prepareBlueIcon = UIColor(red: 0.17, green: 0.45, blue: 0.95, alpha: 1.0)
 
     // MARK: - Scroll
     let scrollView = UIScrollView()
     private let contentView = UIView()
     private let stack = UIStackView()
+
+    // MARK: - Header
+    let backButton = UIButton(type: .system)
+    private let headerTitle = UILabel()
+    private let headerSubtitle = UILabel()
+    private let headerDivider = UIView()
 
     // MARK: - Banner
     private let bannerCard = UIView()
@@ -91,16 +107,10 @@ final class BookHomeVisitView: UIView {
     private let summaryLine1 = UILabel()
     private let summaryLine2 = UILabel()
     private let summaryLine3 = UILabel()
-    private let summaryGreenBg = UIColor.systemGreen.withAlphaComponent(0.12)
-    private let summaryGreenBorder = UIColor.systemGreen.withAlphaComponent(0.3)
-    private let summaryGreenIcon = UIColor.systemGreen
 
     // MARK: - Prepare (BLUE)
     private let prepareCard = UIView()
     private let prepareIconCircle = UIView()
-    private let prepareBlueBg = UITheme.Colors.accent.withAlphaComponent(0.12)
-    private let prepareBlueBorder = UITheme.Colors.accent.withAlphaComponent(0.3)
-    private let prepareBlueIcon = UITheme.Colors.accent
     private let prepareIcon = UIImageView()
     private let prepareTitle = UILabel()
     private let prepareText = UILabel()
@@ -160,8 +170,46 @@ final class BookHomeVisitView: UIView {
         ])
 
         // ========== HEADER ==========
-        // Custom header removed, using native navigation bar.
-        
+        let headerRow = UIView()
+        headerRow.translatesAutoresizingMaskIntoConstraints = false
+
+        backButton.translatesAutoresizingMaskIntoConstraints = false
+        backButton.setImage(UIImage(systemName: "chevron.left"), for: .normal)
+        backButton.tintColor = .black
+        backButton.contentEdgeInsets = UIEdgeInsets(top: 8, left: 6, bottom: 8, right: 6)
+
+        headerTitle.translatesAutoresizingMaskIntoConstraints = false
+        headerTitle.text = "Book Home Visit"
+        headerTitle.font = .boldSystemFont(ofSize: 22)
+        headerTitle.textAlignment = .center
+
+        headerSubtitle.translatesAutoresizingMaskIntoConstraints = false
+        headerSubtitle.text = "Your physiotherapist will come to you"
+        headerSubtitle.font = .systemFont(ofSize: 13, weight: .medium)
+        headerSubtitle.textColor = .darkGray
+        headerSubtitle.textAlignment = .center
+
+        headerDivider.translatesAutoresizingMaskIntoConstraints = false
+        headerDivider.backgroundColor = UIColor.black.withAlphaComponent(0.08)
+
+        headerRow.addSubview(backButton)
+        headerRow.addSubview(headerTitle)
+
+        NSLayoutConstraint.activate([
+            headerRow.heightAnchor.constraint(equalToConstant: 40),
+
+            backButton.leadingAnchor.constraint(equalTo: headerRow.leadingAnchor),
+            backButton.centerYAnchor.constraint(equalTo: headerRow.centerYAnchor),
+
+            headerTitle.centerXAnchor.constraint(equalTo: headerRow.centerXAnchor),
+            headerTitle.centerYAnchor.constraint(equalTo: headerRow.centerYAnchor)
+        ])
+
+        stack.addArrangedSubview(headerRow)
+        stack.addArrangedSubview(headerSubtitle)
+        stack.addArrangedSubview(headerDivider)
+        headerDivider.heightAnchor.constraint(equalToConstant: 1).isActive = true
+
         // ========== BANNER ==========
         styleCard(bannerCard)
         bannerCard.backgroundColor = primaryBlue.withAlphaComponent(0.85)
@@ -215,14 +263,14 @@ final class BookHomeVisitView: UIView {
         stack.addArrangedSubview(bannerCard)
 
         // ========== DOCTOR CARD ==========
-        UITheme.applyCardStyle(doctorCard)
+        styleCard(doctorCard)
         doctorCard.clipsToBounds = true
 
         doctorTop.translatesAutoresizingMaskIntoConstraints = false
         doctorTop.backgroundColor = primaryBlue.withAlphaComponent(0.85)
 
         doctorBottom.translatesAutoresizingMaskIntoConstraints = false
-        doctorBottom.backgroundColor = UITheme.Colors.surface
+        doctorBottom.backgroundColor = .white
 
         doctorAvatar.translatesAutoresizingMaskIntoConstraints = false
         doctorAvatar.image = UIImage(systemName: "person.circle.fill")
@@ -318,7 +366,7 @@ final class BookHomeVisitView: UIView {
 
 
         // ========== ADDRESS CARD ==========
-        UITheme.applyCardStyle(addressCard)
+        styleCard(addressCard)
 
         addressIcon.translatesAutoresizingMaskIntoConstraints = false
         addressIcon.image = UIImage(systemName: "mappin.and.ellipse")
@@ -351,22 +399,21 @@ final class BookHomeVisitView: UIView {
 
         [addressField, phoneField].forEach {
             $0.translatesAutoresizingMaskIntoConstraints = false
-            $0.backgroundColor = UITheme.Colors.neutralFill
+            $0.backgroundColor = UIColor(hex: "F6F7FB")
             $0.layer.cornerRadius = 12
             $0.layer.borderWidth = 1
-            $0.layer.borderColor = UITheme.Colors.border.cgColor
+            $0.layer.borderColor = UIColor.black.withAlphaComponent(0.08).cgColor
             $0.setLeftPadding(12)
-            $0.textColor = UITheme.Colors.textPrimary
             $0.heightAnchor.constraint(equalToConstant: 44).isActive = true
         }
 
         instructionsTextView.translatesAutoresizingMaskIntoConstraints = false
-        instructionsTextView.backgroundColor = UITheme.Colors.neutralFill
+        instructionsTextView.backgroundColor = UIColor(hex: "F6F7FB")
         instructionsTextView.layer.cornerRadius = 12
         instructionsTextView.layer.borderWidth = 1
-        instructionsTextView.layer.borderColor = UITheme.Colors.border.cgColor
+        instructionsTextView.layer.borderColor = UIColor.black.withAlphaComponent(0.08).cgColor
         instructionsTextView.font = .systemFont(ofSize: 14)
-        instructionsTextView.textColor = UITheme.Colors.textPrimary
+        instructionsTextView.textColor = .lightGray
         instructionsTextView.text = "Special instructions (parking, floor, access etc.)"
         instructionsTextView.textContainerInset = UIEdgeInsets(top: 12, left: 8, bottom: 12, right: 8)
 
@@ -387,7 +434,7 @@ final class BookHomeVisitView: UIView {
         stack.addArrangedSubview(addressCard)
 
         // ========== DATE/TIME CARD ==========
-        UITheme.applyCardStyle(dateCard)
+        styleCard(dateCard)
 
         dateIcon.translatesAutoresizingMaskIntoConstraints = false
         dateIcon.image = UIImage(systemName: "calendar")
@@ -465,7 +512,7 @@ final class BookHomeVisitView: UIView {
         stack.addArrangedSubview(dateCard)
 
         // ========== SLOTS CARD ==========
-        UITheme.applyCardStyle(slotsCard)
+        styleCard(slotsCard)
 
         slotsTitle.text = "Available Time Slots"
         slotsTitle.font = .boldSystemFont(ofSize: 18)
@@ -527,15 +574,13 @@ final class BookHomeVisitView: UIView {
 
         summaryTitle.text = "Your Appointment Summary"
         summaryTitle.font = .boldSystemFont(ofSize: 16)
-        summaryTitle.textColor = UITheme.Colors.textPrimary
 
         summaryLine1.font = .systemFont(ofSize: 14, weight: .semibold)
         summaryLine2.font = .systemFont(ofSize: 14, weight: .medium)
         summaryLine3.font = .systemFont(ofSize: 13, weight: .medium)
 
-        summaryLine1.textColor = UITheme.Colors.textPrimary
-        summaryLine2.textColor = UITheme.Colors.textSecondary
-        summaryLine3.textColor = UITheme.Colors.textSecondary
+        summaryLine2.textColor = UIColor.black.withAlphaComponent(0.65)
+        summaryLine3.textColor = UIColor.black.withAlphaComponent(0.55)
         summaryLine3.numberOfLines = 2
 
         let summaryTextStack = UIStackView(arrangedSubviews: [summaryTitle, summaryLine1, summaryLine2, summaryLine3])
@@ -580,7 +625,6 @@ final class BookHomeVisitView: UIView {
 
         prepareTitle.text = "What to Prepare"
         prepareTitle.font = .boldSystemFont(ofSize: 16)
-        prepareTitle.textColor = UITheme.Colors.textPrimary
 
         prepareText.text =
         "• Clear a comfortable space for treatment\n" +
@@ -589,7 +633,7 @@ final class BookHomeVisitView: UIView {
         "• Ensure someone is home to let the therapist in"
         prepareText.numberOfLines = 0
         prepareText.font = .systemFont(ofSize: 13, weight: .medium)
-        prepareText.textColor = UITheme.Colors.textSecondary
+        prepareText.textColor = UIColor.black.withAlphaComponent(0.65)
 
         let prepareHeaderRow = UIStackView(arrangedSubviews: [prepareIconCircle, prepareTitle, UIView()])
         prepareHeaderRow.axis = .horizontal
@@ -624,7 +668,7 @@ final class BookHomeVisitView: UIView {
         stack.addArrangedSubview(prepareCard)
 
         // ========== CANCELLATION ==========
-        UITheme.applyCardStyle(cancelCard)
+        styleCard(cancelCard)
         cancelCard.backgroundColor = UIColor.systemYellow.withAlphaComponent(0.18)
         cancelCard.layer.borderWidth = 1
         cancelCard.layer.borderColor = UIColor.systemYellow.withAlphaComponent(0.35).cgColor
@@ -632,7 +676,7 @@ final class BookHomeVisitView: UIView {
         cancelText.text = "Cancellation Policy: Free cancellation up to 24 hours before appointment. Late cancellation may incur charges."
         cancelText.numberOfLines = 0
         cancelText.font = .systemFont(ofSize: 13, weight: .medium)
-        cancelText.textColor = .label
+        cancelText.textColor = UIColor.brown
 
         cancelText.translatesAutoresizingMaskIntoConstraints = false
         cancelCard.addSubview(cancelText)

@@ -47,30 +47,31 @@ final class PhysioTabBarController: UITabBarController {
 
         viewControllers = [home, appointments, programs, reports]
         selectedIndex = 0
-
-        // Apply transparent scroll-edge and frosted glass standard appearance
-        let standard = UITheme.makeGlassNavBarAppearance()
-        let scrollEdge = UINavigationBarAppearance()
-        scrollEdge.configureWithTransparentBackground()
-        scrollEdge.shadowColor = .clear
-        scrollEdge.titleTextAttributes = [
-            .foregroundColor: UIColor.label,
-            .font: UIFont.systemFont(ofSize: 17, weight: .semibold)
-        ]
-        
-        for nav in [home, appointments, programs, reports] {
-            nav.navigationBar.tintColor = UITheme.Colors.accent
-            nav.navigationBar.standardAppearance = standard
-            nav.navigationBar.scrollEdgeAppearance = scrollEdge
-            nav.navigationBar.compactAppearance = standard
-        }
     }
 
     private func styleTabBar() {
-        // iOS 26 Liquid Glass — transparent + blur
-        let appearance = UITheme.makeGlassTabBarAppearance()
+        let appearance = UITabBarAppearance()
+        appearance.configureWithDefaultBackground()
+        appearance.backgroundEffect = UIBlurEffect(style: .systemUltraThinMaterialLight)
+        appearance.backgroundColor = UIColor.white.withAlphaComponent(0.6)
+
+        let normal = appearance.stackedLayoutAppearance.normal
+        normal.iconColor = UIColor.black.withAlphaComponent(0.6)
+        normal.titleTextAttributes = [.foregroundColor: UIColor.black.withAlphaComponent(0.6)]
+
+        let selected = appearance.stackedLayoutAppearance.selected
+        selected.iconColor = UIColor(hex: "1E6EF7")
+        selected.titleTextAttributes = [.foregroundColor: UIColor(hex: "1E6EF7")]
+
         tabBar.standardAppearance = appearance
         tabBar.scrollEdgeAppearance = appearance
+
+        tabBar.layer.cornerRadius = 22
+        tabBar.layer.masksToBounds = false
+        tabBar.layer.shadowColor = UIColor.black.cgColor
+        tabBar.layer.shadowOpacity = 0.08
+        tabBar.layer.shadowRadius = 12
+        tabBar.layer.shadowOffset = CGSize(width: 0, height: -2)
         tabBar.itemPositioning = .automatic
     }
 }
@@ -85,11 +86,11 @@ private final class PlaceholderViewController: UIViewController {
 
     override func viewDidLoad() {
         super.viewDidLoad()
-        view.backgroundColor = .systemGroupedBackground
+        view.backgroundColor = UIColor(hex: "E6F1FF")
         let label = UILabel()
         label.text = title
         label.font = .systemFont(ofSize: 20, weight: .bold)
-        label.textColor = .secondaryLabel
+        label.textColor = UIColor.black.withAlphaComponent(0.7)
         label.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(label)
         NSLayoutConstraint.activate([

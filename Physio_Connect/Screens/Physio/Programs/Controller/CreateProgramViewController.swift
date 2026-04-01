@@ -35,7 +35,7 @@ final class CreateProgramViewController: UIViewController, UITableViewDataSource
     override func viewDidLoad() {
         super.viewDidLoad()
         title = "Create New Program"
-        view.backgroundColor = UITheme.Colors.background
+        view.backgroundColor = UIColor(hex: "E6F1FF")
         navigationItem.rightBarButtonItem = UIBarButtonItem(
             image: UIImage(systemName: "xmark"),
             style: .plain,
@@ -591,7 +591,7 @@ final class ExercisePickerViewController: UIViewController, UITableViewDataSourc
     override func viewDidLoad() {
         super.viewDidLoad()
         title = "Select Exercise"
-        view.backgroundColor = UITheme.Colors.background
+        view.backgroundColor = UIColor(hex: "E6F1FF")
         navigationItem.rightBarButtonItem = UIBarButtonItem(
             image: UIImage(systemName: "xmark"),
             style: .plain,

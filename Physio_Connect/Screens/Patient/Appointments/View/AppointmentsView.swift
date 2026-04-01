@@ -21,6 +21,8 @@ final class AppointmentsView: UIView {
     var onCompletedReviewTapped: ((CompletedAppointmentVM) -> Void)?
 
     // MARK: - UI
+    private let topBar = UIView()
+    private let titleLabel = UILabel()
     let profileButton = UIButton(type: .system)
 
     let segmented = UISegmentedControl(items: ["Upcoming", "Completed"])
@@ -40,7 +42,7 @@ final class AppointmentsView: UIView {
     // MARK: - Init
     override init(frame: CGRect) {
         super.init(frame: frame)
-        backgroundColor = .systemGroupedBackground
+        backgroundColor = UITheme.Colors.background
         build()
         wireActions()
         applyDefaultUI()
@@ -49,6 +51,8 @@ final class AppointmentsView: UIView {
     required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
 
     private func applyDefaultUI() {
+        titleLabel.text = "Appointments"
+
         segmented.selectedSegmentIndex = 0
         segmented.selectedSegmentTintColor = UITheme.Colors.accent
         segmented.backgroundColor = UITheme.Colors.surface
@@ -87,6 +91,23 @@ final class AppointmentsView: UIView {
     }
 
     private func build() {
+        // Top bar
+        topBar.translatesAutoresizingMaskIntoConstraints = false
+        addSubview(topBar)
+
+        titleLabel.translatesAutoresizingMaskIntoConstraints = false
+        titleLabel.font = UITheme.Typography.screenTitle
+        titleLabel.textColor = UITheme.Colors.textPrimary
+        titleLabel.textAlignment = .center
+
+        profileButton.translatesAutoresizingMaskIntoConstraints = false
+        let profileConfig = UIImage.SymbolConfiguration(pointSize: 22, weight: .regular)
+        profileButton.setImage(UIImage(systemName: "person.circle", withConfiguration: profileConfig), for: .normal)
+        profileButton.tintColor = UIColor.black.withAlphaComponent(0.65)
+
+        topBar.addSubview(titleLabel)
+        topBar.addSubview(profileButton)
+
         // Segmented control
         segmented.translatesAutoresizingMaskIntoConstraints = false
         addSubview(segmented)
@@ -119,10 +140,21 @@ final class AppointmentsView: UIView {
         upcomingListStack.setContentCompressionResistancePriority(.required, for: .vertical)
 
         // Layout
-
         NSLayoutConstraint.activate([
+            topBar.topAnchor.constraint(equalTo: safeAreaLayoutGuide.topAnchor, constant: 6),
+            topBar.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 16),
+            topBar.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -16),
+            topBar.heightAnchor.constraint(equalToConstant: 44),
 
-            segmented.topAnchor.constraint(equalTo: safeAreaLayoutGuide.topAnchor, constant: 10),
+            titleLabel.centerXAnchor.constraint(equalTo: topBar.centerXAnchor),
+            titleLabel.centerYAnchor.constraint(equalTo: topBar.centerYAnchor),
+
+            profileButton.trailingAnchor.constraint(equalTo: topBar.trailingAnchor),
+            profileButton.centerYAnchor.constraint(equalTo: topBar.centerYAnchor),
+            profileButton.widthAnchor.constraint(equalToConstant: 40),
+            profileButton.heightAnchor.constraint(equalToConstant: 40),
+
+            segmented.topAnchor.constraint(equalTo: topBar.bottomAnchor, constant: 10),
             segmented.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 16),
             segmented.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -16),
             segmented.heightAnchor.constraint(equalToConstant: 44),
@@ -291,7 +323,7 @@ final class UpcomingAppointmentTabCardView: UIView {
         avatar.contentMode = .scaleAspectFill
         avatar.clipsToBounds = true
         avatar.layer.cornerRadius = 10
-        avatar.backgroundColor = .tertiarySystemFill
+        avatar.backgroundColor = UIColor.black.withAlphaComponent(0.06)
         NSLayoutConstraint.activate([
             avatar.widthAnchor.constraint(equalToConstant: 76),
             avatar.heightAnchor.constraint(equalToConstant: 76)
@@ -377,7 +409,7 @@ final class UpcomingAppointmentTabCardView: UIView {
             avatar.image = image
         } else {
             avatar.image = UIImage(systemName: "person.fill")
-            avatar.tintColor = .tertiaryLabel
+            avatar.tintColor = UIColor.black.withAlphaComponent(0.25)
         }
     }
 
@@ -479,22 +511,25 @@ struct CompletedAppointmentVM {
 
         var pillBg: UIColor {
             switch self {
-            case .completed: return UIColor.systemGreen.withAlphaComponent(0.15)
-            case .cancelled, .cancelledByPhysio: return UIColor.systemRed.withAlphaComponent(0.15)
+            case .completed: return UIColor(hex: "E6F5EA")
+            case .cancelled: return UIColor(hex: "FCE4E4")
+            case .cancelledByPhysio: return UIColor(hex: "FCE4E4")
             }
         }
 
         var pillText: UIColor {
             switch self {
-            case .completed: return .systemGreen
-            case .cancelled, .cancelledByPhysio: return .systemRed
+            case .completed: return UIColor(hex: "2E7D32")
+            case .cancelled: return UIColor(hex: "E53935")
+            case .cancelledByPhysio: return UIColor(hex: "E53935")
             }
         }
 
         var pillBorder: UIColor {
             switch self {
-            case .completed: return UIColor.systemGreen.withAlphaComponent(0.3)
-            case .cancelled, .cancelledByPhysio: return UIColor.systemRed.withAlphaComponent(0.3)
+            case .completed: return UIColor(hex: "BFE3C7")
+            case .cancelled: return UIColor(hex: "F2B8B8")
+            case .cancelledByPhysio: return UIColor(hex: "F2B8B8")
             }
         }
     }
@@ -656,7 +691,7 @@ final class CompletedAppointmentCell: UITableViewCell {
 
         statusIcon.translatesAutoresizingMaskIntoConstraints = false
         statusIcon.contentMode = .scaleAspectFit
-        statusIcon.tintColor = .secondaryLabel
+        statusIcon.tintColor = UIColor.black.withAlphaComponent(0.6)
         NSLayoutConstraint.activate([
             statusIcon.widthAnchor.constraint(equalToConstant: 14),
             statusIcon.heightAnchor.constraint(equalToConstant: 14)
@@ -684,7 +719,7 @@ final class CompletedAppointmentCell: UITableViewCell {
         headerRow.translatesAutoresizingMaskIntoConstraints = false
 
         avatar.translatesAutoresizingMaskIntoConstraints = false
-        avatar.backgroundColor = .tertiarySystemFill
+        avatar.backgroundColor = UIColor.black.withAlphaComponent(0.06)
         avatar.contentMode = .scaleAspectFill
         avatar.clipsToBounds = true
         avatar.layer.cornerRadius = 14
@@ -746,12 +781,11 @@ final class CompletedAppointmentCell: UITableViewCell {
         buttonsRow.addArrangedSubview(reportButton)
 
         reviewButton.setTitle("Rate & Review", for: .normal)
-        reviewButton.backgroundColor = UIColor.systemOrange.withAlphaComponent(0.15)
-        reviewButton.setTitleColor(.systemOrange, for: .normal)
-        reviewButton.titleLabel?.font = .systemFont(ofSize: 13, weight: .semibold)
-        reviewButton.layer.cornerRadius = 14
+        reviewButton.backgroundColor = UIColor(hex: "FFF7E6")
+        reviewButton.setTitleColor(UIColor(hex: "D97706"), for: .normal)
+        reviewButton.layer.cornerRadius = 12
         reviewButton.layer.borderWidth = 1
-        reviewButton.layer.borderColor = UIColor.systemOrange.withAlphaComponent(0.3).cgColor
+        reviewButton.layer.borderColor = UIColor(hex: "FCD34D").cgColor
         reviewButton.titleLabel?.font = UITheme.Typography.buttonSmall
         reviewButton.translatesAutoresizingMaskIntoConstraints = false
         reviewButton.addTarget(self, action: #selector(reviewTapped), for: .touchUpInside)

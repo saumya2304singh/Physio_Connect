@@ -51,7 +51,7 @@ final class HomeArticleCell: UITableViewCell {
         contentView.backgroundColor = .clear
 
         card.translatesAutoresizingMaskIntoConstraints = false
-        card.backgroundColor = UITheme.Colors.surface
+        card.backgroundColor = .white
         card.layer.cornerRadius = 16
         card.layer.shadowColor = UIColor.black.cgColor
         card.layer.shadowOpacity = 0.06
@@ -60,11 +60,11 @@ final class HomeArticleCell: UITableViewCell {
         contentView.addSubview(card)
 
         tagPill.translatesAutoresizingMaskIntoConstraints = false
-        tagPill.backgroundColor = UITheme.Colors.accent.withAlphaComponent(0.12)
+        tagPill.backgroundColor = UIColor(hex: "E8F3FF")
         tagPill.layer.cornerRadius = 12
         tagPill.layer.masksToBounds = true
         tagPill.font = UITheme.Typography.caption
-        tagPill.textColor = UITheme.Colors.accent
+        tagPill.textColor = UIColor(hex: "1E6EF7")
 
         titleLabel.translatesAutoresizingMaskIntoConstraints = false
         titleLabel.font = UITheme.Typography.cardTitle

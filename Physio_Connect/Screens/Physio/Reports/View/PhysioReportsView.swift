@@ -31,7 +31,7 @@ final class PhysioReportsView: UIView {
     required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
 
     private func build() {
-        backgroundColor = .systemGroupedBackground
+        backgroundColor = UIColor(hex: "E6F1FF")
 
         searchBar.translatesAutoresizingMaskIntoConstraints = false
         searchBar.searchBarStyle = .minimal
@@ -50,7 +50,7 @@ final class PhysioReportsView: UIView {
         emptyLabel.translatesAutoresizingMaskIntoConstraints = false
         emptyLabel.text = "No program assignments yet.\nShare a program code to see patient reports."
         emptyLabel.font = .systemFont(ofSize: 15, weight: .semibold)
-        emptyLabel.textColor = UITheme.Colors.textSecondary
+        emptyLabel.textColor = UIColor.black.withAlphaComponent(0.55)
         emptyLabel.numberOfLines = 0
         emptyLabel.textAlignment = .center
         emptyLabel.isHidden = true
@@ -112,17 +112,22 @@ final class ReportPatientCell: UITableViewCell {
         backgroundColor = .clear
 
         card.translatesAutoresizingMaskIntoConstraints = false
-        UITheme.applyCardStyle(card)
+        card.backgroundColor = .white
+        card.layer.cornerRadius = 16
+        card.layer.shadowColor = UIColor.black.cgColor
+        card.layer.shadowOpacity = 0.06
+        card.layer.shadowRadius = 10
+        card.layer.shadowOffset = CGSize(width: 0, height: 4)
         contentView.addSubview(card)
 
         nameLabel.translatesAutoresizingMaskIntoConstraints = false
         nameLabel.font = .systemFont(ofSize: 17, weight: .bold)
-        nameLabel.textColor = .label
+        nameLabel.textColor = UIColor(hex: "102A43")
 
         agePill.translatesAutoresizingMaskIntoConstraints = false
         agePill.font = .systemFont(ofSize: 12, weight: .semibold)
-        agePill.textColor = UITheme.Colors.accent
-        agePill.backgroundColor = UITheme.Colors.accent.withAlphaComponent(0.12)
+        agePill.textColor = UIColor(hex: "1E6EF7")
+        agePill.backgroundColor = UIColor(hex: "E6F1FF")
         agePill.textAlignment = .center
         agePill.layer.cornerRadius = 12
         agePill.clipsToBounds = true
@@ -130,30 +135,30 @@ final class ReportPatientCell: UITableViewCell {
 
         programLabel.translatesAutoresizingMaskIntoConstraints = false
         programLabel.font = .systemFont(ofSize: 14, weight: .semibold)
-        programLabel.textColor = UITheme.Colors.textSecondary
+        programLabel.textColor = UIColor.black.withAlphaComponent(0.75)
         programLabel.numberOfLines = 0
 
         locationLabel.translatesAutoresizingMaskIntoConstraints = false
         locationLabel.font = .systemFont(ofSize: 14, weight: .medium)
-        locationLabel.textColor = UITheme.Colors.textSecondary
+        locationLabel.textColor = UIColor.black.withAlphaComponent(0.7)
         locationLabel.numberOfLines = 0
 
         divider.translatesAutoresizingMaskIntoConstraints = false
-        divider.backgroundColor = UITheme.Colors.border
+        divider.backgroundColor = UIColor.black.withAlphaComponent(0.05)
 
         adherenceTitleLabel.translatesAutoresizingMaskIntoConstraints = false
         adherenceTitleLabel.font = .systemFont(ofSize: 13, weight: .semibold)
-        adherenceTitleLabel.textColor = UITheme.Colors.textSecondary
+        adherenceTitleLabel.textColor = UIColor.black.withAlphaComponent(0.6)
         adherenceTitleLabel.text = "Adherence Rate"
 
         adherenceValueLabel.translatesAutoresizingMaskIntoConstraints = false
         adherenceValueLabel.font = .systemFont(ofSize: 13, weight: .bold)
-        adherenceValueLabel.textColor = UITheme.Colors.accent
+        adherenceValueLabel.textColor = UIColor(hex: "1E6EF7")
         adherenceValueLabel.textAlignment = .right
 
         adherenceBar.translatesAutoresizingMaskIntoConstraints = false
-        adherenceBar.trackTintColor = UITheme.Colors.neutralFill
-        adherenceBar.progressTintColor = UITheme.Colors.accent
+        adherenceBar.trackTintColor = UIColor.black.withAlphaComponent(0.06)
+        adherenceBar.progressTintColor = UIColor(hex: "1E6EF7")
         adherenceBar.layer.cornerRadius = 4
         adherenceBar.clipsToBounds = true
 

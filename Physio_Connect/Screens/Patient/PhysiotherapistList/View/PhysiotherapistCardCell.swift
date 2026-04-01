@@ -44,7 +44,14 @@ final class PhysiotherapistCardCell: UITableViewCell {
 
         // ---------------- CARD STYLE (MATCH YOUR DoctorProfileCardView) ----------------
         card.translatesAutoresizingMaskIntoConstraints = false
-        UITheme.applyCardStyle(card)
+        card.backgroundColor = .white
+        card.layer.cornerRadius = 24
+        card.layer.borderWidth = 1
+        card.layer.borderColor = UIColor(hex: "D4E3FE").cgColor
+        card.layer.shadowColor = UIColor.black.cgColor
+        card.layer.shadowOpacity = 0.08
+        card.layer.shadowRadius = 6
+        card.layer.shadowOffset = CGSize(width: 0, height: 3)
         contentView.addSubview(card)
 
         // ---------------- IMAGE (MATCH) ----------------
@@ -61,24 +68,24 @@ final class PhysiotherapistCardCell: UITableViewCell {
         // ---------------- LABELS (MATCH FONT SIZES) ----------------
         nameLabel.translatesAutoresizingMaskIntoConstraints = false
         nameLabel.font = .boldSystemFont(ofSize: 17)
-        nameLabel.textColor = UITheme.Colors.textPrimary
+        nameLabel.textColor = .black
 
         ratingLabel.translatesAutoresizingMaskIntoConstraints = false
         ratingLabel.font = .systemFont(ofSize: 13)
-        ratingLabel.textColor = UITheme.Colors.textSecondary
+        ratingLabel.textColor = .darkGray
 
         distanceLabel.translatesAutoresizingMaskIntoConstraints = false
         distanceLabel.font = .systemFont(ofSize: 13)
-        distanceLabel.textColor = UITheme.Colors.textSecondary
+        distanceLabel.textColor = .darkGray
 
         specializationLabel.translatesAutoresizingMaskIntoConstraints = false
         specializationLabel.font = .systemFont(ofSize: 13)
-        specializationLabel.textColor = UITheme.Colors.accent
+        specializationLabel.textColor = UIColor(hex: "1E6EF7")
         specializationLabel.numberOfLines = 1
 
         feeLabel.translatesAutoresizingMaskIntoConstraints = false
         feeLabel.font = .systemFont(ofSize: 13, weight: .bold)
-        feeLabel.textColor = UITheme.Colors.accent
+        feeLabel.textColor = UIColor(hex: "1E6EF7")
 
         [nameLabel, specializationLabel, ratingLabel, distanceLabel, feeLabel].forEach {
             card.addSubview($0)

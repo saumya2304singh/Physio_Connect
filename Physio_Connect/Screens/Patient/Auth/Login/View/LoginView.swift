@@ -9,12 +9,16 @@ import UIKit
 
 final class LoginView: UIView {
 
-    private let bg = UITheme.Colors.background
-    private let primaryBlue = UITheme.Colors.accent
+    private let bg = UIColor(hex: "E3F0FF")
+    private let primaryBlue = UIColor(hex: "1E6EF7")
 
     private let scrollView = UIScrollView()
     private let contentView = UIView()
     private let stack = UIStackView()
+
+    let backButton = UIButton(type: .system)
+    private let titleLabel = UILabel()
+    private let subtitleLabel = UILabel()
 
     let emailField = IconTextField(iconSystemName: "envelope")
     let passwordField = IconTextField(iconSystemName: "lock")
@@ -67,12 +71,46 @@ final class LoginView: UIView {
             stack.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -24)
         ])
 
-        // Native navigation bar is used for heading now.
-        emailField.placeholder = "Email Address"
+        let headerRow = UIView()
+        headerRow.translatesAutoresizingMaskIntoConstraints = false
+
+        backButton.translatesAutoresizingMaskIntoConstraints = false
+        backButton.setImage(UIImage(systemName: "chevron.left"), for: .normal)
+        backButton.tintColor = primaryBlue
+        backButton.contentEdgeInsets = UIEdgeInsets(top: 8, left: 6, bottom: 8, right: 6)
+
+        titleLabel.translatesAutoresizingMaskIntoConstraints = false
+        titleLabel.text = "Welcome Back"
+        titleLabel.font = .boldSystemFont(ofSize: 22)
+        titleLabel.textAlignment = .center
+
+        subtitleLabel.translatesAutoresizingMaskIntoConstraints = false
+        subtitleLabel.text = "Log in to continue"
+        subtitleLabel.font = .systemFont(ofSize: 13, weight: .medium)
+        subtitleLabel.textColor = .darkGray
+        subtitleLabel.textAlignment = .center
+
+        headerRow.addSubview(backButton)
+        headerRow.addSubview(titleLabel)
+
+        NSLayoutConstraint.activate([
+            headerRow.heightAnchor.constraint(equalToConstant: 40),
+            backButton.leadingAnchor.constraint(equalTo: headerRow.leadingAnchor),
+            backButton.centerYAnchor.constraint(equalTo: headerRow.centerYAnchor),
+            titleLabel.centerXAnchor.constraint(equalTo: headerRow.centerXAnchor),
+            titleLabel.centerYAnchor.constraint(equalTo: headerRow.centerYAnchor)
+        ])
+
+        stack.addArrangedSubview(headerRow)
+        stack.addArrangedSubview(subtitleLabel)
+
+        emailField.titleText = "Email Address"
+        emailField.placeholder = "your.email@example.com"
         emailField.textField.keyboardType = .emailAddress
         emailField.textField.autocapitalizationType = .none
 
-        passwordField.placeholder = "Password"
+        passwordField.titleText = "Password"
+        passwordField.placeholder = "Enter your password"
         passwordField.textField.isSecureTextEntry = true
         passwordField.textField.autocapitalizationType = .none
         passwordField.textField.autocorrectionType = .no
@@ -90,7 +128,7 @@ final class LoginView: UIView {
         loginButton.setTitleColor(.white, for: .normal)
         loginButton.titleLabel?.font = .systemFont(ofSize: 16, weight: .bold)
         loginButton.backgroundColor = primaryBlue
-        loginButton.layer.cornerRadius = UITheme.Metrics.buttonCornerRadius
+        loginButton.layer.cornerRadius = 16
         loginButton.heightAnchor.constraint(equalToConstant: 54).isActive = true
         stack.addArrangedSubview(loginButton)
 
@@ -103,7 +141,7 @@ final class LoginView: UIView {
 
     private func configureEyeButton(_ button: UIButton) {
         button.setImage(UIImage(systemName: "eye"), for: .normal)
-        button.tintColor = .tertiaryLabel
+        button.tintColor = UIColor.black.withAlphaComponent(0.45)
         button.frame = CGRect(x: 0, y: 0, width: 34, height: 34)
     }
 }
