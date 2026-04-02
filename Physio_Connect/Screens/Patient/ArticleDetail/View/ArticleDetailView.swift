@@ -87,7 +87,7 @@ final class ArticleDetailView: UIView {
         backButton.tintColor = UIColor.black.withAlphaComponent(0.7)
 
         titleLabel.translatesAutoresizingMaskIntoConstraints = false
-        titleLabel.font = UITheme.Typography.screenTitle
+        titleLabel.font = UITheme.Typography.cardTitle
         titleLabel.textColor = UITheme.Colors.textPrimary
         titleLabel.textAlignment = .center
 

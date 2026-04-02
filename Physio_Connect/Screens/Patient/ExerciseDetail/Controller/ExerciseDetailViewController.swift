@@ -129,6 +129,14 @@ final class ExerciseDetailViewController: UIViewController {
         loadProgressState()
     }
 
+    override func viewWillDisappear(_ animated: Bool) {
+        super.viewWillDisappear(animated)
+        if isMovingFromParent || isBeingDismissed {
+            navigationController?.setNavigationBarHidden(false, animated: false)
+            navigationController?.navigationBar.prefersLargeTitles = true
+        }
+    }
+
     @objc private func backTapped() {
         if isCompleted {
             if requiresPainFeedback {

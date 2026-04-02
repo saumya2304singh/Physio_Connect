@@ -14,22 +14,14 @@ final class ProfileViewController: UIViewController, PHPickerViewControllerDeleg
     private let model = ProfileModel()
     private var isRefreshing = false
     private var isUploadingAvatar = false
+    private var isLoggedInState = true
     private var currentProfile: ProfileViewData?
 
     override func loadView() { view = profileView }
 
     override func viewDidLoad() {
         super.viewDidLoad()
-        navigationController?.setNavigationBarHidden(false, animated: false)
-        navigationItem.title = "Profile"
-        navigationItem.largeTitleDisplayMode = .never
-        navigationItem.rightBarButtonItem = UIBarButtonItem(
-            title: "Edit",
-            style: .plain,
-            target: self,
-            action: #selector(editTapped)
-        )
-        profileView.useNativeNavigationChrome()
+        configureNavigationChrome()
         bind()
         profileView.preloadAvatar(urlString: ProfileModel.cachedAvatarURL())
         Task { await refreshProfile() }
@@ -48,7 +40,37 @@ final class ProfileViewController: UIViewController, PHPickerViewControllerDeleg
 
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
+        configureNavigationChrome()
         Task { await refreshProfile() }
+    }
+
+    private func configureNavigationChrome() {
+        guard let nav = navigationController else {
+            profileView.useInViewNavigationChrome(showBack: true, showEdit: true, title: "Profile")
+            return
+        }
+
+        nav.setNavigationBarHidden(false, animated: false)
+        navigationItem.title = "Profile"
+        navigationItem.largeTitleDisplayMode = .never
+        profileView.useNativeNavigationChrome()
+
+        let showEdit = isLoggedInState
+        navigationItem.rightBarButtonItem = showEdit
+            ? UIBarButtonItem(title: "Edit", style: .plain, target: self, action: #selector(editTapped))
+            : nil
+
+        if nav.viewControllers.count > 1 {
+            navigationItem.leftBarButtonItem = nil
+        } else {
+            let fallbackBack = UIBarButtonItem(
+                image: UIImage(systemName: "chevron.left"),
+                style: .plain,
+                target: self,
+                action: #selector(goHomeTapped)
+            )
+            navigationItem.leftBarButtonItem = fallbackBack
+        }
     }
 
     private func bind() {
@@ -124,6 +146,10 @@ final class ProfileViewController: UIViewController, PHPickerViewControllerDeleg
         }
 
         let hasSession = await model.hasActiveSession()
+        await MainActor.run {
+            self.isLoggedInState = hasSession
+            self.configureNavigationChrome()
+        }
         guard hasSession else {
             await MainActor.run {
                 self.profileView.applyLoggedOut()
@@ -163,8 +189,7 @@ final class ProfileViewController: UIViewController, PHPickerViewControllerDeleg
     private func showLogin() {
         let vc = LoginViewController()
         vc.onLoginSuccess = { [weak self] in
-            self?.navigationController?.popViewController(animated: true)
-            Task { await self?.refreshProfile() }
+            self?.handlePostAuthSuccess()
         }
         vc.onSignupTapped = { [weak self] in
             self?.showSignup()
@@ -183,8 +208,7 @@ final class ProfileViewController: UIViewController, PHPickerViewControllerDeleg
         let model = CreateAccountModel(appointment: signupDraft)
         let vc = CreateAccountViewController(model: model)
         vc.onSignupComplete = { [weak self] in
-            self?.navigationController?.popViewController(animated: true)
-            Task { await self?.refreshProfile() }
+            self?.handlePostAuthSuccess()
         }
         vc.onLoginTapped = { [weak self] in
             self?.showLogin()
@@ -214,6 +238,37 @@ final class ProfileViewController: UIViewController, PHPickerViewControllerDeleg
 
     @objc private func editTapped() {
         openEditProfile()
+    }
+
+    @objc private func goHomeTapped() {
+        routeToHomeRoot()
+    }
+
+    private func handlePostAuthSuccess() {
+        Task { await refreshProfile() }
+        routeToHomeRoot()
+    }
+
+    private func routeToHomeRoot() {
+        if let tabs = tabBarController as? MainTabBarController {
+            tabs.selectedIndex = 0
+            if let navs = tabs.viewControllers as? [UINavigationController], let homeNav = navs.first {
+                homeNav.popToRootViewController(animated: false)
+            }
+            navigationController?.popToRootViewController(animated: true)
+            return
+        }
+
+        if let nav = navigationController, nav.viewControllers.count > 1 {
+            nav.popToRootViewController(animated: true)
+            return
+        }
+
+        let window = view.window ?? UIApplication.shared.connectedScenes
+            .compactMap { $0 as? UIWindowScene }
+            .flatMap { $0.windows }
+            .first { $0.isKeyWindow }
+        RootRouter.setRoot(MainTabBarController(), window: window)
     }
 
     private func presentAvatarPicker() {

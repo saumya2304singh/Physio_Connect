@@ -187,7 +187,7 @@ final class ArticlesView: UIView {
             tableView.bottomAnchor.constraint(equalTo: bottomAnchor),
 
             searchBottomButton.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -20),
-            searchBottomButton.bottomAnchor.constraint(equalTo: safeAreaLayoutGuide.bottomAnchor, constant: -42),
+            searchBottomButton.bottomAnchor.constraint(equalTo: safeAreaLayoutGuide.bottomAnchor, constant: -96),
             searchBottomButton.widthAnchor.constraint(equalToConstant: 60),
             searchBottomButton.heightAnchor.constraint(equalToConstant: 60),
 

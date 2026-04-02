@@ -203,9 +203,7 @@ final class VideosViewController: UIViewController, UITableViewDataSource, UITab
                 if rows.isEmpty {
                     completedRowKeys = []
                     await MainActor.run {
-                        self.programHeaderView = nil
                         self.programFooterView = nil
-                        self.videosView.tableView.tableHeaderView = nil
                         self.videosView.tableView.tableFooterView = nil
                     }
                 } else if let programID = rows.first?.program_id {
@@ -232,28 +230,15 @@ final class VideosViewController: UIViewController, UITableViewDataSource, UITab
                     programCompleted = programSections.count > 0 && completedDays == programSections.count
                     await MainActor.run {
                         if programCompleted {
-                            self.programHeaderView = nil
                             self.programFooterView = nil
-                            self.videosView.tableView.tableHeaderView = nil
                             self.videosView.tableView.tableFooterView = nil
                         } else {
-                            self.applyProgramHeader(
-                                programTitle: self.programTitle ?? "Your Recovery Program",
-                                adherencePercent: adherencePercent,
-                                completedCount: completedCount,
-                                totalCount: totalCount,
-                                weeklyMinutes: weeklyMinutes,
-                                painSeries: series.pain,
-                                adherenceSeries: series.adherence
-                            )
                             self.applyProgramFooter(completedDays: completedDays, totalDays: self.programSections.count)
                         }
                     }
                 } else {
                     await MainActor.run {
-                        self.programHeaderView = nil
                         self.programFooterView = nil
-                        self.videosView.tableView.tableHeaderView = nil
                         self.videosView.tableView.tableFooterView = nil
                     }
                 }
@@ -282,9 +267,7 @@ final class VideosViewController: UIViewController, UITableViewDataSource, UITab
                 videosView.setProgramMode(false)
                 await MainActor.run {
                     self.videosView.setProgramRedeemVisible(false)
-                    self.programHeaderView = nil
                     self.programFooterView = nil
-                    self.videosView.tableView.tableHeaderView = nil
                     self.videosView.tableView.tableFooterView = nil
                 }
                 programStartDate = nil

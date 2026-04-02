@@ -65,11 +65,16 @@ final class MainTabBarController: UITabBarController, UITabBarControllerDelegate
     }
 
     func tabBarController(_ tabBarController: UITabBarController, didSelect viewController: UIViewController) {
+        tabBar.isUserInteractionEnabled = true
         guard let nav = viewController as? UINavigationController,
               let visible = nav.visibleViewController else { return }
         nav.setNavigationBarHidden(false, animated: false)
         nav.navigationBar.prefersLargeTitles = true
         visible.navigationItem.largeTitleDisplayMode = .automatic
         nav.navigationBar.setNeedsLayout()
+    }
+
+    func tabBarController(_ tabBarController: UITabBarController, shouldSelect viewController: UIViewController) -> Bool {
+        true
     }
 }

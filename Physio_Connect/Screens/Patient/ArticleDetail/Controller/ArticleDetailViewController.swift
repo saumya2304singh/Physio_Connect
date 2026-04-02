@@ -33,6 +33,14 @@ final class ArticleDetailViewController: UIViewController {
         detailView.shareButton.addTarget(self, action: #selector(shareTapped), for: .touchUpInside)
     }
 
+    override func viewWillDisappear(_ animated: Bool) {
+        super.viewWillDisappear(animated)
+        // Restore native nav bar for the parent tab-root screen when returning.
+        if isMovingFromParent || isBeingDismissed {
+            navigationController?.setNavigationBarHidden(false, animated: false)
+        }
+    }
+
     override func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
         Task { await incrementViewsAndRefresh() }

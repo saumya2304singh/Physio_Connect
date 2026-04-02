@@ -48,32 +48,22 @@ enum NativeUIStyle {
         title: String,
         rightItem: UIBarButtonItem?
     ) {
-        if viewController.title != title {
-            viewController.title = title
-        }
-        let titleLabel = UILabel()
-        titleLabel.text = title
-        titleLabel.textColor = .label
-        titleLabel.font = UITheme.Typography.screenTitle
-        titleLabel.adjustsFontForContentSizeCategory = true
-        titleLabel.sizeToFit()
-        let leftTitleItem = UIBarButtonItem(customView: titleLabel)
-        if #available(iOS 26.0, *) {
-            leftTitleItem.hidesSharedBackground = true
-        }
-        viewController.navigationItem.title = nil
+        viewController.navigationItem.title = title
         viewController.navigationItem.titleView = nil
-        if viewController.navigationItem.largeTitleDisplayMode != .never {
-            viewController.navigationItem.largeTitleDisplayMode = .never
+        if viewController.navigationItem.largeTitleDisplayMode != .always {
+            viewController.navigationItem.largeTitleDisplayMode = .always
         }
         viewController.navigationItem.leftItemsSupplementBackButton = false
-        viewController.navigationItem.leftBarButtonItem = leftTitleItem
+        viewController.navigationItem.leftBarButtonItem = nil
         if viewController.navigationItem.rightBarButtonItem !== rightItem {
             viewController.navigationItem.rightBarButtonItem = rightItem
         }
         let navBar = viewController.navigationController?.navigationBar
-        if navBar?.prefersLargeTitles != false {
-            navBar?.prefersLargeTitles = false
+        if let navBar {
+            applyNavigationAppearance(to: navBar)
+        }
+        if navBar?.prefersLargeTitles != true {
+            navBar?.prefersLargeTitles = true
         }
         navBar?.setNeedsLayout()
     }
@@ -102,6 +92,11 @@ enum NativeUIStyle {
     }
 
     private static func configureNavigationBar() {
+        let navBar = UINavigationBar.appearance()
+        applyNavigationAppearance(to: navBar)
+    }
+
+    private static func applyNavigationAppearance(to navBar: UINavigationBar) {
         let standardAppearance = UINavigationBarAppearance()
         standardAppearance.configureWithTransparentBackground()
         standardAppearance.backgroundEffect = nil
@@ -126,7 +121,6 @@ enum NativeUIStyle {
         scrollEdgeAppearance.titleTextAttributes = standardAppearance.titleTextAttributes
         scrollEdgeAppearance.largeTitleTextAttributes = standardAppearance.largeTitleTextAttributes
 
-        let navBar = UINavigationBar.appearance()
         navBar.standardAppearance = standardAppearance
         navBar.scrollEdgeAppearance = scrollEdgeAppearance
         navBar.compactAppearance = standardAppearance

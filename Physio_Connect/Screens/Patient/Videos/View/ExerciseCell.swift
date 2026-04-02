@@ -140,8 +140,8 @@ final class ExerciseCell: UITableViewCell {
         NSLayoutConstraint.activate([
             card.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 8),
             card.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -8),
-            card.leadingAnchor.constraint(equalTo: contentView.leadingAnchor),
-            card.trailingAnchor.constraint(equalTo: contentView.trailingAnchor),
+            card.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 16),
+            card.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -16),
 
             heroImageView.topAnchor.constraint(equalTo: card.topAnchor),
             heroImageView.leadingAnchor.constraint(equalTo: card.leadingAnchor),
