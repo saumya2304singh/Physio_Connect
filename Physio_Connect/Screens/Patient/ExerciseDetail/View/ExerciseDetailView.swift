@@ -329,7 +329,7 @@ final class ExerciseDetailView: UIView, UIGestureRecognizerDelegate {
     private func buildInfoCard() {
         infoCard.translatesAutoresizingMaskIntoConstraints = false
         infoCard.backgroundColor = .white
-        infoCard.layer.cornerRadius = 20
+        infoCard.layer.cornerRadius = 22
         infoCard.layer.shadowColor = UIColor.black.cgColor
         infoCard.layer.shadowOpacity = 0.05
         infoCard.layer.shadowRadius = 12
@@ -376,7 +376,7 @@ final class ExerciseDetailView: UIView, UIGestureRecognizerDelegate {
 
         completeCard.translatesAutoresizingMaskIntoConstraints = false
         completeCard.backgroundColor = UIColor(hex: "F8FAFF")
-        completeCard.layer.cornerRadius = 18
+        completeCard.layer.cornerRadius = 22
         completeCard.layer.borderWidth = 1
         completeCard.layer.borderColor = UIColor(hex: "DCE8FF").cgColor
         completeCard.layer.shadowColor = UIColor.black.cgColor
@@ -413,7 +413,7 @@ final class ExerciseDetailView: UIView, UIGestureRecognizerDelegate {
     private func buildPainCard() {
         painCard.translatesAutoresizingMaskIntoConstraints = false
         painCard.backgroundColor = .white
-        painCard.layer.cornerRadius = 20
+        painCard.layer.cornerRadius = 22
         painCard.layer.shadowColor = UIColor.black.cgColor
         painCard.layer.shadowOpacity = 0.05
         painCard.layer.shadowRadius = 12
@@ -590,7 +590,7 @@ final class ExerciseDetailView: UIView, UIGestureRecognizerDelegate {
     private func buildNotesCard() {
         notesCard.translatesAutoresizingMaskIntoConstraints = false
         notesCard.backgroundColor = .white
-        notesCard.layer.cornerRadius = 20
+        notesCard.layer.cornerRadius = 22
         notesCard.layer.shadowColor = UIColor.black.cgColor
         notesCard.layer.shadowOpacity = 0.05
         notesCard.layer.shadowRadius = 12

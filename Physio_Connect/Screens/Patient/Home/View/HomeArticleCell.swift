@@ -11,9 +11,16 @@ final class HomeArticleCell: UITableViewCell {
     static let reuseID = "HomeArticleCell"
 
     private let card = UIView()
-    private let tagPill = UILabel()
+    private let sourcePill = UILabel()
+    private let clockIconView = UIImageView()
+    private let metaRow = UIStackView()
+    private let sourceTimeSpacer = UIView()
+    private let minutesLabel = UILabel()
     private let titleLabel = UILabel()
-    private let metaLabel = UILabel()
+    private let summaryLabel = UILabel()
+    private let footerLabel = UILabel()
+    private let chevronView = UIImageView()
+    private let footerRow = UIStackView()
 
     override init(style: UITableViewCell.CellStyle, reuseIdentifier: String?) {
         super.init(style: style, reuseIdentifier: reuseIdentifier)
@@ -26,14 +33,16 @@ final class HomeArticleCell: UITableViewCell {
 
     override func prepareForReuse() {
         super.prepareForReuse()
-        tagPill.text = nil
+        sourcePill.text = nil
+        minutesLabel.text = nil
         titleLabel.text = nil
-        metaLabel.text = nil
+        summaryLabel.text = nil
     }
 
     func configure(with article: ArticleRow) {
         titleLabel.text = article.title
-        metaLabel.text = "\(article.read_minutes ?? 0) min read"
+        summaryLabel.text = article.summary
+        minutesLabel.text = "\(article.read_minutes ?? 0) min read"
         let sourceName = article.source_name?.trimmingCharacters(in: .whitespacesAndNewlines)
         let sourceSlug = article.source?.trimmingCharacters(in: .whitespacesAndNewlines)
         let urlSource = sourceHost(from: article.source_url) ?? sourceHost(from: article.url)
@@ -42,7 +51,7 @@ final class HomeArticleCell: UITableViewCell {
                               (sourceSlug?.isEmpty == false ? sourceSlug :
                                (urlSource?.isEmpty == false ? urlSource :
                                 (fallbackTag?.isEmpty == false ? fallbackTag : "Source"))))
-        tagPill.text = "  \(resolvedSource ?? "Source")  "
+        sourcePill.text = "  \(resolvedSource ?? "Source")  "
     }
 
     private func build() {
@@ -51,33 +60,76 @@ final class HomeArticleCell: UITableViewCell {
         contentView.backgroundColor = .clear
 
         card.translatesAutoresizingMaskIntoConstraints = false
-        card.backgroundColor = .white
-        card.layer.cornerRadius = 16
+        card.backgroundColor = UIColor.white.withAlphaComponent(0.92)
+        card.layer.cornerRadius = 22
+        card.layer.cornerCurve = .continuous
+        card.layer.borderWidth = 1
+        card.layer.borderColor = UIColor.white.withAlphaComponent(0.55).cgColor
         card.layer.shadowColor = UIColor.black.cgColor
-        card.layer.shadowOpacity = 0.06
+        card.layer.shadowOpacity = 0.035
         card.layer.shadowRadius = 8
-        card.layer.shadowOffset = CGSize(width: 0, height: 4)
+        card.layer.shadowOffset = CGSize(width: 0, height: 3)
         contentView.addSubview(card)
 
-        tagPill.translatesAutoresizingMaskIntoConstraints = false
-        tagPill.backgroundColor = UIColor(hex: "E8F3FF")
-        tagPill.layer.cornerRadius = 12
-        tagPill.layer.masksToBounds = true
-        tagPill.font = UITheme.Typography.caption
-        tagPill.textColor = UIColor(hex: "1E6EF7")
+        sourcePill.translatesAutoresizingMaskIntoConstraints = false
+        sourcePill.backgroundColor = UIColor(hex: "EAF3FF")
+        sourcePill.layer.cornerRadius = 11
+        sourcePill.layer.masksToBounds = true
+        sourcePill.font = UITheme.Typography.meta
+        sourcePill.textColor = UIColor(hex: "1E6EF7")
+        sourcePill.textAlignment = .center
+        sourcePill.lineBreakMode = .byTruncatingTail
+        sourcePill.setContentCompressionResistancePriority(.required, for: .horizontal)
+        sourcePill.setContentHuggingPriority(.required, for: .horizontal)
 
         titleLabel.translatesAutoresizingMaskIntoConstraints = false
         titleLabel.font = UITheme.Typography.cardTitle
         titleLabel.textColor = UITheme.Colors.textPrimary
         titleLabel.numberOfLines = 2
 
-        metaLabel.translatesAutoresizingMaskIntoConstraints = false
-        metaLabel.font = UITheme.Typography.caption
-        metaLabel.textColor = UITheme.Colors.textSecondary
+        summaryLabel.translatesAutoresizingMaskIntoConstraints = false
+        summaryLabel.font = UITheme.Typography.bodySmall
+        summaryLabel.textColor = UITheme.Colors.textSecondary
+        summaryLabel.numberOfLines = 2
 
-        card.addSubview(tagPill)
+        clockIconView.translatesAutoresizingMaskIntoConstraints = false
+        clockIconView.image = UIImage(systemName: "clock")
+        clockIconView.tintColor = UIColor.black.withAlphaComponent(0.45)
+
+        minutesLabel.translatesAutoresizingMaskIntoConstraints = false
+        minutesLabel.font = UITheme.Typography.caption
+        minutesLabel.textColor = UIColor.black.withAlphaComponent(0.55)
+
+        metaRow.axis = .horizontal
+        metaRow.spacing = 8
+        metaRow.alignment = .center
+        metaRow.translatesAutoresizingMaskIntoConstraints = false
+        metaRow.addArrangedSubview(sourcePill)
+        metaRow.addArrangedSubview(sourceTimeSpacer)
+        metaRow.addArrangedSubview(clockIconView)
+        metaRow.addArrangedSubview(minutesLabel)
+
+        footerLabel.translatesAutoresizingMaskIntoConstraints = false
+        footerLabel.text = "Read more"
+        footerLabel.font = UITheme.Typography.buttonSmall
+        footerLabel.textColor = UIColor(hex: "1E6EF7")
+
+        chevronView.translatesAutoresizingMaskIntoConstraints = false
+        chevronView.image = UIImage(systemName: "chevron.right")
+        chevronView.tintColor = UIColor(hex: "1E6EF7")
+        chevronView.preferredSymbolConfiguration = UIImage.SymbolConfiguration(pointSize: 12, weight: .semibold)
+
+        footerRow.axis = .horizontal
+        footerRow.spacing = 4
+        footerRow.alignment = .center
+        footerRow.translatesAutoresizingMaskIntoConstraints = false
+        footerRow.addArrangedSubview(footerLabel)
+        footerRow.addArrangedSubview(chevronView)
+
+        card.addSubview(metaRow)
         card.addSubview(titleLabel)
-        card.addSubview(metaLabel)
+        card.addSubview(summaryLabel)
+        card.addSubview(footerRow)
 
         NSLayoutConstraint.activate([
             card.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 8),
@@ -85,16 +137,27 @@ final class HomeArticleCell: UITableViewCell {
             card.trailingAnchor.constraint(equalTo: contentView.trailingAnchor),
             card.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -8),
 
-            tagPill.topAnchor.constraint(equalTo: card.topAnchor, constant: 12),
-            tagPill.leadingAnchor.constraint(equalTo: card.leadingAnchor, constant: 12),
+            sourcePill.heightAnchor.constraint(equalToConstant: 22),
+            sourcePill.widthAnchor.constraint(lessThanOrEqualToConstant: 160),
 
-            titleLabel.topAnchor.constraint(equalTo: tagPill.bottomAnchor, constant: 8),
-            titleLabel.leadingAnchor.constraint(equalTo: tagPill.leadingAnchor),
-            titleLabel.trailingAnchor.constraint(equalTo: card.trailingAnchor, constant: -12),
+            clockIconView.widthAnchor.constraint(equalToConstant: 12),
+            clockIconView.heightAnchor.constraint(equalToConstant: 12),
 
-            metaLabel.topAnchor.constraint(equalTo: titleLabel.bottomAnchor, constant: 6),
-            metaLabel.leadingAnchor.constraint(equalTo: titleLabel.leadingAnchor),
-            metaLabel.bottomAnchor.constraint(lessThanOrEqualTo: card.bottomAnchor, constant: -12)
+            metaRow.topAnchor.constraint(equalTo: card.topAnchor, constant: 14),
+            metaRow.leadingAnchor.constraint(equalTo: card.leadingAnchor, constant: 14),
+            metaRow.trailingAnchor.constraint(equalTo: card.trailingAnchor, constant: -14),
+
+            titleLabel.topAnchor.constraint(equalTo: metaRow.bottomAnchor, constant: 10),
+            titleLabel.leadingAnchor.constraint(equalTo: card.leadingAnchor, constant: 14),
+            titleLabel.trailingAnchor.constraint(equalTo: card.trailingAnchor, constant: -14),
+
+            summaryLabel.topAnchor.constraint(equalTo: titleLabel.bottomAnchor, constant: 6),
+            summaryLabel.leadingAnchor.constraint(equalTo: titleLabel.leadingAnchor),
+            summaryLabel.trailingAnchor.constraint(equalTo: titleLabel.trailingAnchor),
+
+            footerRow.topAnchor.constraint(equalTo: summaryLabel.bottomAnchor, constant: 10),
+            footerRow.trailingAnchor.constraint(equalTo: card.trailingAnchor, constant: -14),
+            footerRow.bottomAnchor.constraint(equalTo: card.bottomAnchor, constant: -14)
         ])
     }
 

@@ -14,6 +14,7 @@ final class ArticlesView: UIView {
     let profileButton = UIButton(type: .system)
 
     let searchBar = UISearchBar()
+    let searchBottomButton = UIButton(type: .system)
     private let segmentScrollView = UIScrollView()
     let segmentStack = UIStackView()
     let segmentButtons: [UIButton] = [
@@ -32,6 +33,8 @@ final class ArticlesView: UIView {
     private let refreshControl = UIRefreshControl()
     private let headerContainer = UIView()
     private var featuredHeightConstraint: NSLayoutConstraint?
+    private var topBarHeightConstraint: NSLayoutConstraint?
+    private var searchHeightConstraint: NSLayoutConstraint?
 
     override init(frame: CGRect) {
         let layout = UICollectionViewFlowLayout()
@@ -99,13 +102,9 @@ final class ArticlesView: UIView {
         profileButton.setImage(UIImage(systemName: "person.circle", withConfiguration: profileConfig), for: .normal)
         profileButton.tintColor = UIColor.black.withAlphaComponent(0.65)
 
-        searchBar.placeholder = "Search articles, topics, conditions..."
-        searchBar.searchBarStyle = .minimal
+        NativeUIStyle.styleSearchBar(searchBar, placeholder: "Search articles, topics, conditions...")
         searchBar.translatesAutoresizingMaskIntoConstraints = false
-        searchBar.backgroundImage = UIImage()
-        searchBar.searchTextField.backgroundColor = .white
-        searchBar.searchTextField.layer.cornerRadius = 20
-        searchBar.searchTextField.layer.masksToBounds = true
+        searchBar.isHidden = true
 
         segmentScrollView.translatesAutoresizingMaskIntoConstraints = false
         segmentScrollView.showsHorizontalScrollIndicator = false
@@ -156,9 +155,13 @@ final class ArticlesView: UIView {
         tableView.separatorStyle = .none
         tableView.refreshControl = refreshControl
 
+        searchBottomButton.translatesAutoresizingMaskIntoConstraints = false
+        NativeUIStyle.styleFloatingSearchButton(searchBottomButton)
+
         featuredCard.isHidden = true
 
         addSubview(tableView)
+        addSubview(searchBottomButton)
         tableView.tableHeaderView = headerContainer
         tableView.contentInset = .zero
         tableView.contentInsetAdjustmentBehavior = .always
@@ -178,15 +181,19 @@ final class ArticlesView: UIView {
         featuredHeightConstraint?.isActive = true
 
         NSLayoutConstraint.activate([
-            tableView.topAnchor.constraint(equalTo: safeAreaLayoutGuide.topAnchor),
+            tableView.topAnchor.constraint(equalTo: topAnchor),
             tableView.leadingAnchor.constraint(equalTo: leadingAnchor),
             tableView.trailingAnchor.constraint(equalTo: trailingAnchor),
             tableView.bottomAnchor.constraint(equalTo: bottomAnchor),
 
-            topBar.topAnchor.constraint(equalTo: headerContainer.topAnchor, constant: 6),
+            searchBottomButton.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -20),
+            searchBottomButton.bottomAnchor.constraint(equalTo: safeAreaLayoutGuide.bottomAnchor, constant: -42),
+            searchBottomButton.widthAnchor.constraint(equalToConstant: 60),
+            searchBottomButton.heightAnchor.constraint(equalToConstant: 60),
+
+            topBar.topAnchor.constraint(equalTo: headerContainer.topAnchor),
             topBar.leadingAnchor.constraint(equalTo: headerContainer.layoutMarginsGuide.leadingAnchor),
             topBar.trailingAnchor.constraint(equalTo: headerContainer.layoutMarginsGuide.trailingAnchor),
-            topBar.heightAnchor.constraint(equalToConstant: 44),
 
             titleLabel.centerXAnchor.constraint(equalTo: topBar.centerXAnchor),
             titleLabel.centerYAnchor.constraint(equalTo: topBar.centerYAnchor),
@@ -227,6 +234,24 @@ final class ArticlesView: UIView {
             recentHeaderStack.trailingAnchor.constraint(equalTo: headerContainer.layoutMarginsGuide.trailingAnchor),
             recentHeaderStack.bottomAnchor.constraint(equalTo: headerContainer.bottomAnchor, constant: -10)
         ])
+        topBarHeightConstraint = topBar.heightAnchor.constraint(equalToConstant: 44)
+        topBarHeightConstraint?.isActive = true
+        searchHeightConstraint = searchBar.heightAnchor.constraint(equalToConstant: 0)
+        searchHeightConstraint?.isActive = true
+    }
+
+    func useNativeNavigationChrome() {
+        titleLabel.isHidden = true
+        profileButton.isHidden = true
+        topBar.isHidden = true
+        topBarHeightConstraint?.constant = 0
+        updateHeaderLayout()
+    }
+
+    func setSearchVisible(_ visible: Bool) {
+        searchBar.isHidden = !visible
+        searchHeightConstraint?.constant = visible ? 44 : 0
+        updateHeaderLayout()
     }
 
     private func configureSegmentButton(_ button: UIButton, title: String, icon: String) {

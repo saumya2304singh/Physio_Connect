@@ -26,15 +26,18 @@ final class AppointmentsView: UIView {
     let profileButton = UIButton(type: .system)
 
     let segmented = UISegmentedControl(items: ["Upcoming", "Completed"])
+    private let segmentedContainer = UIView()
 
     private let scrollView = UIScrollView()
     private let contentStack = UIStackView()
+    private var hasAppliedInitialScrollOffset = false
 
     // Cards (Upcoming tab)
     private let upcomingListStack = UIStackView()
     private var upcomingCardMap: [UUID: UpcomingAppointmentTabCardView] = [:]
     let bookCard = BookHomeVisitsCardView()
     private var hasUpcoming = false
+    private var topBarHeightConstraint: NSLayoutConstraint?
 
     // Completed list (Completed tab)
     let completedList = CompletedAppointmentsListView()
@@ -49,6 +52,20 @@ final class AppointmentsView: UIView {
     }
 
     required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
+
+    override func layoutSubviews() {
+        super.layoutSubviews()
+        // Underlap nav bar and keep visible content start aligned below it,
+        // while allowing scrolled cards to be visible behind the title area.
+        let topInset = safeAreaInsets.top + 22
+        let bottomInset: CGFloat = 64
+        scrollView.contentInset = UIEdgeInsets(top: topInset, left: 0, bottom: bottomInset, right: 0)
+        scrollView.scrollIndicatorInsets = UIEdgeInsets(top: topInset, left: 0, bottom: bottomInset, right: 0)
+        if !hasAppliedInitialScrollOffset {
+            scrollView.contentOffset = CGPoint(x: 0, y: -topInset)
+            hasAppliedInitialScrollOffset = true
+        }
+    }
 
     private func applyDefaultUI() {
         titleLabel.text = "Appointments"
@@ -108,19 +125,29 @@ final class AppointmentsView: UIView {
         topBar.addSubview(titleLabel)
         topBar.addSubview(profileButton)
 
-        // Segmented control
-        segmented.translatesAutoresizingMaskIntoConstraints = false
-        addSubview(segmented)
-
         // Scroll
         scrollView.translatesAutoresizingMaskIntoConstraints = false
         scrollView.showsVerticalScrollIndicator = false
+        scrollView.backgroundColor = .clear
+        scrollView.contentInsetAdjustmentBehavior = .never
         addSubview(scrollView)
 
         contentStack.axis = .vertical
         contentStack.spacing = 12
         contentStack.translatesAutoresizingMaskIntoConstraints = false
         scrollView.addSubview(contentStack)
+
+        // Segmented control (inside scroll content so it scrolls with cards)
+        segmentedContainer.translatesAutoresizingMaskIntoConstraints = false
+        segmented.translatesAutoresizingMaskIntoConstraints = false
+        segmentedContainer.addSubview(segmented)
+        NSLayoutConstraint.activate([
+            segmented.topAnchor.constraint(equalTo: segmentedContainer.topAnchor),
+            segmented.leadingAnchor.constraint(equalTo: segmentedContainer.leadingAnchor),
+            segmented.trailingAnchor.constraint(equalTo: segmentedContainer.trailingAnchor),
+            segmented.bottomAnchor.constraint(equalTo: segmentedContainer.bottomAnchor),
+            segmented.heightAnchor.constraint(equalToConstant: 44)
+        ])
 
         // Add views into stack
         upcomingListStack.axis = .vertical
@@ -132,6 +159,7 @@ final class AppointmentsView: UIView {
         bookCard.translatesAutoresizingMaskIntoConstraints = false
         completedList.translatesAutoresizingMaskIntoConstraints = false
 
+        contentStack.addArrangedSubview(segmentedContainer)
         contentStack.addArrangedSubview(upcomingListStack)
         contentStack.addArrangedSubview(bookCard)
         contentStack.addArrangedSubview(completedList)
@@ -141,10 +169,9 @@ final class AppointmentsView: UIView {
 
         // Layout
         NSLayoutConstraint.activate([
-            topBar.topAnchor.constraint(equalTo: safeAreaLayoutGuide.topAnchor, constant: 6),
+            topBar.topAnchor.constraint(equalTo: safeAreaLayoutGuide.topAnchor),
             topBar.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 16),
             topBar.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -16),
-            topBar.heightAnchor.constraint(equalToConstant: 44),
 
             titleLabel.centerXAnchor.constraint(equalTo: topBar.centerXAnchor),
             titleLabel.centerYAnchor.constraint(equalTo: topBar.centerYAnchor),
@@ -154,15 +181,10 @@ final class AppointmentsView: UIView {
             profileButton.widthAnchor.constraint(equalToConstant: 40),
             profileButton.heightAnchor.constraint(equalToConstant: 40),
 
-            segmented.topAnchor.constraint(equalTo: topBar.bottomAnchor, constant: 10),
-            segmented.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 16),
-            segmented.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -16),
-            segmented.heightAnchor.constraint(equalToConstant: 44),
-
-            scrollView.topAnchor.constraint(equalTo: segmented.bottomAnchor, constant: 14),
+            scrollView.topAnchor.constraint(equalTo: topAnchor),
             scrollView.leadingAnchor.constraint(equalTo: leadingAnchor),
             scrollView.trailingAnchor.constraint(equalTo: trailingAnchor),
-            scrollView.bottomAnchor.constraint(equalTo: safeAreaLayoutGuide.bottomAnchor),
+            scrollView.bottomAnchor.constraint(equalTo: bottomAnchor),
 
             contentStack.topAnchor.constraint(equalTo: scrollView.contentLayoutGuide.topAnchor),
             contentStack.leadingAnchor.constraint(equalTo: scrollView.contentLayoutGuide.leadingAnchor, constant: 16),
@@ -171,6 +193,15 @@ final class AppointmentsView: UIView {
 
             contentStack.widthAnchor.constraint(equalTo: scrollView.frameLayoutGuide.widthAnchor, constant: -32)
         ])
+        topBarHeightConstraint = topBar.heightAnchor.constraint(equalToConstant: 44)
+        topBarHeightConstraint?.isActive = true
+    }
+
+    func useNativeNavigationChrome() {
+        titleLabel.isHidden = true
+        profileButton.isHidden = true
+        topBar.isHidden = true
+        topBarHeightConstraint?.constant = 0
     }
 
     // MARK: - Public API (Controller calls these)
@@ -427,6 +458,8 @@ final class UpcomingAppointmentTabCardView: UIView {
 final class BookHomeVisitsCardView: UIView {
 
     private let container = UIView()
+    private let iconWrap = UIView()
+    private let iconView = UIImageView()
     private let titleLabel = UILabel()
     private let subtitleLabel = UILabel()
     let bookButton = UIButton(type: .system)
@@ -451,41 +484,69 @@ final class BookHomeVisitsCardView: UIView {
             container.bottomAnchor.constraint(equalTo: bottomAnchor)
         ])
 
+        iconWrap.translatesAutoresizingMaskIntoConstraints = false
+        iconWrap.backgroundColor = UIColor(hex: "1E6EF7").withAlphaComponent(0.12)
+        iconWrap.layer.cornerRadius = 18
+        iconWrap.layer.cornerCurve = .continuous
+
+        iconView.translatesAutoresizingMaskIntoConstraints = false
+        iconView.image = UIImage(systemName: "cross.case.fill")
+        iconView.tintColor = UIColor(hex: "1E6EF7")
+        iconView.contentMode = .scaleAspectFit
+
         titleLabel.translatesAutoresizingMaskIntoConstraints = false
         titleLabel.text = "Book home visits"
-        titleLabel.font = .systemFont(ofSize: 18, weight: .bold)
+        titleLabel.font = .systemFont(ofSize: 20, weight: .bold)
         titleLabel.textColor = UITheme.Colors.textPrimary
 
         subtitleLabel.translatesAutoresizingMaskIntoConstraints = false
-        subtitleLabel.text = "Get certified physiotherapy at your doorsteps"
-        subtitleLabel.font = .systemFont(ofSize: 13, weight: .semibold)
+        subtitleLabel.text = "Get certified physiotherapy at your doorstep"
+        subtitleLabel.font = .systemFont(ofSize: 15, weight: .medium)
         subtitleLabel.textColor = UITheme.Colors.textSecondary
         subtitleLabel.numberOfLines = 2
 
         bookButton.translatesAutoresizingMaskIntoConstraints = false
-        bookButton.setTitle("Book appointment", for: .normal)
-        bookButton.setTitleColor(.white, for: .normal)
-        bookButton.titleLabel?.font = .systemFont(ofSize: 14, weight: .bold)
-        bookButton.backgroundColor = UITheme.Colors.accent
-        bookButton.layer.cornerRadius = 12
-        bookButton.heightAnchor.constraint(equalToConstant: 40).isActive = true
+        var buttonConfig = UIButton.Configuration.filled()
+        buttonConfig.title = "Book Appointment"
+        buttonConfig.baseBackgroundColor = UITheme.Colors.accent
+        buttonConfig.baseForegroundColor = .white
+        buttonConfig.cornerStyle = .capsule
+        buttonConfig.contentInsets = NSDirectionalEdgeInsets(top: 11, leading: 16, bottom: 11, trailing: 16)
+        buttonConfig.image = UIImage(systemName: "arrow.right")
+        buttonConfig.imagePlacement = .trailing
+        buttonConfig.imagePadding = 8
+        bookButton.configuration = buttonConfig
+        bookButton.titleLabel?.font = .systemFont(ofSize: 16, weight: .semibold)
 
+        container.addSubview(iconWrap)
+        iconWrap.addSubview(iconView)
         container.addSubview(titleLabel)
         container.addSubview(subtitleLabel)
         container.addSubview(bookButton)
 
         NSLayoutConstraint.activate([
-            titleLabel.topAnchor.constraint(equalTo: container.topAnchor, constant: 16),
-            titleLabel.leadingAnchor.constraint(equalTo: container.leadingAnchor, constant: 16),
+            iconWrap.topAnchor.constraint(equalTo: container.topAnchor, constant: 16),
+            iconWrap.leadingAnchor.constraint(equalTo: container.leadingAnchor, constant: 16),
+            iconWrap.widthAnchor.constraint(equalToConstant: 36),
+            iconWrap.heightAnchor.constraint(equalToConstant: 36),
+
+            iconView.centerXAnchor.constraint(equalTo: iconWrap.centerXAnchor),
+            iconView.centerYAnchor.constraint(equalTo: iconWrap.centerYAnchor),
+            iconView.widthAnchor.constraint(equalToConstant: 18),
+            iconView.heightAnchor.constraint(equalToConstant: 18),
+
+            titleLabel.topAnchor.constraint(equalTo: iconWrap.topAnchor),
+            titleLabel.leadingAnchor.constraint(equalTo: iconWrap.trailingAnchor, constant: 10),
             titleLabel.trailingAnchor.constraint(equalTo: container.trailingAnchor, constant: -16),
 
             subtitleLabel.topAnchor.constraint(equalTo: titleLabel.bottomAnchor, constant: 6),
             subtitleLabel.leadingAnchor.constraint(equalTo: titleLabel.leadingAnchor),
             subtitleLabel.trailingAnchor.constraint(equalTo: titleLabel.trailingAnchor),
 
-            bookButton.topAnchor.constraint(equalTo: subtitleLabel.bottomAnchor, constant: 12),
+            bookButton.topAnchor.constraint(equalTo: subtitleLabel.bottomAnchor, constant: 14),
+            bookButton.leadingAnchor.constraint(equalTo: container.leadingAnchor, constant: 16),
             bookButton.trailingAnchor.constraint(equalTo: container.trailingAnchor, constant: -16),
-            bookButton.widthAnchor.constraint(equalToConstant: 150),
+            bookButton.heightAnchor.constraint(equalToConstant: 46),
             bookButton.bottomAnchor.constraint(equalTo: container.bottomAnchor, constant: -16)
         ])
     }
@@ -553,6 +614,7 @@ final class CompletedAppointmentsListView: UIView, UITableViewDataSource, UITabl
     var onReviewTapped: ((CompletedAppointmentVM) -> Void)?
 
     private let table = UITableView(frame: .zero, style: .plain)
+    private let emptyStateView = NativeEmptyStateView()
     private var items: [CompletedAppointmentVM] = []
     private var heightConstraint: NSLayoutConstraint?
     private var animatedRows = Set<Int>()
@@ -575,12 +637,24 @@ final class CompletedAppointmentsListView: UIView, UITableViewDataSource, UITabl
         table.isScrollEnabled = false
         table.register(CompletedAppointmentCell.self, forCellReuseIdentifier: "CompletedAppointmentCell")
         addSubview(table)
+        addSubview(emptyStateView)
+        emptyStateView.configure(
+            icon: "calendar.badge.exclamationmark",
+            title: "No Completed Appointments",
+            message: "Completed or cancelled sessions will appear here."
+        )
+        emptyStateView.isHidden = true
 
         NSLayoutConstraint.activate([
             table.topAnchor.constraint(equalTo: topAnchor),
             table.leadingAnchor.constraint(equalTo: leadingAnchor),
             table.trailingAnchor.constraint(equalTo: trailingAnchor),
-            table.bottomAnchor.constraint(equalTo: bottomAnchor)
+            table.bottomAnchor.constraint(equalTo: bottomAnchor),
+
+            emptyStateView.topAnchor.constraint(equalTo: topAnchor),
+            emptyStateView.leadingAnchor.constraint(equalTo: leadingAnchor),
+            emptyStateView.trailingAnchor.constraint(equalTo: trailingAnchor),
+            emptyStateView.heightAnchor.constraint(equalToConstant: 150)
         ])
 
         heightConstraint = heightAnchor.constraint(equalToConstant: 0)
@@ -591,6 +665,13 @@ final class CompletedAppointmentsListView: UIView, UITableViewDataSource, UITabl
         self.items = items
         animatedRows.removeAll()
         table.reloadData()
+        let isEmpty = items.isEmpty
+        table.isHidden = isEmpty
+        emptyStateView.isHidden = !isEmpty
+        if isEmpty {
+            heightConstraint?.constant = 150
+            return
+        }
         let totalHeight = items.reduce(CGFloat(0)) { partial, vm in
             partial + (vm.status == .completed ? 280 : 230)
         }

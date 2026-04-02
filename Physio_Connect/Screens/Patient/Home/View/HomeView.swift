@@ -23,6 +23,7 @@ final class HomeView: UIView {
 
     private let videosHeader = SectionHeaderView(title: "Free Exercise Videos", actionTitle: "View All")
     let videosCollectionView: UICollectionView
+    private let videosEmptyState = NativeEmptyStateView()
     private var videosHeightConstraint: NSLayoutConstraint?
 
     private let progressTitle = UILabel()
@@ -47,6 +48,7 @@ final class HomeView: UIView {
     private let articlesTitle = UILabel()
     let articlesSegmented = UISegmentedControl(items: ["Recent", "For You"])
     let articlesTableView = UITableView(frame: .zero, style: .plain)
+    private let articlesEmptyState = NativeEmptyStateView()
     private var articlesHeightConstraint: NSLayoutConstraint?
 
     override init(frame: CGRect) {
@@ -113,6 +115,14 @@ final class HomeView: UIView {
         videosCollectionView.backgroundColor = .clear
         videosCollectionView.showsVerticalScrollIndicator = false
         videosCollectionView.isScrollEnabled = false
+        videosEmptyState.frame = CGRect(x: 0, y: 0, width: 0, height: 150)
+        videosEmptyState.configure(
+            icon: "play.rectangle",
+            title: "No Free Videos",
+            message: "Exercise videos will appear here once they are available."
+        )
+        videosCollectionView.backgroundView = videosEmptyState
+        videosCollectionView.backgroundView?.isHidden = true
         contentView.addSubview(videosCollectionView)
 
         progressTitle.translatesAutoresizingMaskIntoConstraints = false
@@ -143,14 +153,18 @@ final class HomeView: UIView {
 
         articlesSegmented.translatesAutoresizingMaskIntoConstraints = false
         articlesSegmented.selectedSegmentIndex = 0
-        articlesSegmented.selectedSegmentTintColor = .white
-        articlesSegmented.backgroundColor = UIColor(hex: "EEF3FA")
+        articlesSegmented.selectedSegmentTintColor = UIColor.white.withAlphaComponent(0.92)
+        articlesSegmented.backgroundColor = UIColor.white.withAlphaComponent(0.35)
+        articlesSegmented.layer.cornerRadius = 16
+        articlesSegmented.layer.masksToBounds = true
+        articlesSegmented.layer.borderWidth = 1
+        articlesSegmented.layer.borderColor = UIColor.white.withAlphaComponent(0.45).cgColor
         articlesSegmented.setTitleTextAttributes(
-            [.foregroundColor: UIColor.black.withAlphaComponent(0.55), .font: UIFont.systemFont(ofSize: 14, weight: .semibold)],
+            [.foregroundColor: UIColor.black.withAlphaComponent(0.5), .font: UIFont.systemFont(ofSize: 13, weight: .semibold)],
             for: .normal
         )
         articlesSegmented.setTitleTextAttributes(
-            [.foregroundColor: UIColor.black, .font: UIFont.systemFont(ofSize: 14, weight: .semibold)],
+            [.foregroundColor: UIColor.black, .font: UIFont.systemFont(ofSize: 13, weight: .semibold)],
             for: .selected
         )
         contentView.addSubview(articlesSegmented)
@@ -159,10 +173,20 @@ final class HomeView: UIView {
         articlesTableView.backgroundColor = .clear
         articlesTableView.separatorStyle = .none
         articlesTableView.isScrollEnabled = false
+        articlesTableView.rowHeight = UITableView.automaticDimension
+        articlesTableView.estimatedRowHeight = 210
+        articlesEmptyState.frame = CGRect(x: 0, y: 0, width: 0, height: 130)
+        articlesEmptyState.configure(
+            icon: "doc.text",
+            title: "No Articles Available",
+            message: "We’ll show wellness reads here when content is available."
+        )
+        articlesTableView.backgroundView = articlesEmptyState
+        articlesTableView.backgroundView?.isHidden = true
         contentView.addSubview(articlesTableView)
 
         NSLayoutConstraint.activate([
-            scrollView.topAnchor.constraint(equalTo: safeAreaLayoutGuide.topAnchor),
+            scrollView.topAnchor.constraint(equalTo: topAnchor),
             scrollView.leadingAnchor.constraint(equalTo: leadingAnchor),
             scrollView.trailingAnchor.constraint(equalTo: trailingAnchor),
             scrollView.bottomAnchor.constraint(equalTo: bottomAnchor),
@@ -173,7 +197,7 @@ final class HomeView: UIView {
             contentView.bottomAnchor.constraint(equalTo: scrollView.contentLayoutGuide.bottomAnchor),
             contentView.widthAnchor.constraint(equalTo: scrollView.frameLayoutGuide.widthAnchor),
 
-            topBar.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 8),
+            topBar.topAnchor.constraint(equalTo: contentView.topAnchor),
             topBar.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 16),
             topBar.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -16),
             topBar.heightAnchor.constraint(equalToConstant: 44),
@@ -229,6 +253,7 @@ final class HomeView: UIView {
             articlesSegmented.topAnchor.constraint(equalTo: articlesTitle.bottomAnchor, constant: 12),
             articlesSegmented.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 16),
             articlesSegmented.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -16),
+            articlesSegmented.heightAnchor.constraint(equalToConstant: 40),
 
             articlesTableView.topAnchor.constraint(equalTo: articlesSegmented.bottomAnchor, constant: 12),
             articlesTableView.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 16),
@@ -275,6 +300,11 @@ final class HomeView: UIView {
         locationLabel.text = text
     }
 
+    func useNativeNavigationChrome() {
+        titleLabel.isHidden = true
+        profileButton.isHidden = true
+    }
+
     func updateVideosHeight(rows: Int) {
         let rowCount = max(rows, 1)
         let rowHeight: CGFloat = 160
@@ -283,6 +313,11 @@ final class HomeView: UIView {
         let height = rowsNeeded * rowHeight + max(0, rowsNeeded - 1) * verticalSpacing
         videosHeightConstraint?.constant = height
         layoutIfNeeded()
+    }
+
+    func setVideosEmptyStateVisible(_ visible: Bool) {
+        videosCollectionView.backgroundView?.isHidden = !visible
+        videosHeader.actionButton.isHidden = visible
     }
 
     var videosActionButton: UIButton {
@@ -320,15 +355,20 @@ final class HomeView: UIView {
     }
 
     func updateArticlesHeight(rows: Int) {
-        let rowHeight: CGFloat = 96
-        let height = CGFloat(max(rows, 1)) * rowHeight
-        articlesHeightConstraint?.constant = height
-        layoutIfNeeded()
+        let fallbackRowHeight: CGFloat = 210
+        let fallback = CGFloat(max(rows, 1)) * fallbackRowHeight
+        articlesHeightConstraint?.constant = fallback
+        updateArticlesHeightToFit()
+    }
+
+    func setArticlesEmptyStateVisible(_ visible: Bool) {
+        articlesTableView.backgroundView?.isHidden = !visible
     }
 
     func updateArticlesHeightToFit() {
+        layoutIfNeeded()
         articlesTableView.layoutIfNeeded()
-        let height = max(articlesTableView.contentSize.height, 1)
+        let height = max(articlesTableView.contentSize.height + 8, 1)
         articlesHeightConstraint?.constant = height
         layoutIfNeeded()
     }

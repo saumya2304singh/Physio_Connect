@@ -20,7 +20,16 @@ final class ProfileViewController: UIViewController, PHPickerViewControllerDeleg
 
     override func viewDidLoad() {
         super.viewDidLoad()
-        navigationController?.setNavigationBarHidden(true, animated: false)
+        navigationController?.setNavigationBarHidden(false, animated: false)
+        navigationItem.title = "Profile"
+        navigationItem.largeTitleDisplayMode = .never
+        navigationItem.rightBarButtonItem = UIBarButtonItem(
+            title: "Edit",
+            style: .plain,
+            target: self,
+            action: #selector(editTapped)
+        )
+        profileView.useNativeNavigationChrome()
         bind()
         profileView.preloadAvatar(urlString: ProfileModel.cachedAvatarURL())
         Task { await refreshProfile() }
@@ -43,13 +52,8 @@ final class ProfileViewController: UIViewController, PHPickerViewControllerDeleg
     }
 
     private func bind() {
-        profileView.onBack = { [weak self] in
-            self?.navigationController?.popViewController(animated: true)
-        }
-
-        profileView.onEdit = { [weak self] in
-            self?.openEditProfile()
-        }
+        profileView.onBack = { [weak self] in self?.navigationController?.popViewController(animated: true) }
+        profileView.onEdit = { [weak self] in self?.openEditProfile() }
 
         profileView.onPrivacyTapped = { [weak self] in
             self?.showAlert(title: "Privacy Policy", message: "Add your privacy policy URL here.")
@@ -206,6 +210,10 @@ final class ProfileViewController: UIViewController, PHPickerViewControllerDeleg
         }
         vc.hidesBottomBarWhenPushed = true
         navigationController?.pushViewController(vc, animated: true)
+    }
+
+    @objc private func editTapped() {
+        openEditProfile()
     }
 
     private func presentAvatarPicker() {

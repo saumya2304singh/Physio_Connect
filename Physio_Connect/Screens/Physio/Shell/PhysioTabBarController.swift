@@ -25,6 +25,7 @@ final class PhysioTabBarController: UITabBarController {
         )
 
         let appointments = UINavigationController(rootViewController: PhysioAppointmentsViewController())
+        appointments.navigationBar.prefersLargeTitles = true
         appointments.tabBarItem = UITabBarItem(
             title: "Appointments",
             image: UIImage(systemName: "calendar"),
@@ -32,6 +33,7 @@ final class PhysioTabBarController: UITabBarController {
         )
 
         let programs = UINavigationController(rootViewController: PhysioProgramsViewController())
+        programs.navigationBar.prefersLargeTitles = true
         programs.tabBarItem = UITabBarItem(
             title: "Programs",
             image: UIImage(systemName: "square.grid.2x2"),
@@ -39,6 +41,7 @@ final class PhysioTabBarController: UITabBarController {
         )
 
         let reports = UINavigationController(rootViewController: PhysioReportsViewController())
+        reports.navigationBar.prefersLargeTitles = true
         reports.tabBarItem = UITabBarItem(
             title: "Reports",
             image: UIImage(systemName: "chart.bar"),
@@ -50,29 +53,7 @@ final class PhysioTabBarController: UITabBarController {
     }
 
     private func styleTabBar() {
-        let appearance = UITabBarAppearance()
-        appearance.configureWithDefaultBackground()
-        appearance.backgroundEffect = UIBlurEffect(style: .systemUltraThinMaterialLight)
-        appearance.backgroundColor = UIColor.white.withAlphaComponent(0.6)
-
-        let normal = appearance.stackedLayoutAppearance.normal
-        normal.iconColor = UIColor.black.withAlphaComponent(0.6)
-        normal.titleTextAttributes = [.foregroundColor: UIColor.black.withAlphaComponent(0.6)]
-
-        let selected = appearance.stackedLayoutAppearance.selected
-        selected.iconColor = UIColor(hex: "1E6EF7")
-        selected.titleTextAttributes = [.foregroundColor: UIColor(hex: "1E6EF7")]
-
-        tabBar.standardAppearance = appearance
-        tabBar.scrollEdgeAppearance = appearance
-
-        tabBar.layer.cornerRadius = 22
-        tabBar.layer.masksToBounds = false
-        tabBar.layer.shadowColor = UIColor.black.cgColor
-        tabBar.layer.shadowOpacity = 0.08
-        tabBar.layer.shadowRadius = 12
-        tabBar.layer.shadowOffset = CGSize(width: 0, height: -2)
-        tabBar.itemPositioning = .automatic
+        TabBarGlassStyle.apply(to: tabBar, accentColor: UIColor(hex: "1E6EF7"))
     }
 }
 

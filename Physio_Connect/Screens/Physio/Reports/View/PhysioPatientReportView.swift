@@ -114,7 +114,7 @@ final class PhysioPatientReportView: UIView {
 
         headerCard.translatesAutoresizingMaskIntoConstraints = false
         headerCard.backgroundColor = .white
-        headerCard.layer.cornerRadius = 18
+        headerCard.layer.cornerRadius = 22
         headerCard.layer.shadowColor = UIColor.black.cgColor
         headerCard.layer.shadowOpacity = 0.05
         headerCard.layer.shadowRadius = 10
@@ -186,7 +186,7 @@ final class PhysioPatientReportView: UIView {
 
         chartCard.translatesAutoresizingMaskIntoConstraints = false
         chartCard.backgroundColor = .white
-        chartCard.layer.cornerRadius = 18
+        chartCard.layer.cornerRadius = 22
         chartCard.layer.shadowColor = UIColor.black.cgColor
         chartCard.layer.shadowOpacity = 0.05
         chartCard.layer.shadowRadius = 10
@@ -197,7 +197,7 @@ final class PhysioPatientReportView: UIView {
 
         notesCard.translatesAutoresizingMaskIntoConstraints = false
         notesCard.backgroundColor = .white
-        notesCard.layer.cornerRadius = 18
+        notesCard.layer.cornerRadius = 22
         notesCard.layer.shadowColor = UIColor.black.cgColor
         notesCard.layer.shadowOpacity = 0.05
         notesCard.layer.shadowRadius = 10

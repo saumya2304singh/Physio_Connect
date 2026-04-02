@@ -19,13 +19,19 @@ final class AppointmentsViewController: UIViewController {
     private var isCancelling = false
     private var isRefreshing = false
     private var upcomingTimer: Timer?
+    private lazy var navProfileItem = NativeUIStyle.makeAvatarBarButtonItem(target: self, action: #selector(profileTapped))
 
     override func loadView() { view = apptView }
 
     override func viewDidLoad() {
         super.viewDidLoad()
-
-        navigationController?.setNavigationBarHidden(true, animated: false)
+        navigationController?.setNavigationBarHidden(false, animated: false)
+        NativeUIStyle.applyTabRootNavigation(
+            for: self,
+            title: "Appointments",
+            rightItem: navProfileItem
+        )
+        apptView.useNativeNavigationChrome()
 
         bind()
         Task { await refreshAll() }
@@ -34,6 +40,11 @@ final class AppointmentsViewController: UIViewController {
 
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
+        NativeUIStyle.applyTabRootNavigation(
+            for: self,
+            title: "Appointments",
+            rightItem: navProfileItem
+        )
         Task { await refreshAll() }
         Task { await refreshProfileAvatar() }
     }
@@ -45,13 +56,6 @@ final class AppointmentsViewController: UIViewController {
     }
 
     private func bind() {
-        apptView.onProfileTapped = { [weak self] in
-            guard let self else { return }
-            let vc = ProfileViewController()
-            vc.hidesBottomBarWhenPushed = true
-            self.navigationController?.pushViewController(vc, animated: true)
-        }
-
         apptView.onCancelTapped = { [weak self] vm in
             guard let self else { return }
             guard !self.isCancelling else { return }
@@ -137,16 +141,23 @@ final class AppointmentsViewController: UIViewController {
     }
 
     private func refreshProfileAvatar() async {
+        let cached = ProfileModel.cachedAvatarURL()
         await MainActor.run {
-            PatientNavAvatarStyle.updateProfileButton(
-                self.apptView.profileButton,
-                urlString: ProfileModel.cachedAvatarURL()
-            )
+            PatientNavAvatarStyle.updateProfileItem(self.navProfileItem, urlString: cached)
         }
         guard let profile = try? await profileModel.fetchCurrentProfile() else { return }
+        let resolved = profile.avatarURL?.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false
+            ? profile.avatarURL
+            : cached
         await MainActor.run {
-            PatientNavAvatarStyle.updateProfileButton(self.apptView.profileButton, urlString: profile.avatarURL)
+            PatientNavAvatarStyle.updateProfileItem(self.navProfileItem, urlString: resolved)
         }
+    }
+
+    @objc private func profileTapped() {
+        let vc = ProfileViewController()
+        vc.hidesBottomBarWhenPushed = true
+        navigationController?.pushViewController(vc, animated: true)
     }
 
     // MARK: - Mapping to your View VMs

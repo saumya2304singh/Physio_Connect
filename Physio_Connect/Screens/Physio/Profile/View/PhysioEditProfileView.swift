@@ -20,6 +20,7 @@ final class PhysioEditProfileView: UIView, UIPickerViewDataSource, UIPickerViewD
     private let backButton = UIButton(type: .system)
     private let titleLabel = UILabel()
     private let saveButton = UIButton(type: .system)
+    private var topBarHeightConstraint: NSLayoutConstraint?
 
     private let nameField = PhysioLabeledTextField(title: "Full Name", placeholder: "User")
     private let phoneField = PhysioLabeledTextField(title: "Phone", placeholder: "Phone number")
@@ -193,8 +194,14 @@ final class PhysioEditProfileView: UIView, UIPickerViewDataSource, UIPickerViewD
             saveButton.centerYAnchor.constraint(equalTo: topBar.centerYAnchor)
         ])
 
-        topBar.heightAnchor.constraint(equalToConstant: 52).isActive = true
+        topBarHeightConstraint = topBar.heightAnchor.constraint(equalToConstant: 52)
+        topBarHeightConstraint?.isActive = true
         stackView.addArrangedSubview(topBar)
+    }
+
+    func useNativeNavigationChrome() {
+        topBar.isHidden = true
+        topBarHeightConstraint?.constant = 0
     }
 
     private func buildForm() {

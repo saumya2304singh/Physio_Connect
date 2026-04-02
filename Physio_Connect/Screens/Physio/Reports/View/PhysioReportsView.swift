@@ -21,7 +21,7 @@ final class PhysioReportsView: UIView {
     let searchBar = UISearchBar()
     let refreshControl = UIRefreshControl()
 
-    private let emptyLabel = UILabel()
+    private let emptyStateView = NativeEmptyStateView()
 
     override init(frame: CGRect) {
         super.init(frame: frame)
@@ -34,9 +34,7 @@ final class PhysioReportsView: UIView {
         backgroundColor = UIColor(hex: "E6F1FF")
 
         searchBar.translatesAutoresizingMaskIntoConstraints = false
-        searchBar.searchBarStyle = .minimal
-        searchBar.placeholder = "Search patients or programs..."
-        searchBar.backgroundImage = UIImage()
+        NativeUIStyle.styleSearchBar(searchBar, placeholder: "Search patients or programs...")
 
         tableView.translatesAutoresizingMaskIntoConstraints = false
         tableView.backgroundColor = .clear
@@ -47,18 +45,17 @@ final class PhysioReportsView: UIView {
         tableView.register(ReportPatientCell.self, forCellReuseIdentifier: ReportPatientCell.reuseID)
         tableView.refreshControl = refreshControl
 
-        emptyLabel.translatesAutoresizingMaskIntoConstraints = false
-        emptyLabel.text = "No program assignments yet.\nShare a program code to see patient reports."
-        emptyLabel.font = .systemFont(ofSize: 15, weight: .semibold)
-        emptyLabel.textColor = UIColor.black.withAlphaComponent(0.55)
-        emptyLabel.numberOfLines = 0
-        emptyLabel.textAlignment = .center
-        emptyLabel.isHidden = true
-        emptyLabel.isUserInteractionEnabled = false
+        emptyStateView.translatesAutoresizingMaskIntoConstraints = false
+        emptyStateView.configure(
+            icon: "chart.line.text.clipboard",
+            title: "No Reports Yet",
+            message: "Assign programs to patients to start seeing progress reports."
+        )
+        emptyStateView.isHidden = true
 
         addSubview(searchBar)
         addSubview(tableView)
-        addSubview(emptyLabel)
+        addSubview(emptyStateView)
 
         NSLayoutConstraint.activate([
             searchBar.topAnchor.constraint(equalTo: safeAreaLayoutGuide.topAnchor, constant: 12),
@@ -70,10 +67,9 @@ final class PhysioReportsView: UIView {
             tableView.trailingAnchor.constraint(equalTo: trailingAnchor),
             tableView.bottomAnchor.constraint(equalTo: bottomAnchor),
 
-            emptyLabel.centerXAnchor.constraint(equalTo: centerXAnchor),
-            emptyLabel.centerYAnchor.constraint(equalTo: centerYAnchor),
-            emptyLabel.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 40),
-            emptyLabel.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -40)
+            emptyStateView.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 20),
+            emptyStateView.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -20),
+            emptyStateView.centerYAnchor.constraint(equalTo: centerYAnchor)
         ])
     }
 
@@ -82,8 +78,8 @@ final class PhysioReportsView: UIView {
     }
 
     func showEmptyState(_ show: Bool) {
-        emptyLabel.isHidden = !show
-        if show { bringSubviewToFront(emptyLabel) }
+        emptyStateView.isHidden = !show
+        if show { bringSubviewToFront(emptyStateView) }
     }
 }
 
@@ -113,7 +109,7 @@ final class ReportPatientCell: UITableViewCell {
 
         card.translatesAutoresizingMaskIntoConstraints = false
         card.backgroundColor = .white
-        card.layer.cornerRadius = 16
+        card.layer.cornerRadius = 22
         card.layer.shadowColor = UIColor.black.cgColor
         card.layer.shadowOpacity = 0.06
         card.layer.shadowRadius = 10

@@ -44,8 +44,9 @@ struct PhysiotherapistProfileModel {
         let count = physio.reviews_count ?? 0
         let ratingText = "⭐️ \(String(format: "%.1f", avg)) | \(count) reviews"
 
-        let specialization = specializations.first
-            ?? (physio.place_of_work?.isEmpty == false ? physio.place_of_work! : "Physiotherapy specialist")
+        // Keep specialization consistent with list screen mapping.
+        // `place_of_work` (e.g. "Apollo") is location/workplace, not specialization.
+        let specialization = specializations.first ?? "Physiotherapy specialist"
 
         let about = (physio.about?.isEmpty == false)
             ? physio.about!

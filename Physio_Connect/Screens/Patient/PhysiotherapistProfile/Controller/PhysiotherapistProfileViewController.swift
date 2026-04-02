@@ -56,6 +56,19 @@ final class PhysiotherapistProfileViewController: UIViewController {
         loadData()
     }
 
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+        // Enforce hidden native nav every time this custom-header screen appears.
+        navigationItem.hidesBackButton = true
+        navigationController?.setNavigationBarHidden(true, animated: animated)
+    }
+
+    override func viewWillDisappear(_ animated: Bool) {
+        super.viewWillDisappear(animated)
+        // Restore for UIKit-native screens in the same navigation stack.
+        navigationController?.setNavigationBarHidden(false, animated: animated)
+    }
+
     override func viewDidLayoutSubviews() {
         super.viewDidLayoutSubviews()
         // Ensures height stays correct after layout changes

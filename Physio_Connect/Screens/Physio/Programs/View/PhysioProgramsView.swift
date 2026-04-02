@@ -11,7 +11,7 @@ final class PhysioProgramsView: UIView {
 
     let createButton = UIButton(type: .system)
     let tableView = UITableView(frame: .zero, style: .plain)
-    private let emptyLabel = UILabel()
+    private let emptyStateView = NativeEmptyStateView()
     private let refreshControl = UIRefreshControl()
 
     override init(frame: CGRect) {
@@ -37,7 +37,7 @@ final class PhysioProgramsView: UIView {
     }
 
     func showEmptyState(_ show: Bool) {
-        emptyLabel.isHidden = !show
+        emptyStateView.isHidden = !show
         tableView.isHidden = show
     }
 
@@ -61,16 +61,17 @@ final class PhysioProgramsView: UIView {
         tableView.scrollIndicatorInsets = UIEdgeInsets(top: 12, left: 0, bottom: 110, right: 0)
         tableView.refreshControl = refreshControl
 
-        emptyLabel.translatesAutoresizingMaskIntoConstraints = false
-        emptyLabel.text = "No programs yet."
-        emptyLabel.textColor = UIColor.black.withAlphaComponent(0.5)
-        emptyLabel.font = .systemFont(ofSize: 16, weight: .semibold)
-        emptyLabel.textAlignment = .center
-        emptyLabel.isHidden = true
+        emptyStateView.translatesAutoresizingMaskIntoConstraints = false
+        emptyStateView.configure(
+            icon: "square.stack.3d.up",
+            title: "No Programs Yet",
+            message: "Create your first rehab program to start assigning patients."
+        )
+        emptyStateView.isHidden = true
 
         addSubview(createButton)
         addSubview(tableView)
-        addSubview(emptyLabel)
+        addSubview(emptyStateView)
 
         NSLayoutConstraint.activate([
             createButton.topAnchor.constraint(equalTo: safeAreaLayoutGuide.topAnchor, constant: 12),
@@ -83,8 +84,9 @@ final class PhysioProgramsView: UIView {
             tableView.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -16),
             tableView.bottomAnchor.constraint(equalTo: bottomAnchor),
 
-            emptyLabel.centerXAnchor.constraint(equalTo: tableView.centerXAnchor),
-            emptyLabel.centerYAnchor.constraint(equalTo: tableView.centerYAnchor)
+            emptyStateView.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 20),
+            emptyStateView.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -20),
+            emptyStateView.centerYAnchor.constraint(equalTo: tableView.centerYAnchor)
         ])
     }
 }
@@ -158,7 +160,7 @@ final class ProgramCardCell: UITableViewCell {
     private func build() {
         card.translatesAutoresizingMaskIntoConstraints = false
         card.backgroundColor = .white
-        card.layer.cornerRadius = 18
+        card.layer.cornerRadius = 22
         card.layer.shadowColor = UIColor.black.cgColor
         card.layer.shadowOpacity = 0.06
         card.layer.shadowRadius = 10

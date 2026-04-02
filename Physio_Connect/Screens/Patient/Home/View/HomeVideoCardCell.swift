@@ -54,7 +54,7 @@ final class HomeVideoCardCell: UICollectionViewCell {
 
         card.translatesAutoresizingMaskIntoConstraints = false
         card.backgroundColor = .white
-        card.layer.cornerRadius = 16
+        card.layer.cornerRadius = 22
         card.layer.shadowColor = UIColor.black.cgColor
         card.layer.shadowOpacity = 0.08
         card.layer.shadowRadius = 8

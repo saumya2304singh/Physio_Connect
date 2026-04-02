@@ -232,7 +232,7 @@ final class PhysioIconTextField: UIView {
 
         container.translatesAutoresizingMaskIntoConstraints = false
         container.backgroundColor = .white
-        container.layer.cornerRadius = 18
+        container.layer.cornerRadius = 22
         container.layer.borderWidth = 1
         container.layer.borderColor = UIColor.black.withAlphaComponent(0.06).cgColor
         container.layer.shadowColor = UIColor.black.withAlphaComponent(0.06).cgColor

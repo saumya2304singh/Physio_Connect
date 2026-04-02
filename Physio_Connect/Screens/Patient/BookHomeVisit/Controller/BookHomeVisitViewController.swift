@@ -17,6 +17,7 @@ final class BookHomeVisitViewController: UIViewController, UITextFieldDelegate {
     private var physioNameForSummary: String?
     private var slots: [SlotRow] = []
     private var selectedSlot: SlotRow?
+    private let profileModel = ProfileModel()
 
     // MARK: - Init
     init(physioID: UUID, isReschedule: Bool = false) {
@@ -31,9 +32,16 @@ final class BookHomeVisitViewController: UIViewController, UITextFieldDelegate {
     override func viewDidLoad() {
         super.viewDidLoad()
 
-        navigationController?.setNavigationBarHidden(true, animated: false)
+        navigationController?.setNavigationBarHidden(false, animated: false)
+        configureTopNavigation()
+        navigationItem.largeTitleDisplayMode = .never
+        navigationItem.hidesBackButton = false
+        bookView.useNativeTopBarMode()
+        applyTransparentNavigationBarAppearance()
+        bookView.scrollView.contentInsetAdjustmentBehavior = .automatic
 
         // Actions
+        bookView.backButton.isHidden = true
         bookView.backButton.addTarget(self, action: #selector(backTapped), for: .touchUpInside)
         bookView.confirmButton.addTarget(self, action: #selector(confirmTapped), for: .touchUpInside)
         bookView.calendarButton.addTarget(self, action: #selector(calendarTapped), for: .touchUpInside)
@@ -53,6 +61,7 @@ final class BookHomeVisitViewController: UIViewController, UITextFieldDelegate {
         // Fetch
         fetchPhysioHeader()
         fetchSlots(for: bookView.datePicker.date)
+        prefillCustomerContactFields()
 
         // Initial summary
         bookView.updateAppointmentSummary(
@@ -61,6 +70,20 @@ final class BookHomeVisitViewController: UIViewController, UITextFieldDelegate {
             time: nil,
             address: nil
         )
+    }
+
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+        navigationController?.setNavigationBarHidden(false, animated: animated)
+        configureTopNavigation()
+        navigationItem.largeTitleDisplayMode = .never
+        navigationItem.hidesBackButton = false
+        applyTransparentNavigationBarAppearance()
+    }
+
+    override func viewWillDisappear(_ animated: Bool) {
+        super.viewWillDisappear(animated)
+        restoreDefaultNavigationBarAppearance()
     }
 
     @objc private func backTapped() {
@@ -138,6 +161,92 @@ final class BookHomeVisitViewController: UIViewController, UITextFieldDelegate {
                 print("❌ fetchPhysioHeader error:", error)
             }
         }
+    }
+
+    // MARK: - Prefill customer contact/address from backend
+    private func prefillCustomerContactFields() {
+        Task {
+            do {
+                let profile = try await profileModel.fetchCurrentProfile()
+                await MainActor.run {
+                    let fetchedAddress = profile.address.trimmingCharacters(in: .whitespacesAndNewlines)
+                    let fallbackAddress = profile.location.trimmingCharacters(in: .whitespacesAndNewlines)
+                    let addressValue: String? = {
+                        if !fetchedAddress.isEmpty, fetchedAddress != "—" { return fetchedAddress }
+                        if !fallbackAddress.isEmpty, fallbackAddress != "—" { return fallbackAddress }
+                        return nil
+                    }()
+
+                    let currentAddress = self.bookView.addressField.text?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+                    if currentAddress.isEmpty, let addressValue {
+                        self.bookView.addressField.text = addressValue
+                    }
+
+                    let currentPhone = self.bookView.phoneField.text?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+                    if currentPhone.isEmpty {
+                        self.bookView.phoneField.text = self.normalizedPhoneForInput(profile.phone)
+                    }
+
+                    self.bookView.updateAppointmentSummary(
+                        doctorName: self.physioNameForSummary,
+                        date: self.bookView.datePicker.date,
+                        time: self.selectedSlotTimeText(),
+                        address: self.bookView.addressField.text?.trimmingCharacters(in: .whitespacesAndNewlines)
+                    )
+                }
+            } catch {
+                // Guest users / missing session should still be able to continue booking flow.
+                print("ℹ️ prefill customer contact skipped:", error.localizedDescription)
+            }
+        }
+    }
+
+    private func normalizedPhoneForInput(_ rawPhone: String) -> String? {
+        let trimmed = rawPhone.trimmingCharacters(in: .whitespacesAndNewlines)
+        if trimmed.isEmpty || trimmed == "—" { return nil }
+
+        var digits = trimmed.filter(\.isNumber)
+        if digits.hasPrefix("91"), digits.count >= 12 {
+            digits.removeFirst(2)
+        }
+        if digits.count > 10 {
+            digits = String(digits.suffix(10))
+        }
+        guard !digits.isEmpty else { return nil }
+        return formatPhoneDigits(digits, prefix: "+91 ")
+    }
+
+    private func configureTopNavigation() {
+        navigationItem.leftItemsSupplementBackButton = false
+        navigationItem.leftBarButtonItem = nil
+        navigationItem.title = "Book Home Visit"
+        navigationController?.navigationBar.titleTextAttributes = [
+            .foregroundColor: UIColor.black,
+            .font: UIFont.systemFont(ofSize: 22, weight: .bold)
+        ]
+    }
+
+    private func applyTransparentNavigationBarAppearance() {
+        guard let navBar = navigationController?.navigationBar else { return }
+        let appearance = UINavigationBarAppearance()
+        appearance.configureWithTransparentBackground()
+        appearance.backgroundColor = .clear
+        appearance.shadowColor = .clear
+        navBar.standardAppearance = appearance
+        navBar.scrollEdgeAppearance = appearance
+        navBar.compactAppearance = appearance
+        navBar.tintColor = .label
+        navBar.isTranslucent = true
+    }
+
+    private func restoreDefaultNavigationBarAppearance() {
+        guard let navBar = navigationController?.navigationBar else { return }
+        let appearance = UINavigationBarAppearance()
+        appearance.configureWithDefaultBackground()
+        navBar.standardAppearance = appearance
+        navBar.scrollEdgeAppearance = appearance
+        navBar.compactAppearance = appearance
+        navBar.isTranslucent = true
     }
 
     // MARK: - Fetch Slots from physio_availability_slots
@@ -445,6 +554,10 @@ final class BookHomeVisitViewController: UIViewController, UITextFieldDelegate {
 
         // 2) mark slot booked
         try await PhysioService.shared.markSlotBooked(slotID: slotID)
+
+        // Keep latest booking contact details as customer defaults.
+        await persistCustomerDefaults(address: address, phone: phone, userUUID: userUUID)
+
         ArticleTriggerService.shared.triggerArticles(
             keyword: specializationForTrigger ?? "Physiotherapy",
             source: "appointment",
@@ -474,6 +587,28 @@ final class BookHomeVisitViewController: UIViewController, UITextFieldDelegate {
 
         // 3) refresh slots
         fetchSlots(for: bookView.datePicker.date)
+    }
+
+    private func persistCustomerDefaults(address: String, phone: String, userUUID: UUID) async {
+        struct CustomerContactPayload: Encodable {
+            let address: String?
+            let phone: String?
+        }
+
+        let payload = CustomerContactPayload(
+            address: address.trimmingCharacters(in: .whitespacesAndNewlines).nilIfEmpty,
+            phone: phone.trimmingCharacters(in: .whitespacesAndNewlines).nilIfEmpty
+        )
+
+        do {
+            _ = try await SupabaseManager.shared.client
+                .from("customers")
+                .update(payload)
+                .eq("id", value: userUUID.uuidString)
+                .execute()
+        } catch {
+            print("⚠️ customer defaults update failed:", error.localizedDescription)
+        }
     }
 
     // MARK: - Push Signup
@@ -619,5 +754,12 @@ extension BookHomeVisitViewController: UITextViewDelegate {
             return prefix + first
         }
         return prefix + first + " " + rest
+    }
+}
+
+private extension String {
+    var nilIfEmpty: String? {
+        let trimmed = trimmingCharacters(in: .whitespacesAndNewlines)
+        return trimmed.isEmpty ? nil : trimmed
     }
 }

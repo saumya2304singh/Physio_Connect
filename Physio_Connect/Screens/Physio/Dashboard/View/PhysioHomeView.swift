@@ -19,11 +19,11 @@ final class PhysioHomeView: UIView {
 
     private let upcomingTitle = UILabel()
     private let upcomingStack = UIStackView()
-    private let upcomingEmptyLabel = UILabel()
+    private let upcomingEmptyView = NativeEmptyStateView()
 
     private let patientsTitle = UILabel()
     private let patientsStack = UIStackView()
-    private let patientsEmptyLabel = UILabel()
+    private let patientsEmptyView = NativeEmptyStateView()
 
     override init(frame: CGRect) {
         super.init(frame: frame)
@@ -65,10 +65,12 @@ final class PhysioHomeView: UIView {
         upcomingStack.translatesAutoresizingMaskIntoConstraints = false
         contentStack.addArrangedSubview(upcomingStack)
 
-        upcomingEmptyLabel.text = "No upcoming sessions yet."
-        upcomingEmptyLabel.font = .systemFont(ofSize: 14, weight: .semibold)
-        upcomingEmptyLabel.textColor = UIColor.black.withAlphaComponent(0.45)
-        upcomingStack.addArrangedSubview(upcomingEmptyLabel)
+        upcomingEmptyView.configure(
+            icon: "calendar.badge.clock",
+            title: "No Upcoming Sessions",
+            message: "New bookings will appear here as soon as patients schedule."
+        )
+        upcomingStack.addArrangedSubview(upcomingEmptyView)
 
         patientsTitle.text = "Patients"
         patientsTitle.font = .systemFont(ofSize: 18, weight: .bold)
@@ -81,10 +83,12 @@ final class PhysioHomeView: UIView {
         patientsStack.translatesAutoresizingMaskIntoConstraints = false
         contentStack.addArrangedSubview(patientsStack)
 
-        patientsEmptyLabel.text = "No patients assigned yet."
-        patientsEmptyLabel.font = .systemFont(ofSize: 14, weight: .semibold)
-        patientsEmptyLabel.textColor = UIColor.black.withAlphaComponent(0.45)
-        patientsStack.addArrangedSubview(patientsEmptyLabel)
+        patientsEmptyView.configure(
+            icon: "person.2.slash",
+            title: "No Patients Yet",
+            message: "Assigned patients will appear here once they redeem your programs."
+        )
+        patientsStack.addArrangedSubview(patientsEmptyView)
 
         NSLayoutConstraint.activate([
             scrollView.topAnchor.constraint(equalTo: safeAreaLayoutGuide.topAnchor),
@@ -112,7 +116,7 @@ final class PhysioHomeView: UIView {
             view.removeFromSuperview()
         }
         if sessions.isEmpty {
-            upcomingStack.addArrangedSubview(upcomingEmptyLabel)
+            upcomingStack.addArrangedSubview(upcomingEmptyView)
             return
         }
         for session in sessions {
@@ -128,7 +132,7 @@ final class PhysioHomeView: UIView {
             view.removeFromSuperview()
         }
         if patients.isEmpty {
-            patientsStack.addArrangedSubview(patientsEmptyLabel)
+            patientsStack.addArrangedSubview(patientsEmptyView)
             return
         }
         for patient in patients {
