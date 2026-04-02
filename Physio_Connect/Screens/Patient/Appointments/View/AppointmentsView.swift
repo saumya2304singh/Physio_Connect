@@ -30,7 +30,6 @@ final class AppointmentsView: UIView {
 
     private let scrollView = UIScrollView()
     private let contentStack = UIStackView()
-    private var hasAppliedInitialScrollOffset = false
 
     // Cards (Upcoming tab)
     private let upcomingListStack = UIStackView()
@@ -55,16 +54,9 @@ final class AppointmentsView: UIView {
 
     override func layoutSubviews() {
         super.layoutSubviews()
-        // Underlap nav bar and keep visible content start aligned below it,
-        // while allowing scrolled cards to be visible behind the title area.
-        let topInset = safeAreaInsets.top + 22
         let bottomInset: CGFloat = 64
-        scrollView.contentInset = UIEdgeInsets(top: topInset, left: 0, bottom: bottomInset, right: 0)
-        scrollView.scrollIndicatorInsets = UIEdgeInsets(top: topInset, left: 0, bottom: bottomInset, right: 0)
-        if !hasAppliedInitialScrollOffset {
-            scrollView.contentOffset = CGPoint(x: 0, y: -topInset)
-            hasAppliedInitialScrollOffset = true
-        }
+        scrollView.contentInset = UIEdgeInsets(top: 0, left: 0, bottom: bottomInset, right: 0)
+        scrollView.scrollIndicatorInsets = UIEdgeInsets(top: 0, left: 0, bottom: bottomInset, right: 0)
     }
 
     private func applyDefaultUI() {
@@ -181,7 +173,7 @@ final class AppointmentsView: UIView {
             profileButton.widthAnchor.constraint(equalToConstant: 40),
             profileButton.heightAnchor.constraint(equalToConstant: 40),
 
-            scrollView.topAnchor.constraint(equalTo: topAnchor),
+            scrollView.topAnchor.constraint(equalTo: safeAreaLayoutGuide.topAnchor),
             scrollView.leadingAnchor.constraint(equalTo: leadingAnchor),
             scrollView.trailingAnchor.constraint(equalTo: trailingAnchor),
             scrollView.bottomAnchor.constraint(equalTo: bottomAnchor),

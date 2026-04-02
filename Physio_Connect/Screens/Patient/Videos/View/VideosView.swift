@@ -12,6 +12,7 @@ final class VideosView: UIView {
     private let topBar = UIView()
     let titleLabel = UILabel()
     let profileButton = UIButton(type: .system)
+    private let headerContainer = UIView()
     private let segmentScrollView = UIScrollView()
     let segmented = UISegmentedControl(items: ["Free Exercises", "My Program"])
     let searchBar = UISearchBar()
@@ -30,8 +31,11 @@ final class VideosView: UIView {
     private var filterHeightConstraint: NSLayoutConstraint?
     private var redeemCardHeightConstraint: NSLayoutConstraint?
     private var topBarHeightConstraint: NSLayoutConstraint?
+    private var headerBottomToFilterConstraint: NSLayoutConstraint?
+    private var headerBottomToRedeemConstraint: NSLayoutConstraint?
     private var isProgramMode = false
     private var isSearchVisible = false
+    private var lastHeaderLayoutWidth: CGFloat = 0
 
     private let emptyCard = UIView()
     private let emptyTitle = UILabel()
@@ -57,7 +61,8 @@ final class VideosView: UIView {
 
     func showEmptyState(_ show: Bool) {
         emptyCard.isHidden = !show
-        tableView.isHidden = show
+        // Keep table visible so header controls (segment/search/filters) remain available.
+        tableView.isHidden = false
     }
 
     func configureEmptyState(title: String, message: String, showRedeem: Bool) {
@@ -76,6 +81,8 @@ final class VideosView: UIView {
         if !enabled {
             setProgramRedeemVisible(false)
         }
+        updateHeaderBottomConstraint()
+        updateTableHeaderLayout()
         layoutIfNeeded()
     }
 
@@ -83,6 +90,8 @@ final class VideosView: UIView {
         programRedeemCard.isHidden = !visible
         redeemCardHeightConstraint?.constant = visible ? 126 : 0
         if !visible { redeemCodeField.text = "" }
+        updateHeaderBottomConstraint()
+        updateTableHeaderLayout()
     }
 
     func setRefreshing(_ refreshing: Bool) {
@@ -201,7 +210,14 @@ final class VideosView: UIView {
         tableView.translatesAutoresizingMaskIntoConstraints = false
         tableView.backgroundColor = .clear
         tableView.separatorStyle = .none
+        tableView.contentInsetAdjustmentBehavior = .always
+        tableView.alwaysBounceVertical = true
+        tableView.sectionHeaderTopPadding = 0
         tableView.refreshControl = refreshControl
+        tableView.tableHeaderView = headerContainer
+
+        headerContainer.layoutMargins = UIEdgeInsets(top: 0, left: 16, bottom: 8, right: 16)
+        headerContainer.backgroundColor = .clear
 
         emptyCard.translatesAutoresizingMaskIntoConstraints = false
         emptyCard.backgroundColor = .white
@@ -234,11 +250,11 @@ final class VideosView: UIView {
         addSubview(topBar)
         topBar.addSubview(titleLabel)
         topBar.addSubview(profileButton)
-        addSubview(segmentScrollView)
+        headerContainer.addSubview(segmentScrollView)
         segmentScrollView.addSubview(segmented)
-        addSubview(searchBar)
-        addSubview(filterCollectionView)
-        addSubview(programRedeemCard)
+        headerContainer.addSubview(searchBar)
+        headerContainer.addSubview(filterCollectionView)
+        headerContainer.addSubview(programRedeemCard)
         addSubview(tableView)
         addSubview(searchBottomButton)
         addSubview(emptyCard)
@@ -270,9 +286,9 @@ final class VideosView: UIView {
             profileButton.widthAnchor.constraint(equalToConstant: 40),
             profileButton.heightAnchor.constraint(equalToConstant: 40),
 
-            segmentScrollView.topAnchor.constraint(equalTo: topBar.bottomAnchor, constant: 10),
-            segmentScrollView.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 16),
-            segmentScrollView.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -16),
+            segmentScrollView.topAnchor.constraint(equalTo: headerContainer.topAnchor, constant: 10),
+            segmentScrollView.leadingAnchor.constraint(equalTo: headerContainer.layoutMarginsGuide.leadingAnchor),
+            segmentScrollView.trailingAnchor.constraint(equalTo: headerContainer.layoutMarginsGuide.trailingAnchor),
             segmentScrollView.heightAnchor.constraint(equalToConstant: 44),
 
             segmented.topAnchor.constraint(equalTo: segmentScrollView.contentLayoutGuide.topAnchor),
@@ -283,16 +299,16 @@ final class VideosView: UIView {
             segmented.widthAnchor.constraint(greaterThanOrEqualTo: segmentScrollView.frameLayoutGuide.widthAnchor),
 
             searchBar.topAnchor.constraint(equalTo: segmentScrollView.bottomAnchor, constant: 10),
-            searchBar.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 16),
-            searchBar.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -16),
+            searchBar.leadingAnchor.constraint(equalTo: headerContainer.layoutMarginsGuide.leadingAnchor),
+            searchBar.trailingAnchor.constraint(equalTo: headerContainer.layoutMarginsGuide.trailingAnchor),
 
             filterCollectionView.topAnchor.constraint(equalTo: searchBar.bottomAnchor, constant: 10),
-            filterCollectionView.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 16),
-            filterCollectionView.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -16),
+            filterCollectionView.leadingAnchor.constraint(equalTo: headerContainer.layoutMarginsGuide.leadingAnchor),
+            filterCollectionView.trailingAnchor.constraint(equalTo: headerContainer.layoutMarginsGuide.trailingAnchor),
 
             programRedeemCard.topAnchor.constraint(equalTo: filterCollectionView.bottomAnchor, constant: 8),
-            programRedeemCard.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 16),
-            programRedeemCard.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -16),
+            programRedeemCard.leadingAnchor.constraint(equalTo: headerContainer.layoutMarginsGuide.leadingAnchor),
+            programRedeemCard.trailingAnchor.constraint(equalTo: headerContainer.layoutMarginsGuide.trailingAnchor),
 
             redeemIcon.leadingAnchor.constraint(equalTo: programRedeemCard.leadingAnchor, constant: 14),
             redeemIcon.topAnchor.constraint(equalTo: programRedeemCard.topAnchor, constant: 12),
@@ -321,13 +337,13 @@ final class VideosView: UIView {
             redeemInlineButton.centerYAnchor.constraint(equalTo: redeemInputContainer.centerYAnchor),
             redeemInlineButton.widthAnchor.constraint(greaterThanOrEqualToConstant: 86),
 
-            tableView.topAnchor.constraint(equalTo: programRedeemCard.bottomAnchor, constant: 8),
-            tableView.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 16),
-            tableView.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -16),
+            tableView.topAnchor.constraint(equalTo: topAnchor),
+            tableView.leadingAnchor.constraint(equalTo: leadingAnchor),
+            tableView.trailingAnchor.constraint(equalTo: trailingAnchor),
             tableView.bottomAnchor.constraint(equalTo: bottomAnchor),
 
             searchBottomButton.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -20),
-            searchBottomButton.bottomAnchor.constraint(equalTo: safeAreaLayoutGuide.bottomAnchor, constant: -42),
+            searchBottomButton.bottomAnchor.constraint(equalTo: safeAreaLayoutGuide.bottomAnchor, constant: -96),
             searchBottomButton.widthAnchor.constraint(equalToConstant: 60),
             searchBottomButton.heightAnchor.constraint(equalToConstant: 60),
 
@@ -353,6 +369,57 @@ final class VideosView: UIView {
         filterHeightConstraint?.isActive = true
         redeemCardHeightConstraint?.isActive = true
         topBarHeightConstraint?.isActive = true
+        headerBottomToFilterConstraint = filterCollectionView.bottomAnchor.constraint(equalTo: headerContainer.bottomAnchor, constant: -8)
+        headerBottomToRedeemConstraint = programRedeemCard.bottomAnchor.constraint(equalTo: headerContainer.bottomAnchor, constant: -8)
+        updateHeaderBottomConstraint()
+        updateTableHeaderLayout()
+    }
+
+    override func layoutSubviews() {
+        super.layoutSubviews()
+        let width = tableView.bounds.width > 0 ? tableView.bounds.width : bounds.width
+        let needsWidthRelayout = abs(lastHeaderLayoutWidth - width) > 0.5
+        if (!isProgramMode || tableView.tableHeaderView === headerContainer) && needsWidthRelayout {
+            lastHeaderLayoutWidth = width
+            updateTableHeaderLayout()
+        }
+    }
+
+    private func updateTableHeaderLayout() {
+        let width = tableView.bounds.width > 0 ? tableView.bounds.width : (bounds.width > 0 ? bounds.width : UIScreen.main.bounds.width)
+        guard width > 0 else { return }
+
+        let targetWidth = width
+        if abs(headerContainer.frame.width - targetWidth) > 0.5 {
+            headerContainer.frame.size.width = targetWidth
+        }
+        headerContainer.setNeedsLayout()
+        headerContainer.layoutIfNeeded()
+
+        let targetSize = CGSize(width: targetWidth, height: UIView.layoutFittingCompressedSize.height)
+        let height = headerContainer.systemLayoutSizeFitting(
+            targetSize,
+            withHorizontalFittingPriority: .required,
+            verticalFittingPriority: .fittingSizeLevel
+        ).height
+
+        let currentHeight = headerContainer.frame.height
+        let needsHeightUpdate = abs(currentHeight - height) > 0.5
+        if tableView.tableHeaderView !== headerContainer || needsHeightUpdate {
+            headerContainer.frame = CGRect(x: 0, y: 0, width: targetWidth, height: height)
+            tableView.tableHeaderView = headerContainer
+        }
+    }
+
+    func attachBaseHeader() {
+        updateHeaderBottomConstraint()
+        updateTableHeaderLayout()
+    }
+
+    private func updateHeaderBottomConstraint() {
+        let shouldUseRedeemBottom = isProgramMode && !(programRedeemCard.isHidden)
+        headerBottomToFilterConstraint?.isActive = !shouldUseRedeemBottom
+        headerBottomToRedeemConstraint?.isActive = shouldUseRedeemBottom
     }
 
     func useNativeNavigationChrome() {
@@ -372,6 +439,8 @@ final class VideosView: UIView {
         } else {
             searchBar.resignFirstResponder()
         }
+        updateHeaderBottomConstraint()
+        updateTableHeaderLayout()
         layoutIfNeeded()
     }
 }

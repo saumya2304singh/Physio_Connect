@@ -353,6 +353,12 @@ final class ProfileView: UIView {
         backButton.tintColor = UIColor.black.withAlphaComponent(0.8)
         backButton.addTarget(self, action: #selector(backTapped), for: .touchUpInside)
 
+        titleLabel.translatesAutoresizingMaskIntoConstraints = false
+        titleLabel.text = "Profile"
+        titleLabel.font = .systemFont(ofSize: 17, weight: .semibold)
+        titleLabel.textColor = UIColor.black.withAlphaComponent(0.9)
+        titleLabel.textAlignment = .center
+
         editButton.translatesAutoresizingMaskIntoConstraints = false
         editButton.setTitle("Edit", for: .normal)
         editButton.setTitleColor(UIColor(hex: "1E6EF7"), for: .normal)
@@ -360,6 +366,7 @@ final class ProfileView: UIView {
         editButton.addTarget(self, action: #selector(editTapped), for: .touchUpInside)
 
         topBarContainer.addSubview(backButton)
+        topBarContainer.addSubview(titleLabel)
         topBarContainer.addSubview(editButton)
 
         NSLayoutConstraint.activate([
@@ -367,6 +374,11 @@ final class ProfileView: UIView {
             backButton.centerYAnchor.constraint(equalTo: topBarContainer.centerYAnchor),
             backButton.widthAnchor.constraint(equalToConstant: 36),
             backButton.heightAnchor.constraint(equalToConstant: 36),
+
+            titleLabel.centerXAnchor.constraint(equalTo: topBarContainer.centerXAnchor),
+            titleLabel.centerYAnchor.constraint(equalTo: topBarContainer.centerYAnchor),
+            titleLabel.leadingAnchor.constraint(greaterThanOrEqualTo: backButton.trailingAnchor, constant: 8),
+            titleLabel.trailingAnchor.constraint(lessThanOrEqualTo: editButton.leadingAnchor, constant: -8),
 
             editButton.trailingAnchor.constraint(equalTo: topBarContainer.trailingAnchor),
             editButton.centerYAnchor.constraint(equalTo: topBarContainer.centerYAnchor)
@@ -560,6 +572,15 @@ final class ProfileView: UIView {
     func useNativeNavigationChrome() {
         topBarContainer.isHidden = true
         topBarHeightConstraint?.constant = 0
+    }
+
+    func useInViewNavigationChrome(showBack: Bool, showEdit: Bool, title: String = "Profile") {
+        topBarContainer.isHidden = false
+        topBarHeightConstraint?.constant = 44
+        backButton.isHidden = !showBack
+        titleLabel.text = title
+        shouldShowEditButton = showEdit
+        updateEditVisibility()
     }
 
     private func updateEditVisibility() {
