@@ -6,18 +6,20 @@
 //
 import UIKit
 
-final class MainTabBarController: UITabBarController {
+final class MainTabBarController: UITabBarController, UITabBarControllerDelegate {
 
     override func viewDidLoad() {
         super.viewDidLoad()
         setupTabs()
         styleTabBar()
+        delegate = self
     }
 
     private func setupTabs() {
         // Home
         let homeVC = HomeViewController()
         let homeNav = UINavigationController(rootViewController: homeVC)
+        homeNav.navigationBar.prefersLargeTitles = true
         homeNav.tabBarItem = UITabBarItem(
             title: "Home",
             image: UIImage(systemName: "house"),
@@ -27,6 +29,7 @@ final class MainTabBarController: UITabBarController {
         // Appointments
         let apptVC = AppointmentsViewController() // we will build next
         let apptNav = UINavigationController(rootViewController: apptVC)
+        apptNav.navigationBar.prefersLargeTitles = true
         apptNav.tabBarItem = UITabBarItem(
             title: "Appointments",
             image: UIImage(systemName: "calendar"),
@@ -36,6 +39,7 @@ final class MainTabBarController: UITabBarController {
         // Videos
         let videosVC = VideosViewController() // placeholder if you already have
         let videosNav = UINavigationController(rootViewController: videosVC)
+        videosNav.navigationBar.prefersLargeTitles = true
         videosNav.tabBarItem = UITabBarItem(
             title: "Videos",
             image: UIImage(systemName: "play.rectangle"),
@@ -45,6 +49,7 @@ final class MainTabBarController: UITabBarController {
         // Articles
         let articlesVC = ArticlesViewController() // placeholder if you already have
         let articlesNav = UINavigationController(rootViewController: articlesVC)
+        articlesNav.navigationBar.prefersLargeTitles = true
         articlesNav.tabBarItem = UITabBarItem(
             title: "Articles",
             image: UIImage(systemName: "doc.text"),
@@ -56,31 +61,15 @@ final class MainTabBarController: UITabBarController {
     }
 
     private func styleTabBar() {
-        // Native appearance API (iOS 13+)
-        let appearance = UITabBarAppearance()
-        appearance.configureWithOpaqueBackground()
+        TabBarGlassStyle.apply(to: tabBar, accentColor: UIColor(hex: "1E6EF7"))
+    }
 
-        // Background like your screenshot (soft grey)
-        appearance.backgroundColor = UIColor(white: 0.92, alpha: 1.0)
-
-        // Icon/text colors
-        let normal = appearance.stackedLayoutAppearance.normal
-        normal.iconColor = UIColor.black.withAlphaComponent(0.45)
-        normal.titleTextAttributes = [.foregroundColor: UIColor.black.withAlphaComponent(0.45)]
-
-        let selected = appearance.stackedLayoutAppearance.selected
-        selected.iconColor = UIColor(hex: "1E6EF7")
-        selected.titleTextAttributes = [.foregroundColor: UIColor(hex: "1E6EF7")]
-
-        tabBar.standardAppearance = appearance
-        tabBar.scrollEdgeAppearance = appearance
-
-        // Slightly taller + rounded look (simple version)
-        tabBar.layer.cornerRadius = 22
-        tabBar.layer.masksToBounds = true
-
-        // Optional: lift the bar a bit like a “floating” tab
-        tabBar.itemPositioning = .automatic
+    func tabBarController(_ tabBarController: UITabBarController, didSelect viewController: UIViewController) {
+        guard let nav = viewController as? UINavigationController,
+              let visible = nav.visibleViewController else { return }
+        nav.setNavigationBarHidden(false, animated: false)
+        nav.navigationBar.prefersLargeTitles = true
+        visible.navigationItem.largeTitleDisplayMode = .automatic
+        nav.navigationBar.setNeedsLayout()
     }
 }
-

@@ -483,7 +483,7 @@ final class NextUpCell: UICollectionViewCell {
 
         card.translatesAutoresizingMaskIntoConstraints = false
         card.backgroundColor = .white
-        card.layer.cornerRadius = 16
+        card.layer.cornerRadius = 22
         card.layer.shadowColor = UIColor.black.cgColor
         card.layer.shadowOpacity = 0.06
         card.layer.shadowRadius = 8

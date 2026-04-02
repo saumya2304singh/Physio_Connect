@@ -73,6 +73,7 @@ final class PhysiotherapistProfileView: UIView {
     override init(frame: CGRect) {
         super.init(frame: frame)
         backgroundColor = bg
+        isOpaque = true
         build()
     }
 
@@ -135,9 +136,12 @@ final class PhysiotherapistProfileView: UIView {
         addSubview(scrollView)
         scrollView.translatesAutoresizingMaskIntoConstraints = false
         scrollView.showsVerticalScrollIndicator = false
+        scrollView.backgroundColor = bg
+        scrollView.contentInsetAdjustmentBehavior = .never
 
         scrollView.addSubview(contentView)
         contentView.translatesAutoresizingMaskIntoConstraints = false
+        contentView.backgroundColor = bg
 
         NSLayoutConstraint.activate([
             scrollView.topAnchor.constraint(equalTo: topAnchor),
@@ -162,16 +166,21 @@ final class PhysiotherapistProfileView: UIView {
         ]
         header.layer.insertSublayer(headerGradient, at: 0)
 
-        // Back button (chevron only)
+        // Back button (anchored to root safe area so it never disappears on first render)
         backButton.translatesAutoresizingMaskIntoConstraints = false
         backButton.setImage(UIImage(systemName: "chevron.left"), for: .normal)
-        backButton.tintColor = .white
-        backButton.backgroundColor = .clear
+        backButton.tintColor = UIColor(hex: "1A1A1A")
+        backButton.backgroundColor = UIColor.white.withAlphaComponent(0.92)
+        backButton.layer.cornerRadius = 22
+        backButton.layer.shadowColor = UIColor.black.cgColor
+        backButton.layer.shadowOpacity = 0.08
+        backButton.layer.shadowRadius = 8
+        backButton.layer.shadowOffset = CGSize(width: 0, height: 3)
 
         // Profile card
         profileCard.translatesAutoresizingMaskIntoConstraints = false
         profileCard.backgroundColor = .white
-        profileCard.layer.cornerRadius = 20
+        profileCard.layer.cornerRadius = 22
         profileCard.layer.shadowColor = UIColor.black.cgColor
         profileCard.layer.shadowOpacity = 0.08
         profileCard.layer.shadowRadius = 10
@@ -207,7 +216,7 @@ final class PhysiotherapistProfileView: UIView {
         statsDivider.translatesAutoresizingMaskIntoConstraints = false
         statsDivider.backgroundColor = UIColor.clear
 
-        [backButton].forEach { header.addSubview($0) }
+        addSubview(backButton)
         [avatar, nameLabel, specializationLabel, locationIcon, servicePlaceLabel, statsDivider].forEach { profileCard.addSubview($0) }
 
         NSLayoutConstraint.activate([
@@ -216,9 +225,8 @@ final class PhysiotherapistProfileView: UIView {
             header.trailingAnchor.constraint(equalTo: contentView.trailingAnchor),
             header.heightAnchor.constraint(equalToConstant: 160),
 
-            // Back button down a bit
-            backButton.leadingAnchor.constraint(equalTo: header.leadingAnchor, constant: 12),
-            backButton.topAnchor.constraint(equalTo: header.safeAreaLayoutGuide.topAnchor, constant: 14),
+            backButton.leadingAnchor.constraint(equalTo: safeAreaLayoutGuide.leadingAnchor, constant: 12),
+            backButton.topAnchor.constraint(equalTo: safeAreaLayoutGuide.topAnchor, constant: 2),
             backButton.widthAnchor.constraint(equalToConstant: 44),
             backButton.heightAnchor.constraint(equalToConstant: 44),
 
@@ -278,7 +286,7 @@ final class PhysiotherapistProfileView: UIView {
         // About card (expandable) — FIXED ORDER (prevents crash)
         aboutCard.translatesAutoresizingMaskIntoConstraints = false
         aboutCard.backgroundColor = .white
-        aboutCard.layer.cornerRadius = 18
+        aboutCard.layer.cornerRadius = 22
         aboutCard.layer.shadowColor = UIColor.black.cgColor
         aboutCard.layer.shadowOpacity = 0.04
         aboutCard.layer.shadowRadius = 8
@@ -327,7 +335,7 @@ final class PhysiotherapistProfileView: UIView {
         // Consultation fee card
         specFeeCard.translatesAutoresizingMaskIntoConstraints = false
         specFeeCard.backgroundColor = .white
-        specFeeCard.layer.cornerRadius = 18
+        specFeeCard.layer.cornerRadius = 22
         specFeeCard.layer.shadowColor = UIColor.black.cgColor
         specFeeCard.layer.shadowOpacity = 0.04
         specFeeCard.layer.shadowRadius = 8

@@ -30,7 +30,7 @@ final class PhysioReviewCell: UITableViewCell {
     private func build() {
         card.translatesAutoresizingMaskIntoConstraints = false
         card.backgroundColor = .white
-        card.layer.cornerRadius = 18
+        card.layer.cornerRadius = 22
         card.layer.shadowOpacity = 0.06
         card.layer.shadowRadius = 8
         card.layer.shadowOffset = CGSize(width: 0, height: 4)

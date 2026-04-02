@@ -19,7 +19,7 @@ final class PhysiotherapistCardCell: UITableViewCell {
     // TEXTS
     private let nameLabel = UILabel()
     private let ratingLabel = UILabel()
-    private let distanceLabel = UILabel()
+    private let metaLabel = UILabel()
     private let specializationLabel = UILabel()
     private let feeLabel = UILabel()
     var avatarPath: String?
@@ -45,7 +45,7 @@ final class PhysiotherapistCardCell: UITableViewCell {
         // ---------------- CARD STYLE (MATCH YOUR DoctorProfileCardView) ----------------
         card.translatesAutoresizingMaskIntoConstraints = false
         card.backgroundColor = .white
-        card.layer.cornerRadius = 24
+        card.layer.cornerRadius = 22
         card.layer.borderWidth = 1
         card.layer.borderColor = UIColor(hex: "D4E3FE").cgColor
         card.layer.shadowColor = UIColor.black.cgColor
@@ -67,27 +67,27 @@ final class PhysiotherapistCardCell: UITableViewCell {
 
         // ---------------- LABELS (MATCH FONT SIZES) ----------------
         nameLabel.translatesAutoresizingMaskIntoConstraints = false
-        nameLabel.font = .boldSystemFont(ofSize: 17)
+        nameLabel.font = UITheme.Typography.cardTitle
         nameLabel.textColor = .black
 
         ratingLabel.translatesAutoresizingMaskIntoConstraints = false
-        ratingLabel.font = .systemFont(ofSize: 13)
+        ratingLabel.font = UITheme.Typography.meta
         ratingLabel.textColor = .darkGray
 
-        distanceLabel.translatesAutoresizingMaskIntoConstraints = false
-        distanceLabel.font = .systemFont(ofSize: 13)
-        distanceLabel.textColor = .darkGray
+        metaLabel.translatesAutoresizingMaskIntoConstraints = false
+        metaLabel.font = UITheme.Typography.meta
+        metaLabel.textColor = .darkGray
 
         specializationLabel.translatesAutoresizingMaskIntoConstraints = false
-        specializationLabel.font = .systemFont(ofSize: 13)
+        specializationLabel.font = UITheme.Typography.meta
         specializationLabel.textColor = UIColor(hex: "1E6EF7")
         specializationLabel.numberOfLines = 1
 
         feeLabel.translatesAutoresizingMaskIntoConstraints = false
-        feeLabel.font = .systemFont(ofSize: 13, weight: .bold)
+        feeLabel.font = UITheme.Typography.meta
         feeLabel.textColor = UIColor(hex: "1E6EF7")
 
-        [nameLabel, specializationLabel, ratingLabel, distanceLabel, feeLabel].forEach {
+        [nameLabel, specializationLabel, ratingLabel, metaLabel, feeLabel].forEach {
             card.addSubview($0)
         }
 
@@ -114,10 +114,10 @@ final class PhysiotherapistCardCell: UITableViewCell {
             ratingLabel.topAnchor.constraint(equalTo: specializationLabel.bottomAnchor, constant: 6),
             ratingLabel.leadingAnchor.constraint(equalTo: nameLabel.leadingAnchor),
 
-            distanceLabel.topAnchor.constraint(equalTo: ratingLabel.bottomAnchor, constant: 6),
-            distanceLabel.leadingAnchor.constraint(equalTo: nameLabel.leadingAnchor),
+            metaLabel.topAnchor.constraint(equalTo: ratingLabel.bottomAnchor, constant: 6),
+            metaLabel.leadingAnchor.constraint(equalTo: nameLabel.leadingAnchor),
 
-            feeLabel.topAnchor.constraint(equalTo: distanceLabel.bottomAnchor, constant: 6),
+            feeLabel.topAnchor.constraint(equalTo: metaLabel.bottomAnchor, constant: 6),
             feeLabel.leadingAnchor.constraint(equalTo: nameLabel.leadingAnchor),
             feeLabel.trailingAnchor.constraint(equalTo: card.trailingAnchor, constant: -16),
             feeLabel.bottomAnchor.constraint(lessThanOrEqualTo: card.bottomAnchor, constant: -16)
@@ -129,7 +129,7 @@ final class PhysiotherapistCardCell: UITableViewCell {
         nameLabel.text = model.name
         specializationLabel.text = model.specializationText
         ratingLabel.text = "⭐️ \(String(format: "%.1f", model.rating)) | \(model.reviewsCount) reviews"
-        distanceLabel.text = model.distanceText
+        metaLabel.text = model.metaText
         feeLabel.text = model.feeText
 
         // Placeholder (until you add image_url column)

@@ -38,7 +38,7 @@ final class HomePainTrendCardView: UIView {
     private func build() {
         container.translatesAutoresizingMaskIntoConstraints = false
         container.backgroundColor = .white
-        container.layer.cornerRadius = 20
+        container.layer.cornerRadius = 22
         container.layer.shadowColor = UIColor.black.cgColor
         container.layer.shadowOpacity = 0.03
         container.layer.shadowRadius = 8
@@ -194,7 +194,7 @@ final class HomeAdherenceCardView: UIView {
     private func build() {
         container.translatesAutoresizingMaskIntoConstraints = false
         container.backgroundColor = UIColor(hex: "ECFEFF")
-        container.layer.cornerRadius = 20
+        container.layer.cornerRadius = 22
         container.layer.shadowColor = UIColor.black.cgColor
         container.layer.shadowOpacity = 0.03
         container.layer.shadowRadius = 8

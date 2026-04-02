@@ -21,6 +21,8 @@ struct PhysiotherapistCardModel: Identifiable {
 
     /// Already formatted like "₹1000/hr"
     let feeText: String
+    /// Secondary line shown in card (e.g. place of work, clinic name, etc.)
+    let metaText: String
     let profileImagePath: String?
     let profileImageVersion: String?
 

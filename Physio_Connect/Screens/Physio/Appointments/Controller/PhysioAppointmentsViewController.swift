@@ -90,6 +90,18 @@ final class PhysioAppointmentsViewController: UIViewController, UITableViewDataS
             return haystack.contains(searchText)
         }
 
+        let segmentTitle: String = {
+            switch selectedIndex {
+            case 1: return "upcoming"
+            case 2: return "completed"
+            default: return "appointments"
+            }
+        }()
+        let title = filteredAppointments.isEmpty ? "No \(segmentTitle.capitalized) Appointments" : ""
+        let message = filteredAppointments.isEmpty
+            ? (searchText.isEmpty ? "Booked sessions will appear here." : "Try another search term.")
+            : ""
+        contentView.showEmptyState(filteredAppointments.isEmpty, title: title, message: message)
         contentView.tableView.reloadData()
     }
 
@@ -113,6 +125,11 @@ final class PhysioAppointmentsViewController: UIViewController, UITableViewDataS
             await MainActor.run {
                 self.allAppointments = []
                 self.applyFilters()
+                self.contentView.showEmptyState(
+                    true,
+                    title: "Unable to Load Appointments",
+                    message: "Please pull to refresh and try again."
+                )
             }
         }
     }

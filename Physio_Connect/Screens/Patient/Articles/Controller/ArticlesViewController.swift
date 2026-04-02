@@ -22,13 +22,21 @@ final class ArticlesViewController: UIViewController, UITableViewDataSource, UIT
     private let filterOptions = ["All", "Neck", "Upper Back", "Lower Back", "Shoulders"]
     private var selectedFilterIndex = 0
     private var selectedSegmentIndex = 0
+    private var isSearchVisible = false
+    private lazy var navProfileItem = NativeUIStyle.makeAvatarBarButtonItem(target: self, action: #selector(profileTapped))
+    private let emptyStateView = NativeEmptyStateView()
 
     override func loadView() { view = articlesView }
 
     override func viewDidLoad() {
         super.viewDidLoad()
-        navigationController?.setNavigationBarHidden(true, animated: false)
-        articlesView.profileButton.addTarget(self, action: #selector(profileTapped), for: .touchUpInside)
+        navigationController?.setNavigationBarHidden(false, animated: false)
+        NativeUIStyle.applyTabRootNavigation(
+            for: self,
+            title: "Articles",
+            rightItem: navProfileItem
+        )
+        articlesView.useNativeNavigationChrome()
 
         articlesView.tableView.dataSource = self
         articlesView.tableView.delegate = self
@@ -42,6 +50,14 @@ final class ArticlesViewController: UIViewController, UITableViewDataSource, UIT
         articlesView.tableView.estimatedRowHeight = 320
         articlesView.tableView.contentInset = UIEdgeInsets(top: 0, left: 0, bottom: 110, right: 0)
         articlesView.tableView.scrollIndicatorInsets = UIEdgeInsets(top: 0, left: 0, bottom: 110, right: 0)
+        emptyStateView.frame = CGRect(x: 0, y: 0, width: 0, height: 220)
+        emptyStateView.configure(
+            icon: "doc.text.magnifyingglass",
+            title: "No Articles Yet",
+            message: "Articles from trusted sources will appear here when available."
+        )
+        articlesView.tableView.backgroundView = emptyStateView
+        articlesView.tableView.backgroundView?.isHidden = true
 
         articlesView.setRefreshTarget(self, action: #selector(refreshPulled))
 
@@ -56,6 +72,8 @@ final class ArticlesViewController: UIViewController, UITableViewDataSource, UIT
         }
 
         articlesView.filterCollectionView.selectItem(at: IndexPath(item: selectedFilterIndex, section: 0), animated: false, scrollPosition: [])
+        articlesView.searchBottomButton.addTarget(self, action: #selector(toggleSearch), for: .touchUpInside)
+        articlesView.setSearchVisible(false)
         updateBookmarksVisibility()
         Task { await reload() }
         Task { await refreshProfileAvatar() }
@@ -63,6 +81,11 @@ final class ArticlesViewController: UIViewController, UITableViewDataSource, UIT
 
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
+        NativeUIStyle.applyTabRootNavigation(
+            for: self,
+            title: "Articles",
+            rightItem: navProfileItem
+        )
         Task { await refreshProfileAvatar() }
     }
 
@@ -84,6 +107,16 @@ final class ArticlesViewController: UIViewController, UITableViewDataSource, UIT
 
     @objc private func refreshPulled() {
         Task { await reload() }
+    }
+
+    @objc private func toggleSearch() {
+        isSearchVisible.toggle()
+        articlesView.setSearchVisible(isSearchVisible)
+        if isSearchVisible {
+            articlesView.searchBar.becomeFirstResponder()
+        } else {
+            articlesView.searchBar.resignFirstResponder()
+        }
     }
 
     private func currentSort() -> ArticleSort {
@@ -117,6 +150,7 @@ final class ArticlesViewController: UIViewController, UITableViewDataSource, UIT
                     self.articlesView.updateResults(count: rows.count)
                     self.updateFeaturedArticle(from: rows)
                     self.articlesView.tableView.reloadData()
+                    self.updateEmptyState()
                 }
             } else {
                 let rows = try await model.fetchArticles(
@@ -129,10 +163,17 @@ final class ArticlesViewController: UIViewController, UITableViewDataSource, UIT
                     self.articlesView.updateResults(count: rows.count)
                     self.updateFeaturedArticle(from: rows)
                     self.articlesView.tableView.reloadData()
+                    self.updateEmptyState()
                 }
             }
         } catch {
-            await MainActor.run { self.showError("Articles Error", error.localizedDescription) }
+            await MainActor.run {
+                self.showError("Articles Error", error.localizedDescription)
+                self.articles = []
+                self.updateFeaturedArticle(from: [])
+                self.articlesView.tableView.reloadData()
+                self.updateEmptyState()
+            }
         }
     }
 
@@ -230,11 +271,12 @@ final class ArticlesViewController: UIViewController, UITableViewDataSource, UIT
             cell.setBookmarked(isBookmarked)
         }
         updateBookmarksVisibility()
-        if selectedSegmentIndex == 3 {
+        if selectedSegmentIndex == 2 {
             let rows = filteredBookmarks()
             articles = rows
             articlesView.updateResults(count: rows.count)
             articlesView.tableView.reloadData()
+            updateEmptyState()
         }
         showBookmarkToast(isBookmarked)
     }
@@ -242,7 +284,7 @@ final class ArticlesViewController: UIViewController, UITableViewDataSource, UIT
     private func updateBookmarksVisibility() {
         let hasBookmarks = !bookmarkedIDs.isEmpty
         articlesView.setBookmarksVisible(hasBookmarks)
-        if !hasBookmarks, selectedSegmentIndex == 3 {
+        if !hasBookmarks, selectedSegmentIndex == 2 {
             selectedSegmentIndex = 0
             articlesView.setSegmentSelection(0)
             Task { await reload() }
@@ -285,15 +327,16 @@ final class ArticlesViewController: UIViewController, UITableViewDataSource, UIT
     }
 
     private func refreshProfileAvatar() async {
+        let cached = ProfileModel.cachedAvatarURL()
         await MainActor.run {
-            PatientNavAvatarStyle.updateProfileButton(
-                self.articlesView.profileButton,
-                urlString: ProfileModel.cachedAvatarURL()
-            )
+            PatientNavAvatarStyle.updateProfileItem(self.navProfileItem, urlString: cached)
         }
         guard let profile = try? await profileModel.fetchCurrentProfile() else { return }
+        let resolved = profile.avatarURL?.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false
+            ? profile.avatarURL
+            : cached
         await MainActor.run {
-            PatientNavAvatarStyle.updateProfileButton(self.articlesView.profileButton, urlString: profile.avatarURL)
+            PatientNavAvatarStyle.updateProfileItem(self.navProfileItem, urlString: resolved)
         }
     }
 
@@ -302,6 +345,33 @@ final class ArticlesViewController: UIViewController, UITableViewDataSource, UIT
         featuredArticle = featured
         articlesView.featuredCard.configure(with: featured)
         articlesView.setFeaturedVisible(featured != nil)
+    }
+
+    private func updateEmptyState() {
+        let isEmpty = articles.isEmpty
+        if isEmpty {
+            let hasQuery = !(articlesView.searchBar.text?.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ?? true)
+            if selectedSegmentIndex == 2 {
+                emptyStateView.configure(
+                    icon: "bookmark",
+                    title: "No Saved Articles",
+                    message: "Bookmark useful reads to keep them here."
+                )
+            } else if hasQuery || selectedFilterIndex > 0 {
+                emptyStateView.configure(
+                    icon: "magnifyingglass",
+                    title: "No Matching Articles",
+                    message: "Try a different keyword or clear filters."
+                )
+            } else {
+                emptyStateView.configure(
+                    icon: "doc.text.magnifyingglass",
+                    title: "No Articles Yet",
+                    message: "Articles from trusted sources will appear here when available."
+                )
+            }
+        }
+        articlesView.tableView.backgroundView?.isHidden = !isEmpty
     }
 
     private func showError(_ title: String, _ message: String) {

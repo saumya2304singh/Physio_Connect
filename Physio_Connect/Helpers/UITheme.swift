@@ -28,21 +28,58 @@ enum UITheme {
 
     // Standardized typography scale used across patient + physio flows.
     enum Typography {
-        static let screenTitle = UIFont.systemFont(ofSize: 20, weight: .bold)
-        static let sectionTitle = UIFont.systemFont(ofSize: 18, weight: .bold)
-        static let cardTitle = UIFont.systemFont(ofSize: 16, weight: .semibold)
-        static let cardTitleRegular = UIFont.systemFont(ofSize: 15, weight: .regular)
-        static let body = UIFont.systemFont(ofSize: 15, weight: .regular)
-        static let bodySmall = UIFont.systemFont(ofSize: 14, weight: .regular)
-        static let bodySmallMedium = UIFont.systemFont(ofSize: 14, weight: .medium)
-        static let meta = UIFont.systemFont(ofSize: 13, weight: .medium)
-        static let caption = UIFont.systemFont(ofSize: 12, weight: .semibold)
-        static let button = UIFont.systemFont(ofSize: 16, weight: .semibold)
-        static let buttonSmall = UIFont.systemFont(ofSize: 14, weight: .semibold)
+        private static func textStyle(for size: CGFloat) -> UIFont.TextStyle {
+            switch size {
+            case 34...: return .largeTitle
+            case 28..<34: return .title1
+            case 22..<28: return .title2
+            case 20..<22: return .title3
+            case 17..<20: return .headline
+            case 15..<17: return .body
+            case 13..<15: return .subheadline
+            case 12..<13: return .footnote
+            default: return .caption1
+            }
+        }
+
+        static func scaled(
+            _ size: CGFloat,
+            weight: UIFont.Weight = .regular,
+            design: UIFontDescriptor.SystemDesign = .default
+        ) -> UIFont {
+            let base = UIFont.systemFont(ofSize: size, weight: weight)
+            let descriptor = base.fontDescriptor.withDesign(design) ?? base.fontDescriptor
+            let designed = UIFont(descriptor: descriptor, size: size)
+            return UIFontMetrics(forTextStyle: textStyle(for: size)).scaledFont(for: designed)
+        }
+
+        static func displayFont(_ size: CGFloat, weight: UIFont.Weight = .bold) -> UIFont {
+            scaled(size, weight: weight, design: .default)
+        }
+
+        static func bodyFont(_ size: CGFloat, weight: UIFont.Weight = .regular) -> UIFont {
+            scaled(size, weight: weight, design: .default)
+        }
+
+        static func monoFont(_ size: CGFloat, weight: UIFont.Weight = .regular) -> UIFont {
+            scaled(size, weight: weight, design: .monospaced)
+        }
+
+        static let screenTitle = displayFont(34, weight: .bold)
+        static let sectionTitle = displayFont(22, weight: .semibold)
+        static let cardTitle = bodyFont(17, weight: .semibold)
+        static let cardTitleRegular = bodyFont(15, weight: .regular)
+        static let body = bodyFont(15, weight: .regular)
+        static let bodySmall = bodyFont(14, weight: .regular)
+        static let bodySmallMedium = bodyFont(14, weight: .medium)
+        static let meta = bodyFont(13, weight: .medium)
+        static let caption = bodyFont(12, weight: .semibold)
+        static let button = bodyFont(17, weight: .semibold)
+        static let buttonSmall = bodyFont(15, weight: .semibold)
     }
 
     enum Metrics {
-        static let cardCornerRadius: CGFloat = 16
+        static let cardCornerRadius: CGFloat = 22
         static let chipCornerRadius: CGFloat = 12
         static let cardShadowOpacity: Float = 0.08
         static let cardShadowRadius: CGFloat = 10

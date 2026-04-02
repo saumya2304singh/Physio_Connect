@@ -34,6 +34,7 @@ final class BookHomeVisitView: UIView {
     private let headerTitle = UILabel()
     private let headerSubtitle = UILabel()
     private let headerDivider = UIView()
+    private var headerRowHeight: NSLayoutConstraint?
 
     // MARK: - Banner
     private let bannerCard = UIView()
@@ -138,12 +139,14 @@ final class BookHomeVisitView: UIView {
         scrollView.translatesAutoresizingMaskIntoConstraints = false
         scrollView.alwaysBounceVertical = true
         scrollView.showsVerticalScrollIndicator = false
+        scrollView.backgroundColor = bg
 
         scrollView.addSubview(contentView)
         contentView.translatesAutoresizingMaskIntoConstraints = false
+        contentView.backgroundColor = bg
 
         NSLayoutConstraint.activate([
-            scrollView.topAnchor.constraint(equalTo: safeAreaLayoutGuide.topAnchor),
+            scrollView.topAnchor.constraint(equalTo: topAnchor),
             scrollView.leadingAnchor.constraint(equalTo: leadingAnchor),
             scrollView.trailingAnchor.constraint(equalTo: trailingAnchor),
             scrollView.bottomAnchor.constraint(equalTo: bottomAnchor),
@@ -195,8 +198,9 @@ final class BookHomeVisitView: UIView {
         headerRow.addSubview(backButton)
         headerRow.addSubview(headerTitle)
 
+        headerRowHeight = headerRow.heightAnchor.constraint(equalToConstant: 40)
+        headerRowHeight?.isActive = true
         NSLayoutConstraint.activate([
-            headerRow.heightAnchor.constraint(equalToConstant: 40),
 
             backButton.leadingAnchor.constraint(equalTo: headerRow.leadingAnchor),
             backButton.centerYAnchor.constraint(equalTo: headerRow.centerYAnchor),
@@ -710,6 +714,14 @@ final class BookHomeVisitView: UIView {
         setDate(Date())
         setSelectedTimeText(nil)
         updateAppointmentSummary(doctorName: nil, date: Date(), time: nil, address: nil)
+    }
+
+    func useNativeTopBarMode() {
+        backButton.isHidden = true
+        headerTitle.isHidden = true
+        headerSubtitle.isHidden = true
+        headerDivider.isHidden = true
+        headerRowHeight?.constant = 0
     }
 
     // MARK: - Public APIs used by VC

@@ -20,9 +20,17 @@ final class PhysioProfileViewController: UIViewController, PHPickerViewControlle
 
     override func viewDidLoad() {
         super.viewDidLoad()
-        navigationController?.setNavigationBarHidden(true, animated: false)
-        navigationItem.hidesBackButton = true
-        navigationItem.rightBarButtonItem = nil
+        navigationController?.setNavigationBarHidden(false, animated: false)
+        navigationItem.title = "Profile"
+        navigationItem.largeTitleDisplayMode = .never
+        navigationItem.hidesBackButton = false
+        navigationItem.rightBarButtonItem = UIBarButtonItem(
+            title: "Edit",
+            style: .plain,
+            target: self,
+            action: #selector(editTapped)
+        )
+        profileView.useNativeNavigationChrome()
         profileView.onBack = { [weak self] in self?.navigationController?.popViewController(animated: true) }
         profileView.onEdit = { [weak self] in self?.showEdit() }
         profileView.onSignOut = { [weak self] in self?.signOut() }
@@ -37,11 +45,6 @@ final class PhysioProfileViewController: UIViewController, PHPickerViewControlle
 
         profileView.setLoggedIn(true)
         loadInitial()
-    }
-
-    override func viewWillDisappear(_ animated: Bool) {
-        super.viewWillDisappear(animated)
-        navigationController?.setNavigationBarHidden(false, animated: false)
     }
 
     @objc private func editTapped() {

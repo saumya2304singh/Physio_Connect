@@ -36,6 +36,7 @@ final class VideosViewController: UIViewController, UITableViewDataSource, UITab
     private var programHeaderView: UIView?
     private var programFooterView: UIView?
     private var animatedProgramRows = Set<IndexPath>()
+    private lazy var navProfileItem = NativeUIStyle.makeAvatarBarButtonItem(target: self, action: #selector(profileTapped))
 
     private var isProgramTab: Bool { videosView.segmented.selectedSegmentIndex == 1 }
     private var filteredFreeExercises: [ExerciseVideoRow] {
@@ -51,7 +52,13 @@ final class VideosViewController: UIViewController, UITableViewDataSource, UITab
 
     override func viewDidLoad() {
         super.viewDidLoad()
-        navigationController?.setNavigationBarHidden(true, animated: false)
+        navigationController?.setNavigationBarHidden(false, animated: false)
+        NativeUIStyle.applyTabRootNavigation(
+            for: self,
+            title: "Videos",
+            rightItem: navProfileItem
+        )
+        videosView.useNativeNavigationChrome()
 
         videosView.tableView.dataSource = self
         videosView.tableView.delegate = self
@@ -69,10 +76,10 @@ final class VideosViewController: UIViewController, UITableViewDataSource, UITab
         videosView.filterCollectionView.selectItem(at: IndexPath(item: selectedFilterIndex, section: 0), animated: false, scrollPosition: [])
 
         videosView.segmented.addTarget(self, action: #selector(tabChanged), for: .valueChanged)
+        videosView.searchBottomButton.addTarget(self, action: #selector(searchBottomTapped), for: .touchUpInside)
         videosView.redeemButton.addTarget(self, action: #selector(redeemTapped), for: .touchUpInside)
         videosView.redeemInlineButton.addTarget(self, action: #selector(redeemInlineTapped), for: .touchUpInside)
         videosView.setRefreshTarget(self, action: #selector(refreshPulled))
-        videosView.profileButton.addTarget(self, action: #selector(profileTapped), for: .touchUpInside)
         NotificationCenter.default.addObserver(
             self,
             selector: #selector(handleProgressUpdate(_:)),
@@ -86,18 +93,23 @@ final class VideosViewController: UIViewController, UITableViewDataSource, UITab
 
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
+        NativeUIStyle.applyTabRootNavigation(
+            for: self,
+            title: "Videos",
+            rightItem: navProfileItem
+        )
         Task { await reload() }
         Task { await refreshProfileAvatar() }
     }
 
-    override func viewDidLayoutSubviews() {
-        super.viewDidLayoutSubviews()
+    override func viewDidAppear(_ animated: Bool) {
+        super.viewDidAppear(animated)
         updateHeaderLayout()
         updateFooterLayout()
     }
 
-    override func viewDidAppear(_ animated: Bool) {
-        super.viewDidAppear(animated)
+    override func viewDidLayoutSubviews() {
+        super.viewDidLayoutSubviews()
         updateHeaderLayout()
         updateFooterLayout()
     }
@@ -108,6 +120,10 @@ final class VideosViewController: UIViewController, UITableViewDataSource, UITab
 
     @objc private func tabChanged() {
         Task { await reload() }
+    }
+
+    @objc private func searchBottomTapped() {
+        videosView.toggleSearchVisibility()
     }
 
     @objc private func refreshPulled() {
@@ -275,7 +291,6 @@ final class VideosViewController: UIViewController, UITableViewDataSource, UITab
                 let rows = try await model.fetchFreeExercises(search: videosView.searchBar.text)
                 freeExercises = rows
                 await MainActor.run {
-                    self.videosView.showEmptyState(false)
                     self.videosView.filterCollectionView.reloadData()
                     self.videosView.filterCollectionView.selectItem(
                         at: IndexPath(item: self.selectedFilterIndex, section: 0),
@@ -283,6 +298,7 @@ final class VideosViewController: UIViewController, UITableViewDataSource, UITab
                         scrollPosition: []
                     )
                     self.videosView.tableView.reloadData()
+                    self.updateFreeExercisesEmptyState()
                     self.updateHeaderLayout()
                 }
             }
@@ -348,7 +364,10 @@ final class VideosViewController: UIViewController, UITableViewDataSource, UITab
             do {
                 let rows = try await model.fetchFreeExercises(search: searchText)
                 freeExercises = rows
-                await MainActor.run { self.videosView.tableView.reloadData() }
+                await MainActor.run {
+                    self.videosView.tableView.reloadData()
+                    self.updateFreeExercisesEmptyState()
+                }
             } catch {
                 await MainActor.run { self.showError("Search error", error.localizedDescription) }
             }
@@ -543,6 +562,7 @@ final class VideosViewController: UIViewController, UITableViewDataSource, UITab
         collectionView.reloadItems(at: reloadItems)
         collectionView.selectItem(at: indexPath, animated: false, scrollPosition: [])
         videosView.tableView.reloadData()
+        updateFreeExercisesEmptyState()
     }
 
     func collectionView(_ collectionView: UICollectionView,
@@ -906,16 +926,39 @@ final class VideosViewController: UIViewController, UITableViewDataSource, UITab
         present(ac, animated: true)
     }
 
+    private func updateFreeExercisesEmptyState() {
+        guard !isProgramTab else { return }
+        let filteredRows = filteredFreeExercises
+        let hasSearch = !(videosView.searchBar.text?.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ?? true)
+        if filteredRows.isEmpty {
+            if hasSearch || selectedFilterIndex > 0 {
+                videosView.configureEmptyState(
+                    title: "No Matching Videos",
+                    message: "Try another keyword or clear filters to explore more exercises.",
+                    showRedeem: false
+                )
+            } else {
+                videosView.configureEmptyState(
+                    title: "No Videos Available",
+                    message: "We couldn't fetch videos right now. Pull to refresh and try again.",
+                    showRedeem: false
+                )
+            }
+        }
+        videosView.showEmptyState(filteredRows.isEmpty)
+    }
+
     private func refreshProfileAvatar() async {
+        let cached = ProfileModel.cachedAvatarURL()
         await MainActor.run {
-            PatientNavAvatarStyle.updateProfileButton(
-                self.videosView.profileButton,
-                urlString: ProfileModel.cachedAvatarURL()
-            )
+            PatientNavAvatarStyle.updateProfileItem(self.navProfileItem, urlString: cached)
         }
         guard let profile = try? await profileModel.fetchCurrentProfile() else { return }
+        let resolved = profile.avatarURL?.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false
+            ? profile.avatarURL
+            : cached
         await MainActor.run {
-            PatientNavAvatarStyle.updateProfileButton(self.videosView.profileButton, urlString: profile.avatarURL)
+            PatientNavAvatarStyle.updateProfileItem(self.navProfileItem, urlString: resolved)
         }
     }
 }

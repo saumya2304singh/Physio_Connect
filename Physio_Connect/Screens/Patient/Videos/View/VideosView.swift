@@ -12,8 +12,10 @@ final class VideosView: UIView {
     private let topBar = UIView()
     let titleLabel = UILabel()
     let profileButton = UIButton(type: .system)
+    private let segmentScrollView = UIScrollView()
     let segmented = UISegmentedControl(items: ["Free Exercises", "My Program"])
     let searchBar = UISearchBar()
+    let searchBottomButton = UIButton(type: .system)
     let filterCollectionView: UICollectionView
     let tableView = UITableView(frame: .zero, style: .plain)
     let programRedeemCard = UIView()
@@ -27,6 +29,9 @@ final class VideosView: UIView {
     private var searchHeightConstraint: NSLayoutConstraint?
     private var filterHeightConstraint: NSLayoutConstraint?
     private var redeemCardHeightConstraint: NSLayoutConstraint?
+    private var topBarHeightConstraint: NSLayoutConstraint?
+    private var isProgramMode = false
+    private var isSearchVisible = false
 
     private let emptyCard = UIView()
     private let emptyTitle = UILabel()
@@ -62,9 +67,11 @@ final class VideosView: UIView {
     }
 
     func setProgramMode(_ enabled: Bool) {
-        searchBar.isHidden = enabled
+        isProgramMode = enabled
+        searchBar.isHidden = enabled || !isSearchVisible
+        searchBottomButton.isHidden = enabled
         filterCollectionView.isHidden = enabled
-        searchHeightConstraint?.constant = enabled ? 0 : 44
+        searchHeightConstraint?.constant = (enabled || !isSearchVisible) ? 0 : 44
         filterHeightConstraint?.constant = enabled ? 0 : 40
         if !enabled {
             setProgramRedeemVisible(false)
@@ -108,6 +115,7 @@ final class VideosView: UIView {
 
         segmented.selectedSegmentIndex = 0
         segmented.translatesAutoresizingMaskIntoConstraints = false
+        segmented.apportionsSegmentWidthsByContent = true
         segmented.selectedSegmentTintColor = UIColor(hex: "1E6EF7")
         segmented.backgroundColor = .white
         segmented.layer.cornerRadius = 16
@@ -121,21 +129,29 @@ final class VideosView: UIView {
             for: .normal
         )
 
-        searchBar.placeholder = "Search exercises"
-        searchBar.searchBarStyle = .minimal
+        segmentScrollView.translatesAutoresizingMaskIntoConstraints = false
+        segmentScrollView.showsHorizontalScrollIndicator = false
+        segmentScrollView.alwaysBounceHorizontal = true
+        segmentScrollView.delaysContentTouches = false
+        segmentScrollView.canCancelContentTouches = true
+
+        NativeUIStyle.styleSearchBar(searchBar, placeholder: "Search exercises")
         searchBar.translatesAutoresizingMaskIntoConstraints = false
-        searchBar.backgroundImage = UIImage()
-        searchBar.searchTextField.backgroundColor = .white
-        searchBar.searchTextField.layer.cornerRadius = 16
-        searchBar.searchTextField.layer.masksToBounds = true
+        searchBar.isHidden = true
+
+        searchBottomButton.translatesAutoresizingMaskIntoConstraints = false
+        NativeUIStyle.styleFloatingSearchButton(searchBottomButton)
 
         filterCollectionView.translatesAutoresizingMaskIntoConstraints = false
         filterCollectionView.backgroundColor = .clear
         filterCollectionView.showsHorizontalScrollIndicator = false
+        filterCollectionView.alwaysBounceHorizontal = true
+        filterCollectionView.delaysContentTouches = false
+        filterCollectionView.canCancelContentTouches = true
 
         programRedeemCard.translatesAutoresizingMaskIntoConstraints = false
         programRedeemCard.backgroundColor = UIColor(hex: "F7FAFF")
-        programRedeemCard.layer.cornerRadius = 18
+        programRedeemCard.layer.cornerRadius = 22
         programRedeemCard.layer.borderWidth = 1
         programRedeemCard.layer.borderColor = UIColor(hex: "D7E6FF").cgColor
         programRedeemCard.layer.shadowColor = UIColor.black.cgColor
@@ -218,11 +234,13 @@ final class VideosView: UIView {
         addSubview(topBar)
         topBar.addSubview(titleLabel)
         topBar.addSubview(profileButton)
-        addSubview(segmented)
+        addSubview(segmentScrollView)
+        segmentScrollView.addSubview(segmented)
         addSubview(searchBar)
         addSubview(filterCollectionView)
         addSubview(programRedeemCard)
         addSubview(tableView)
+        addSubview(searchBottomButton)
         addSubview(emptyCard)
         programRedeemCard.addSubview(redeemIcon)
         programRedeemCard.addSubview(redeemTitleLabel)
@@ -238,13 +256,12 @@ final class VideosView: UIView {
         searchHeightConstraint = searchBar.heightAnchor.constraint(equalToConstant: 44)
         filterHeightConstraint = filterCollectionView.heightAnchor.constraint(equalToConstant: 40)
         redeemCardHeightConstraint = programRedeemCard.heightAnchor.constraint(equalToConstant: 0)
+        topBarHeightConstraint = topBar.heightAnchor.constraint(equalToConstant: 44)
 
         NSLayoutConstraint.activate([
-            topBar.topAnchor.constraint(equalTo: safeAreaLayoutGuide.topAnchor, constant: 6),
+            topBar.topAnchor.constraint(equalTo: safeAreaLayoutGuide.topAnchor),
             topBar.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 16),
             topBar.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -16),
-            topBar.heightAnchor.constraint(equalToConstant: 44),
-
             titleLabel.centerXAnchor.constraint(equalTo: topBar.centerXAnchor),
             titleLabel.centerYAnchor.constraint(equalTo: topBar.centerYAnchor),
 
@@ -253,12 +270,19 @@ final class VideosView: UIView {
             profileButton.widthAnchor.constraint(equalToConstant: 40),
             profileButton.heightAnchor.constraint(equalToConstant: 40),
 
-            segmented.topAnchor.constraint(equalTo: topBar.bottomAnchor, constant: 10),
-            segmented.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 16),
-            segmented.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -16),
-            segmented.heightAnchor.constraint(equalToConstant: 44),
+            segmentScrollView.topAnchor.constraint(equalTo: topBar.bottomAnchor, constant: 10),
+            segmentScrollView.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 16),
+            segmentScrollView.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -16),
+            segmentScrollView.heightAnchor.constraint(equalToConstant: 44),
 
-            searchBar.topAnchor.constraint(equalTo: segmented.bottomAnchor, constant: 10),
+            segmented.topAnchor.constraint(equalTo: segmentScrollView.contentLayoutGuide.topAnchor),
+            segmented.bottomAnchor.constraint(equalTo: segmentScrollView.contentLayoutGuide.bottomAnchor),
+            segmented.leadingAnchor.constraint(equalTo: segmentScrollView.contentLayoutGuide.leadingAnchor),
+            segmented.trailingAnchor.constraint(equalTo: segmentScrollView.contentLayoutGuide.trailingAnchor),
+            segmented.heightAnchor.constraint(equalTo: segmentScrollView.frameLayoutGuide.heightAnchor),
+            segmented.widthAnchor.constraint(greaterThanOrEqualTo: segmentScrollView.frameLayoutGuide.widthAnchor),
+
+            searchBar.topAnchor.constraint(equalTo: segmentScrollView.bottomAnchor, constant: 10),
             searchBar.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 16),
             searchBar.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -16),
 
@@ -302,6 +326,11 @@ final class VideosView: UIView {
             tableView.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -16),
             tableView.bottomAnchor.constraint(equalTo: bottomAnchor),
 
+            searchBottomButton.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -20),
+            searchBottomButton.bottomAnchor.constraint(equalTo: safeAreaLayoutGuide.bottomAnchor, constant: -42),
+            searchBottomButton.widthAnchor.constraint(equalToConstant: 60),
+            searchBottomButton.heightAnchor.constraint(equalToConstant: 60),
+
             emptyCard.centerYAnchor.constraint(equalTo: tableView.centerYAnchor),
             emptyCard.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 16),
             emptyCard.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -16),
@@ -323,5 +352,26 @@ final class VideosView: UIView {
         searchHeightConstraint?.isActive = true
         filterHeightConstraint?.isActive = true
         redeemCardHeightConstraint?.isActive = true
+        topBarHeightConstraint?.isActive = true
+    }
+
+    func useNativeNavigationChrome() {
+        titleLabel.isHidden = true
+        profileButton.isHidden = true
+        topBar.isHidden = true
+        topBarHeightConstraint?.constant = 0
+    }
+
+    func toggleSearchVisibility() {
+        guard !isProgramMode else { return }
+        isSearchVisible.toggle()
+        searchBar.isHidden = !isSearchVisible
+        searchHeightConstraint?.constant = isSearchVisible ? 44 : 0
+        if isSearchVisible {
+            searchBar.becomeFirstResponder()
+        } else {
+            searchBar.resignFirstResponder()
+        }
+        layoutIfNeeded()
     }
 }

@@ -38,7 +38,12 @@ struct ProfileViewData {
     let notificationsEnabled: Bool
     let avatarURL: String?
 
-    static func from(row: CustomerProfileRow?, emailFallback: String, metadataAvatarURL: String?) -> ProfileViewData {
+    static func from(
+        row: CustomerProfileRow?,
+        emailFallback: String,
+        metadataAvatarURL: String?,
+        metadataAddress: String?
+    ) -> ProfileViewData {
         let rawName = row?.full_name?.trimmingCharacters(in: .whitespacesAndNewlines)
         let name = (rawName?.isEmpty == false) ? rawName! : "User"
 
@@ -48,6 +53,7 @@ struct ProfileViewData {
 
         let phone = row?.phone?.trimmingCharacters(in: .whitespacesAndNewlines)
         let address = row?.address?.trimmingCharacters(in: .whitespacesAndNewlines)
+        let metadataAddress = metadataAddress?.trimmingCharacters(in: .whitespacesAndNewlines)
         let gender = row?.gender?.trimmingCharacters(in: .whitespacesAndNewlines)
         let dob = row?.date_of_birth?.trimmingCharacters(in: .whitespacesAndNewlines)
         let health = row?.health_identifier?.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -58,11 +64,13 @@ struct ProfileViewData {
             name: name,
             email: email.isEmpty ? "—" : email,
             phone: phone?.isEmpty == false ? phone! : "—",
-            address: address?.isEmpty == false ? address! : "—",
+            address: address?.isEmpty == false ? address! : (metadataAddress?.isEmpty == false ? metadataAddress! : "—"),
             gender: gender?.isEmpty == false ? gender! : "—",
             dateOfBirth: dob?.isEmpty == false ? dob! : "—",
             healthIdentifier: health?.isEmpty == false ? health! : "—",
-            location: location?.isEmpty == false ? location! : (address?.isEmpty == false ? address! : "—"),
+            location: location?.isEmpty == false ? location! : (
+                address?.isEmpty == false ? address! : (metadataAddress?.isEmpty == false ? metadataAddress! : "—")
+            ),
             about: "—",
             yearsExperience: "—",
             notificationsEnabled: row?.notifications_enabled ?? true,
@@ -102,6 +110,7 @@ final class ProfileModel {
         let userID = session.user.id.uuidString
         let emailFallback = session.user.email ?? "—"
         let metadataAvatarURL = session.user.userMetadata["avatar_url"]?.stringValue
+        let metadataAddress = session.user.userMetadata["address"]?.stringValue
 
         var row: CustomerProfileRow?
         do {
@@ -117,7 +126,12 @@ final class ProfileModel {
             print("❌ Profile fetch error:", error)
         }
 
-        let data = ProfileViewData.from(row: row, emailFallback: emailFallback, metadataAvatarURL: metadataAvatarURL)
+        let data = ProfileViewData.from(
+            row: row,
+            emailFallback: emailFallback,
+            metadataAvatarURL: metadataAvatarURL,
+            metadataAddress: metadataAddress
+        )
         Self.cacheAvatarURL(data.avatarURL)
         return data
     }
@@ -141,6 +155,7 @@ final class ProfileModel {
         let phone: String
         let gender: String
         let dateOfBirth: String
+        let address: String
         let location: String
     }
 
@@ -153,6 +168,7 @@ final class ProfileModel {
             let phone: String?
             let gender: String?
             let date_of_birth: String?
+            let address: String?
             let location: String?
         }
 
@@ -161,14 +177,52 @@ final class ProfileModel {
             phone: input.phone.trimmingCharacters(in: .whitespacesAndNewlines).nilIfEmpty,
             gender: input.gender.trimmingCharacters(in: .whitespacesAndNewlines).nilIfEmpty,
             date_of_birth: input.dateOfBirth.trimmingCharacters(in: .whitespacesAndNewlines).nilIfEmpty,
+            address: input.address.trimmingCharacters(in: .whitespacesAndNewlines).nilIfEmpty,
             location: input.location.trimmingCharacters(in: .whitespacesAndNewlines).nilIfEmpty
         )
 
-        _ = try await client
-            .from("customers")
-            .update(payload)
-            .eq("id", value: userID)
-            .execute()
+        do {
+            _ = try await client
+                .from("customers")
+                .update(payload)
+                .eq("id", value: userID)
+                .execute()
+        } catch {
+            // Backward compatibility: if customers.address doesn't exist, save remaining fields and store address in metadata.
+            if error.localizedDescription.localizedCaseInsensitiveContains("address") &&
+                error.localizedDescription.localizedCaseInsensitiveContains("customers") {
+                struct FallbackPayload: Encodable {
+                    let full_name: String?
+                    let phone: String?
+                    let gender: String?
+                    let date_of_birth: String?
+                    let location: String?
+                }
+                let fallback = FallbackPayload(
+                    full_name: input.name.trimmingCharacters(in: .whitespacesAndNewlines).nilIfEmpty,
+                    phone: input.phone.trimmingCharacters(in: .whitespacesAndNewlines).nilIfEmpty,
+                    gender: input.gender.trimmingCharacters(in: .whitespacesAndNewlines).nilIfEmpty,
+                    date_of_birth: input.dateOfBirth.trimmingCharacters(in: .whitespacesAndNewlines).nilIfEmpty,
+                    location: input.location.trimmingCharacters(in: .whitespacesAndNewlines).nilIfEmpty
+                )
+                _ = try await client
+                    .from("customers")
+                    .update(fallback)
+                    .eq("id", value: userID)
+                    .execute()
+            } else {
+                throw error
+            }
+        }
+
+        // Always keep address mirrored in auth metadata so it can be fetched even if DB schema lacks customers.address.
+        var metadata = session.user.userMetadata
+        if let address = input.address.trimmingCharacters(in: .whitespacesAndNewlines).nilIfEmpty {
+            metadata["address"] = .string(address)
+        } else {
+            metadata.removeValue(forKey: "address")
+        }
+        _ = try await client.auth.update(user: UserAttributes(data: metadata))
     }
 
     func signOut() async throws {

@@ -105,6 +105,10 @@ final class PhysioReportsViewController: UIViewController, UITableViewDataSource
             }
         } catch {
             await MainActor.run {
+                self.allPatients = []
+                self.filteredPatients = []
+                self.reportsView.showEmptyState(true)
+                self.reportsView.tableView.reloadData()
                 self.presentError(message: error.localizedDescription)
             }
         }
@@ -169,6 +173,7 @@ final class PhysioReportsViewController: UIViewController, UITableViewDataSource
         let query = reportsView.searchBar.text?.lowercased().trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
         guard !query.isEmpty else {
             filteredPatients = allPatients
+            reportsView.showEmptyState(filteredPatients.isEmpty)
             reportsView.tableView.reloadData()
             return
         }
@@ -177,6 +182,7 @@ final class PhysioReportsViewController: UIViewController, UITableViewDataSource
             let haystack = "\(vm.name) \(vm.programText) \(vm.location)".lowercased()
             return haystack.contains(query)
         }
+        reportsView.showEmptyState(filteredPatients.isEmpty)
         reportsView.tableView.reloadData()
     }
 }

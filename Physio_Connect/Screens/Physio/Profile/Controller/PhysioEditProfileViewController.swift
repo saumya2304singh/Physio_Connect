@@ -20,7 +20,17 @@ final class PhysioEditProfileViewController: UIViewController {
 
     override func viewDidLoad() {
         super.viewDidLoad()
-        navigationItem.hidesBackButton = true
+        navigationController?.setNavigationBarHidden(false, animated: false)
+        navigationItem.title = "Edit Profile"
+        navigationItem.largeTitleDisplayMode = .never
+        navigationItem.hidesBackButton = false
+        navigationItem.rightBarButtonItem = UIBarButtonItem(
+            title: "Save",
+            style: .done,
+            target: self,
+            action: #selector(saveTapped)
+        )
+        editView.useNativeNavigationChrome()
         bind()
         loadProfile()
     }
@@ -46,6 +56,7 @@ final class PhysioEditProfileViewController: UIViewController {
 
     private func saveProfile() {
         editView.setSaving(true)
+        navigationItem.rightBarButtonItem?.isEnabled = false
         Task {
             do {
                 if !editView.hasCoordinates() {
@@ -58,6 +69,7 @@ final class PhysioEditProfileViewController: UIViewController {
                 try await model.updateProfile(input)
                 await MainActor.run {
                     self.editView.setSaving(false)
+                    self.navigationItem.rightBarButtonItem?.isEnabled = true
                     self.onProfileUpdated?()
                     self.navigationController?.popViewController(animated: true)
                 }
@@ -65,10 +77,15 @@ final class PhysioEditProfileViewController: UIViewController {
                 print("❌ Physio profile save error:", error)
                 await MainActor.run {
                     self.editView.setSaving(false)
+                    self.navigationItem.rightBarButtonItem?.isEnabled = true
                     self.showError(error.localizedDescription)
                 }
             }
         }
+    }
+
+    @objc private func saveTapped() {
+        saveProfile()
     }
 
     private func showError(_ message: String) {

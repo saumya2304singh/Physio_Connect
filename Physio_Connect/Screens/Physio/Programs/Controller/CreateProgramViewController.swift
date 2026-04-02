@@ -495,7 +495,7 @@ final class ProgramDayCell: UITableViewCell {
         let card = UIView()
         card.translatesAutoresizingMaskIntoConstraints = false
         card.backgroundColor = .white
-        card.layer.cornerRadius = 16
+        card.layer.cornerRadius = 22
         card.layer.shadowColor = UIColor.black.cgColor
         card.layer.shadowOpacity = 0.04
         card.layer.shadowRadius = 6
@@ -599,11 +599,7 @@ final class ExercisePickerViewController: UIViewController, UITableViewDataSourc
             action: #selector(closeTapped)
         )
 
-        searchBar.searchBarStyle = .minimal
-        searchBar.placeholder = "Search videos"
-        searchBar.searchTextField.backgroundColor = .white
-        searchBar.searchTextField.layer.cornerRadius = 14
-        searchBar.searchTextField.layer.masksToBounds = true
+        NativeUIStyle.styleSearchBar(searchBar, placeholder: "Search videos")
         searchBar.delegate = self
 
         tableView.translatesAutoresizingMaskIntoConstraints = false

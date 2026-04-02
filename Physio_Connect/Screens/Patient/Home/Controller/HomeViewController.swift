@@ -25,14 +25,20 @@ final class HomeViewController: UIViewController, UICollectionViewDataSource, UI
     private var selectedArticlesSort: ArticleSort = .recent
     private let itemsPerDay = 2
     private let homeArticleLimit = 3
+    private lazy var navProfileItem = NativeUIStyle.makeAvatarBarButtonItem(target: self, action: #selector(profileTapped))
 
     override func loadView() { view = homeView }
 
     override func viewDidLoad() {
         super.viewDidLoad()
-        navigationController?.setNavigationBarHidden(true, animated: false)
+        navigationController?.setNavigationBarHidden(false, animated: false)
+        NativeUIStyle.applyTabRootNavigation(
+            for: self,
+            title: "Home",
+            rightItem: navProfileItem
+        )
+        homeView.useNativeNavigationChrome()
 
-        homeView.profileButton.addTarget(self, action: #selector(profileTapped), for: .touchUpInside)
         homeView.videosCollectionView.dataSource = self
         homeView.videosCollectionView.delegate = self
         homeView.videosCollectionView.register(HomeVideoCardCell.self, forCellWithReuseIdentifier: HomeVideoCardCell.reuseID)
@@ -70,6 +76,11 @@ final class HomeViewController: UIViewController, UICollectionViewDataSource, UI
 
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
+        NativeUIStyle.applyTabRootNavigation(
+            for: self,
+            title: "Home",
+            rightItem: navProfileItem
+        )
         locationService.requestLocation()
         Task { await refreshCards() }
         Task { await refreshProfileAvatar() }
@@ -79,6 +90,11 @@ final class HomeViewController: UIViewController, UICollectionViewDataSource, UI
         super.viewWillDisappear(animated)
         upcomingTimer?.invalidate()
         upcomingTimer = nil
+    }
+
+    override func viewDidLayoutSubviews() {
+        super.viewDidLayoutSubviews()
+        homeView.updateArticlesHeightToFit()
     }
 
     private func refreshCards() async {
@@ -121,6 +137,7 @@ final class HomeViewController: UIViewController, UICollectionViewDataSource, UI
             self.thumbnailImages = [:]
             self.homeView.videosCollectionView.reloadData()
             self.homeView.updateVideosHeight(rows: self.freeVideos.count)
+            self.homeView.setVideosEmptyStateVisible(self.freeVideos.isEmpty)
             self.homeView.painCard.configure(
                 painSeries: progress.painSeries,
                 averagePain: progress.averagePain,
@@ -139,6 +156,7 @@ final class HomeViewController: UIViewController, UICollectionViewDataSource, UI
             self.articles = Array(fetchedArticles.prefix(self.homeArticleLimit))
             self.homeView.articlesTableView.reloadData()
             self.homeView.updateArticlesHeight(rows: self.articles.count)
+            self.homeView.setArticlesEmptyStateVisible(self.articles.isEmpty)
             DispatchQueue.main.async {
                 self.homeView.updateArticlesHeightToFit()
             }
@@ -260,19 +278,21 @@ final class HomeViewController: UIViewController, UICollectionViewDataSource, UI
 
     @objc private func profileTapped() {
         let vc = ProfileViewController()
+        vc.hidesBottomBarWhenPushed = true
         navigationController?.pushViewController(vc, animated: true)
     }
 
     private func refreshProfileAvatar() async {
+        let cached = ProfileModel.cachedAvatarURL()
         await MainActor.run {
-            PatientNavAvatarStyle.updateProfileButton(
-                self.homeView.profileButton,
-                urlString: ProfileModel.cachedAvatarURL()
-            )
+            PatientNavAvatarStyle.updateProfileItem(self.navProfileItem, urlString: cached)
         }
         guard let profile = try? await profileModel.fetchCurrentProfile() else { return }
+        let resolved = profile.avatarURL?.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false
+            ? profile.avatarURL
+            : cached
         await MainActor.run {
-            PatientNavAvatarStyle.updateProfileButton(self.homeView.profileButton, urlString: profile.avatarURL)
+            PatientNavAvatarStyle.updateProfileItem(self.navProfileItem, urlString: resolved)
         }
     }
 

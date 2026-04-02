@@ -34,6 +34,8 @@ final class ProfileView: UIView {
     private let backButton = UIButton(type: .system)
     private let titleLabel = UILabel()
     private let editButton = UIButton(type: .system)
+    private let topBarContainer = UIView()
+    private var topBarHeightConstraint: NSLayoutConstraint?
     private var shouldShowEditButton = true
     private var isLoggedInState = true
 
@@ -344,8 +346,7 @@ final class ProfileView: UIView {
 
 
     private func buildTopBar() {
-        let container = UIView()
-        container.translatesAutoresizingMaskIntoConstraints = false
+        topBarContainer.translatesAutoresizingMaskIntoConstraints = false
 
         backButton.translatesAutoresizingMaskIntoConstraints = false
         backButton.setImage(UIImage(systemName: "chevron.left"), for: .normal)
@@ -358,21 +359,22 @@ final class ProfileView: UIView {
         editButton.titleLabel?.font = .systemFont(ofSize: 16, weight: .semibold)
         editButton.addTarget(self, action: #selector(editTapped), for: .touchUpInside)
 
-        container.addSubview(backButton)
-        container.addSubview(editButton)
+        topBarContainer.addSubview(backButton)
+        topBarContainer.addSubview(editButton)
 
         NSLayoutConstraint.activate([
-            backButton.leadingAnchor.constraint(equalTo: container.leadingAnchor),
-            backButton.centerYAnchor.constraint(equalTo: container.centerYAnchor),
+            backButton.leadingAnchor.constraint(equalTo: topBarContainer.leadingAnchor),
+            backButton.centerYAnchor.constraint(equalTo: topBarContainer.centerYAnchor),
             backButton.widthAnchor.constraint(equalToConstant: 36),
             backButton.heightAnchor.constraint(equalToConstant: 36),
 
-            editButton.trailingAnchor.constraint(equalTo: container.trailingAnchor),
-            editButton.centerYAnchor.constraint(equalTo: container.centerYAnchor)
+            editButton.trailingAnchor.constraint(equalTo: topBarContainer.trailingAnchor),
+            editButton.centerYAnchor.constraint(equalTo: topBarContainer.centerYAnchor)
         ])
 
-        container.heightAnchor.constraint(equalToConstant: 32).isActive = true
-        stackView.addArrangedSubview(container)
+        topBarHeightConstraint = topBarContainer.heightAnchor.constraint(equalToConstant: 32)
+        topBarHeightConstraint?.isActive = true
+        stackView.addArrangedSubview(topBarContainer)
     }
 
     private func buildSettings() {
@@ -426,7 +428,7 @@ final class ProfileView: UIView {
         stackView.addArrangedSubview(availabilitySectionLabel)
 
         availabilityCard.backgroundColor = UIColor.white
-        availabilityCard.layer.cornerRadius = 18
+        availabilityCard.layer.cornerRadius = 22
         availabilityCard.layer.shadowColor = UIColor.black.cgColor
         availabilityCard.layer.shadowOpacity = 0.05
         availabilityCard.layer.shadowRadius = 10
@@ -555,16 +557,21 @@ final class ProfileView: UIView {
         updateEditVisibility()
     }
 
+    func useNativeNavigationChrome() {
+        topBarContainer.isHidden = true
+        topBarHeightConstraint?.constant = 0
+    }
+
     private func updateEditVisibility() {
         editButton.isHidden = !isLoggedInState || !shouldShowEditButton
     }
 
 
     private func buildSignOut() {
-        signOutButton.setTitle("Sign Out", for: .normal)
-        signOutButton.setTitleColor(UIColor(hex: "E54848"), for: .normal)
+        signOutButton.setTitle("Log Out", for: .normal)
+        signOutButton.setTitleColor(.white, for: .normal)
         signOutButton.titleLabel?.font = .systemFont(ofSize: 16, weight: .semibold)
-        signOutButton.backgroundColor = UIColor.white
+        signOutButton.backgroundColor = UIColor(hex: "E54848")
         signOutButton.layer.cornerRadius = 16
         signOutButton.layer.shadowColor = UIColor.black.cgColor
         signOutButton.layer.shadowOpacity = 0.05
@@ -604,11 +611,14 @@ final class ProfileView: UIView {
         switchRoleButton.backgroundColor = UIColor.white
         switchRoleButton.layer.cornerRadius = 16
         switchRoleButton.layer.shadowColor = UIColor.black.cgColor
-        switchRoleButton.layer.shadowOpacity = 0.05
-        switchRoleButton.layer.shadowRadius = 10
-        switchRoleButton.layer.shadowOffset = CGSize(width: 0, height: 6)
+        switchRoleButton.layer.shadowOpacity = 0.10
+        switchRoleButton.layer.shadowRadius = 14
+        switchRoleButton.layer.shadowOffset = CGSize(width: 0, height: 10)
         switchRoleButton.heightAnchor.constraint(equalToConstant: 52).isActive = true
         switchRoleButton.addTarget(self, action: #selector(switchRolePressed), for: .touchUpInside)
+        switchRoleButton.addTarget(self, action: #selector(switchRoleTouchDown), for: .touchDown)
+        switchRoleButton.addTarget(self, action: #selector(switchRoleTouchUp), for: .touchUpOutside)
+        switchRoleButton.addTarget(self, action: #selector(switchRoleTouchUp), for: .touchCancel)
 
         authStack.axis = .vertical
         authStack.spacing = 12
@@ -715,7 +725,26 @@ final class ProfileView: UIView {
     }
 
     @objc private func switchRolePressed() {
+        switchRoleTouchUp()
         onSwitchRole?()
+    }
+
+    @objc private func switchRoleTouchDown() {
+        UIView.animate(withDuration: 0.12) {
+            self.switchRoleButton.transform = CGAffineTransform(scaleX: 0.98, y: 0.98)
+            self.switchRoleButton.layer.shadowOpacity = 0.06
+            self.switchRoleButton.layer.shadowRadius = 8
+            self.switchRoleButton.layer.shadowOffset = CGSize(width: 0, height: 4)
+        }
+    }
+
+    @objc private func switchRoleTouchUp() {
+        UIView.animate(withDuration: 0.16) {
+            self.switchRoleButton.transform = .identity
+            self.switchRoleButton.layer.shadowOpacity = 0.10
+            self.switchRoleButton.layer.shadowRadius = 14
+            self.switchRoleButton.layer.shadowOffset = CGSize(width: 0, height: 10)
+        }
     }
 
     @objc private func saveAvailabilityTapped() {
@@ -740,28 +769,32 @@ final class ProfileRowView: UIView {
         titleLabel.text = title
         titleLabel.font = .systemFont(ofSize: 15, weight: .regular)
         titleLabel.textColor = UIColor.black.withAlphaComponent(0.55)
+        titleLabel.setContentHuggingPriority(.required, for: .horizontal)
+        titleLabel.setContentCompressionResistancePriority(.required, for: .horizontal)
 
         valueLabel.font = .systemFont(ofSize: 15, weight: .semibold)
         valueLabel.textColor = UIColor.black.withAlphaComponent(0.9)
         valueLabel.textAlignment = .right
-        valueLabel.numberOfLines = 2
+        valueLabel.numberOfLines = 3
+        valueLabel.lineBreakMode = .byTruncatingTail
+        valueLabel.setContentHuggingPriority(.defaultLow, for: .horizontal)
+        valueLabel.setContentCompressionResistancePriority(.defaultHigh, for: .horizontal)
 
-        let stack = UIStackView(arrangedSubviews: [titleLabel, valueLabel])
-        stack.axis = .horizontal
-        stack.alignment = .center
-        stack.spacing = 8
-        stack.translatesAutoresizingMaskIntoConstraints = false
+        titleLabel.translatesAutoresizingMaskIntoConstraints = false
+        valueLabel.translatesAutoresizingMaskIntoConstraints = false
+        addSubview(titleLabel)
+        addSubview(valueLabel)
 
-        valueLabel.setContentHuggingPriority(.required, for: .horizontal)
-        valueLabel.setContentCompressionResistancePriority(.required, for: .horizontal)
-
-        addSubview(stack)
+        let valueLeading = valueLabel.leadingAnchor.constraint(equalTo: titleLabel.trailingAnchor, constant: 44)
 
         NSLayoutConstraint.activate([
-            stack.topAnchor.constraint(equalTo: topAnchor, constant: 12),
-            stack.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 14),
-            stack.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -14),
-            stack.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -12)
+            titleLabel.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 14),
+            titleLabel.centerYAnchor.constraint(equalTo: centerYAnchor),
+
+            valueLeading,
+            valueLabel.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -14),
+            valueLabel.topAnchor.constraint(equalTo: topAnchor, constant: 12),
+            valueLabel.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -12)
         ])
     }
 

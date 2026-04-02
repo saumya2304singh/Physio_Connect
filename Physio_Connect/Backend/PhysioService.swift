@@ -48,6 +48,7 @@ struct PhysioListRow: Decodable {
     let id: UUID
     let name: String
     let gender: String?
+    let place_of_work: String?
     let consultation_fee: Double?
     let latitude: Double?
     let longitude: Double?
@@ -73,6 +74,11 @@ struct PhysioListRow: Decodable {
     
 
 extension PhysioService {
+    #if DEBUG
+    private func debugAvatarLog(_ message: String) {
+        print("🧭 [AvatarDebug] \(message)")
+    }
+    #endif
 
     func fetchPhysiotherapist(by id: UUID) async throws -> Physiotherapist {
         let rows: [Physiotherapist] = try await client
@@ -111,6 +117,7 @@ extension PhysioService {
                 id,
                 name,
                 gender,
+                place_of_work,
                 consultation_fee,
                 latitude,
                 longitude,
@@ -189,21 +196,36 @@ extension PhysioService {
 
     func loadProfileImage(pathOrUrl: String?, version: String?, completion: @escaping (UIImage?) -> Void) {
         guard let raw = pathOrUrl?.trimmingCharacters(in: .whitespacesAndNewlines), !raw.isEmpty else {
+            #if DEBUG
+            debugAvatarLog("loadProfileImage: empty raw path/url")
+            #endif
             completion(nil)
             return
         }
 
         if let url = profileImageURL(pathOrUrl: raw, version: version) {
+            #if DEBUG
+            debugAvatarLog("direct attempt url=\(url.absoluteString)")
+            #endif
             ImageLoader.shared.load(url) { [weak self] image in
                 if image != nil {
+                    #if DEBUG
+                    self?.debugAvatarLog("direct success url=\(url.absoluteString)")
+                    #endif
                     completion(image)
                     return
                 }
+                #if DEBUG
+                self?.debugAvatarLog("direct failed, fallback to signed raw=\(raw)")
+                #endif
                 self?.loadSignedProfileImage(raw: raw, completion: completion)
             }
             return
         }
 
+        #if DEBUG
+        debugAvatarLog("no direct url possible, trying signed raw=\(raw)")
+        #endif
         loadSignedProfileImage(raw: raw, completion: completion)
     }
 
@@ -231,12 +253,18 @@ extension PhysioService {
 
     private func loadSignedProfileImage(raw: String, completion: @escaping (UIImage?) -> Void) {
         if let cached = cachedSignedURL(for: raw) {
+            #if DEBUG
+            debugAvatarLog("signed cache hit raw=\(raw) url=\(cached.absoluteString)")
+            #endif
             ImageLoader.shared.load(cached, completion: completion)
             return
         }
 
         let refs = candidateStorageRefs(from: raw)
         guard !refs.isEmpty else {
+            #if DEBUG
+            debugAvatarLog("no storage refs for raw=\(raw)")
+            #endif
             completion(nil)
             return
         }
@@ -246,11 +274,20 @@ extension PhysioService {
                 if let signed = try? await client.storage
                     .from(ref.bucket)
                     .createSignedURL(path: ref.path, expiresIn: 3600) {
+                    #if DEBUG
+                    debugAvatarLog("signed success bucket=\(ref.bucket) path=\(ref.path) url=\(signed.absoluteString)")
+                    #endif
                     cacheSignedURL(signed, for: raw)
                     ImageLoader.shared.load(signed, completion: completion)
                     return
                 }
+                #if DEBUG
+                debugAvatarLog("signed failed bucket=\(ref.bucket) path=\(ref.path)")
+                #endif
             }
+            #if DEBUG
+            debugAvatarLog("all signed attempts failed raw=\(raw)")
+            #endif
             await MainActor.run { completion(nil) }
         }
     }

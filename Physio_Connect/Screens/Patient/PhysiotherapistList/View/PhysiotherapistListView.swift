@@ -18,9 +18,9 @@ final class PhysiotherapistListView: UIView {
     let backButton = UIButton(type: .system)
     let titleLabel: UILabel = {
         let l = UILabel()
-        l.text = "Find a Physiotherapist"
-        l.font = .boldSystemFont(ofSize: 22)
-        l.textAlignment = .center
+        l.text = "Find a Physio"
+        l.font = .systemFont(ofSize: 28, weight: .bold)
+        l.textAlignment = .left
         return l
     }()
 
@@ -41,6 +41,10 @@ final class PhysiotherapistListView: UIView {
 
     let searchBar = UISearchBar()
     let filterButton = UIButton(type: .system)
+    let searchBottomButton = UIButton(type: .system)
+    private var searchHeightConstraint: NSLayoutConstraint?
+    private var headerHeightConstraint: NSLayoutConstraint?
+    private var isSearchVisible = false
 
     let selectDateLabel: UILabel = {
         let l = UILabel()
@@ -74,42 +78,81 @@ final class PhysiotherapistListView: UIView {
 
         headerContainer.addSubview(backButton)
         headerContainer.addSubview(titleLabel)
+        headerContainer.addSubview(filterButton)
 
         backButton.translatesAutoresizingMaskIntoConstraints = false
         titleLabel.translatesAutoresizingMaskIntoConstraints = false
+        filterButton.translatesAutoresizingMaskIntoConstraints = false
 
         backButton.setImage(UIImage(systemName: "chevron.left"), for: .normal)
-        backButton.tintColor = .black
+        backButton.tintColor = .label
+        backButton.backgroundColor = UIColor.white.withAlphaComponent(0.5)
+        backButton.layer.cornerRadius = 22
+        backButton.layer.cornerCurve = .continuous
+
+        let filterConfig = UIImage.SymbolConfiguration(pointSize: 16, weight: .semibold)
+        filterButton.setImage(UIImage(systemName: "line.3.horizontal.decrease.circle.fill", withConfiguration: filterConfig), for: .normal)
+        filterButton.tintColor = UIColor(hex: "1E6EF7")
+        filterButton.backgroundColor = UIColor.white.withAlphaComponent(0.9)
+        filterButton.layer.cornerRadius = 22
+        filterButton.layer.cornerCurve = .continuous
+        filterButton.layer.borderWidth = 0.8
+        filterButton.layer.borderColor = UIColor.white.withAlphaComponent(0.55).cgColor
+        filterButton.layer.shadowColor = UIColor.black.cgColor
+        filterButton.layer.shadowOpacity = 0.08
+        filterButton.layer.shadowRadius = 8
+        filterButton.layer.shadowOffset = CGSize(width: 0, height: 2)
 
         NSLayoutConstraint.activate([
             headerContainer.topAnchor.constraint(equalTo: safeAreaLayoutGuide.topAnchor),
             headerContainer.leadingAnchor.constraint(equalTo: leadingAnchor),
             headerContainer.trailingAnchor.constraint(equalTo: trailingAnchor),
-            headerContainer.heightAnchor.constraint(equalToConstant: 50),
 
             backButton.centerYAnchor.constraint(equalTo: headerContainer.centerYAnchor),
             backButton.leadingAnchor.constraint(equalTo: headerContainer.leadingAnchor, constant: 16),
+            backButton.widthAnchor.constraint(equalToConstant: 44),
+            backButton.heightAnchor.constraint(equalToConstant: 44),
 
-            titleLabel.centerXAnchor.constraint(equalTo: headerContainer.centerXAnchor),
-            titleLabel.centerYAnchor.constraint(equalTo: headerContainer.centerYAnchor)
+            titleLabel.leadingAnchor.constraint(equalTo: backButton.trailingAnchor, constant: 12),
+            titleLabel.centerYAnchor.constraint(equalTo: headerContainer.centerYAnchor),
+
+            filterButton.trailingAnchor.constraint(equalTo: headerContainer.trailingAnchor, constant: -16),
+            filterButton.centerYAnchor.constraint(equalTo: headerContainer.centerYAnchor),
+            filterButton.widthAnchor.constraint(equalToConstant: 44),
+            filterButton.heightAnchor.constraint(equalToConstant: 44),
+            titleLabel.trailingAnchor.constraint(lessThanOrEqualTo: filterButton.leadingAnchor, constant: -12)
         ])
+        titleLabel.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
+        titleLabel.setContentHuggingPriority(.defaultLow, for: .horizontal)
+        headerHeightConstraint = headerContainer.heightAnchor.constraint(equalToConstant: 56)
+        headerHeightConstraint?.isActive = true
     }
 
     // MARK: Table
     private func setupTable() {
         tableView.register(PhysiotherapistCardCell.self, forCellReuseIdentifier: PhysiotherapistCardCell.reuseID)
         addSubview(tableView)
+        addSubview(searchBottomButton)
         tableView.translatesAutoresizingMaskIntoConstraints = false
         tableView.backgroundColor = .clear
         tableView.separatorStyle = .none
         tableView.rowHeight = UITableView.automaticDimension
         tableView.estimatedRowHeight = 180
+        tableView.contentInsetAdjustmentBehavior = .always
+
+        searchBottomButton.translatesAutoresizingMaskIntoConstraints = false
+        NativeUIStyle.styleFloatingSearchButton(searchBottomButton)
 
         NSLayoutConstraint.activate([
-            tableView.topAnchor.constraint(equalTo: headerContainer.bottomAnchor, constant: 4),
+            tableView.topAnchor.constraint(equalTo: topAnchor),
             tableView.leadingAnchor.constraint(equalTo: safeAreaLayoutGuide.leadingAnchor),
             tableView.trailingAnchor.constraint(equalTo: safeAreaLayoutGuide.trailingAnchor),
-            tableView.bottomAnchor.constraint(equalTo: bottomAnchor)
+            tableView.bottomAnchor.constraint(equalTo: bottomAnchor),
+
+            searchBottomButton.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -20),
+            searchBottomButton.bottomAnchor.constraint(equalTo: safeAreaLayoutGuide.bottomAnchor, constant: -42),
+            searchBottomButton.widthAnchor.constraint(equalToConstant: 60),
+            searchBottomButton.heightAnchor.constraint(equalToConstant: 60)
         ])
     }
 
@@ -126,19 +169,13 @@ final class PhysiotherapistListView: UIView {
         locationIcon.tintColor = UIColor(hex: "1E6EF7")
 
         // Search bar
-        searchBar.searchBarStyle = .minimal
-        searchBar.placeholder = "name, neck, back.."
-
-        // REMOVE SYSTEM BACKGROUND (VERY IMPORTANT)
-        searchBar.setBackgroundImage(UIImage(), for: .any, barMetrics: .default)
-        searchBar.backgroundColor = .clear
+        NativeUIStyle.styleSearchBar(searchBar, placeholder: "name, neck, back...")
+        searchBar.isHidden = true
 
         // CUSTOMIZE INNER TEXT FIELD
         let textField = searchBar.searchTextField
-        textField.backgroundColor = .white
-        textField.layer.borderWidth = 1
-        textField.layer.borderColor = UIColor(hex: "D4E3FE").cgColor
-        textField.layer.cornerRadius = 12
+        textField.layer.borderWidth = 0
+        textField.layer.cornerRadius = 20
         textField.clipsToBounds = true
 
         textField.attributedPlaceholder = NSAttributedString(
@@ -148,11 +185,6 @@ final class PhysiotherapistListView: UIView {
 
         // Hugging priority
         searchBar.setContentHuggingPriority(.defaultLow, for: .horizontal)
-        filterButton.setContentHuggingPriority(.required, for: .horizontal)
-
-        // Filter button
-        filterButton.setImage(UIImage(systemName: "slider.horizontal.3"), for: .normal)
-        filterButton.tintColor = UIColor(hex: "1E6EF7")
 
         // Pills style
         [datePill, timePill].forEach {
@@ -167,7 +199,7 @@ final class PhysiotherapistListView: UIView {
         timePill.setTitle("10:35 AM", for: .normal)
 
         [locationIcon, cityLabel,
-         searchBar, filterButton,
+         searchBar,
          selectDateLabel,
          datePill, timePill].forEach {
             headerContentView.addSubview($0)
@@ -185,19 +217,12 @@ final class PhysiotherapistListView: UIView {
             cityLabel.leadingAnchor.constraint(equalTo: locationIcon.trailingAnchor, constant: 6),
 
             // Search bar
-            searchBar.topAnchor.constraint(equalTo: locationIcon.bottomAnchor, constant: 12),
+            searchBar.topAnchor.constraint(equalTo: locationIcon.bottomAnchor, constant: 10),
             searchBar.leadingAnchor.constraint(equalTo: headerContentView.leadingAnchor, constant: 16),
-            searchBar.heightAnchor.constraint(equalToConstant: 44),
-
-            // Filter button
-            filterButton.centerYAnchor.constraint(equalTo: searchBar.centerYAnchor),
-            filterButton.leadingAnchor.constraint(equalTo: searchBar.trailingAnchor, constant: 10),
-            filterButton.trailingAnchor.constraint(equalTo: headerContentView.trailingAnchor, constant: -16),
-            filterButton.widthAnchor.constraint(equalToConstant: 32),
-            filterButton.heightAnchor.constraint(equalToConstant: 32),
+            searchBar.trailingAnchor.constraint(equalTo: headerContentView.trailingAnchor, constant: -16),
 
             // Select date label
-            selectDateLabel.topAnchor.constraint(equalTo: searchBar.bottomAnchor, constant: 16),
+            selectDateLabel.topAnchor.constraint(equalTo: searchBar.bottomAnchor, constant: 12),
             selectDateLabel.leadingAnchor.constraint(equalTo: headerContentView.leadingAnchor, constant: 16),
 
             // Date / Time pills
@@ -210,6 +235,8 @@ final class PhysiotherapistListView: UIView {
             timePill.heightAnchor.constraint(equalToConstant: 30),
             timePill.bottomAnchor.constraint(equalTo: headerContentView.bottomAnchor, constant: -16)
         ])
+        searchHeightConstraint = searchBar.heightAnchor.constraint(equalToConstant: 0)
+        searchHeightConstraint?.isActive = true
     }
 
     // Resize header for AutoLayout
@@ -232,5 +259,30 @@ final class PhysiotherapistListView: UIView {
 
     func setTimeText(_ text: String) {
         timePill.setTitle(text, for: .normal)
+    }
+
+    func useNativeNavigationChrome() {
+        headerContainer.isHidden = true
+        headerHeightConstraint?.constant = 0
+    }
+
+    func toggleSearchVisibility() {
+        setSearchVisible(!isSearchVisible)
+    }
+
+    func setSearchVisible(_ visible: Bool) {
+        isSearchVisible = visible
+        searchBar.isHidden = !visible
+        searchHeightConstraint?.constant = visible ? 44 : 0
+        if visible {
+            searchBar.becomeFirstResponder()
+        } else {
+            searchBar.resignFirstResponder()
+        }
+        layoutHeaderIfNeeded()
+    }
+
+    var tableHeaderContentHeight: CGFloat {
+        headerContentView.frame.height
     }
 }

@@ -601,7 +601,7 @@ final class IconTextField: UIView {
 
         container.translatesAutoresizingMaskIntoConstraints = false
         container.backgroundColor = UIColor(hex: "F6F7FB")
-        container.layer.cornerRadius = 14
+        container.layer.cornerRadius = 22
         container.layer.borderWidth = 1
         container.layer.borderColor = UIColor.black.withAlphaComponent(0.08).cgColor
 

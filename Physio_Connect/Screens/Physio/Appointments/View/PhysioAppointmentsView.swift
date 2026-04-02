@@ -54,6 +54,7 @@ final class PhysioAppointmentsView: UIView {
     let searchBar = UISearchBar()
     let segmentControl = UISegmentedControl(items: ["All", "Upcoming", "Completed"])
     let tableView = UITableView(frame: .zero, style: .plain)
+    private let emptyStateView = NativeEmptyStateView()
 
     override init(frame: CGRect) {
         super.init(frame: frame)
@@ -66,8 +67,7 @@ final class PhysioAppointmentsView: UIView {
         backgroundColor = UIColor(hex: "E6F1FF")
 
         searchBar.translatesAutoresizingMaskIntoConstraints = false
-        searchBar.searchBarStyle = .minimal
-        searchBar.placeholder = "Search patients or sessions..."
+        NativeUIStyle.styleSearchBar(searchBar, placeholder: "Search patients or sessions...")
 
         segmentControl.translatesAutoresizingMaskIntoConstraints = false
         segmentControl.selectedSegmentIndex = 0
@@ -80,6 +80,14 @@ final class PhysioAppointmentsView: UIView {
         tableView.separatorStyle = .none
         tableView.showsVerticalScrollIndicator = false
         tableView.register(PhysioAppointmentCell.self, forCellReuseIdentifier: "PhysioAppointmentCell")
+        emptyStateView.configure(
+            icon: "calendar.badge.exclamationmark",
+            title: "No Appointments",
+            message: "New patient bookings will appear here."
+        )
+        emptyStateView.frame = CGRect(x: 0, y: 0, width: 0, height: 220)
+        tableView.backgroundView = emptyStateView
+        tableView.backgroundView?.isHidden = true
 
         addSubview(searchBar)
         addSubview(segmentControl)
@@ -100,6 +108,11 @@ final class PhysioAppointmentsView: UIView {
             tableView.trailingAnchor.constraint(equalTo: trailingAnchor),
             tableView.bottomAnchor.constraint(equalTo: bottomAnchor)
         ])
+    }
+
+    func showEmptyState(_ show: Bool, title: String, message: String) {
+        emptyStateView.configure(icon: "calendar.badge.exclamationmark", title: title, message: message)
+        tableView.backgroundView?.isHidden = !show
     }
 }
 
@@ -134,7 +147,7 @@ final class PhysioAppointmentCell: UITableViewCell {
 
         card.translatesAutoresizingMaskIntoConstraints = false
         card.backgroundColor = .white
-        card.layer.cornerRadius = 16
+        card.layer.cornerRadius = 22
         card.layer.shadowColor = UIColor.black.cgColor
         card.layer.shadowOpacity = 0.06
         card.layer.shadowRadius = 8
