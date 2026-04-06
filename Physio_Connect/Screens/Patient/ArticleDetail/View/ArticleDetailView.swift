@@ -6,6 +6,7 @@
 //
 
 import UIKit
+import WebKit
 
 final class ArticleDetailView: UIView {
 
@@ -23,6 +24,8 @@ final class ArticleDetailView: UIView {
     private let articleTitleLabel = UILabel()
     private let summaryLabel = UILabel()
     private let bodyLabel = UILabel()
+    let webView = WKWebView(frame: .zero)
+    let loadingIndicator = UIActivityIndicatorView(style: .large)
 
     override init(frame: CGRect) {
         super.init(frame: frame)
@@ -44,6 +47,7 @@ final class ArticleDetailView: UIView {
     }
 
     func configure(with article: ArticleRow) {
+        showTextContent()
         titleLabel.text = "Read Article"
         articleTitleLabel.text = article.title
         summaryLabel.text = article.summary
@@ -78,6 +82,24 @@ final class ArticleDetailView: UIView {
         preferredBodyText(for: article)
     }
 
+    func showTextContent() {
+        scrollView.isHidden = false
+        webView.isHidden = true
+        loadingIndicator.stopAnimating()
+    }
+
+    func showWebContentLoading() {
+        scrollView.isHidden = true
+        webView.isHidden = false
+        loadingIndicator.startAnimating()
+    }
+
+    func showWebContentLoaded() {
+        scrollView.isHidden = true
+        webView.isHidden = false
+        loadingIndicator.stopAnimating()
+    }
+
     private func build() {
         topBar.translatesAutoresizingMaskIntoConstraints = false
 
@@ -98,8 +120,18 @@ final class ArticleDetailView: UIView {
 
         scrollView.translatesAutoresizingMaskIntoConstraints = false
         scrollView.backgroundColor = UIColor(hex: "EAF2FF")
+        scrollView.contentInsetAdjustmentBehavior = .always
         contentView.translatesAutoresizingMaskIntoConstraints = false
         contentView.backgroundColor = .clear
+
+        webView.translatesAutoresizingMaskIntoConstraints = false
+        webView.isHidden = true
+        webView.backgroundColor = UIColor(hex: "EAF2FF")
+        webView.scrollView.contentInsetAdjustmentBehavior = .never
+
+        loadingIndicator.translatesAutoresizingMaskIntoConstraints = false
+        loadingIndicator.hidesWhenStopped = true
+        loadingIndicator.color = UIColor(hex: "1E6EF7")
 
         contentCard.translatesAutoresizingMaskIntoConstraints = false
         contentCard.backgroundColor = .white
@@ -146,6 +178,8 @@ final class ArticleDetailView: UIView {
         topBar.addSubview(shareButton)
 
         addSubview(scrollView)
+        addSubview(webView)
+        addSubview(loadingIndicator)
         scrollView.addSubview(contentView)
 
         contentView.addSubview(contentCard)
@@ -180,11 +214,19 @@ final class ArticleDetailView: UIView {
             scrollView.trailingAnchor.constraint(equalTo: trailingAnchor),
             scrollView.bottomAnchor.constraint(equalTo: bottomAnchor),
 
-            contentView.topAnchor.constraint(equalTo: scrollView.topAnchor),
-            contentView.leadingAnchor.constraint(equalTo: scrollView.leadingAnchor),
-            contentView.trailingAnchor.constraint(equalTo: scrollView.trailingAnchor),
-            contentView.bottomAnchor.constraint(equalTo: scrollView.bottomAnchor),
-            contentView.widthAnchor.constraint(equalTo: scrollView.widthAnchor),
+            webView.topAnchor.constraint(equalTo: topBar.bottomAnchor, constant: 10),
+            webView.leadingAnchor.constraint(equalTo: leadingAnchor),
+            webView.trailingAnchor.constraint(equalTo: trailingAnchor),
+            webView.bottomAnchor.constraint(equalTo: bottomAnchor),
+
+            loadingIndicator.centerXAnchor.constraint(equalTo: webView.centerXAnchor),
+            loadingIndicator.centerYAnchor.constraint(equalTo: webView.centerYAnchor),
+
+            contentView.topAnchor.constraint(equalTo: scrollView.contentLayoutGuide.topAnchor),
+            contentView.leadingAnchor.constraint(equalTo: scrollView.contentLayoutGuide.leadingAnchor),
+            contentView.trailingAnchor.constraint(equalTo: scrollView.contentLayoutGuide.trailingAnchor),
+            contentView.bottomAnchor.constraint(equalTo: scrollView.contentLayoutGuide.bottomAnchor),
+            contentView.widthAnchor.constraint(equalTo: scrollView.frameLayoutGuide.widthAnchor),
 
             contentCard.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 12),
             contentCard.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 16),
