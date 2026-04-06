@@ -6,8 +6,9 @@
 //
 
 import UIKit
+import WebKit
 
-final class ArticleDetailViewController: UIViewController {
+final class ArticleDetailViewController: UIViewController, WKNavigationDelegate {
 
     private let detailView = ArticleDetailView()
     private var article: ArticleRow
@@ -28,7 +29,8 @@ final class ArticleDetailViewController: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         navigationController?.setNavigationBarHidden(true, animated: false)
-        detailView.configure(with: article)
+        detailView.webView.navigationDelegate = self
+        renderArticle()
         detailView.backButton.addTarget(self, action: #selector(backTapped), for: .touchUpInside)
         detailView.shareButton.addTarget(self, action: #selector(shareTapped), for: .touchUpInside)
     }
@@ -145,12 +147,60 @@ final class ArticleDetailViewController: UIViewController {
             let refreshed = try await model.fetchArticle(id: article.id)
             await MainActor.run {
                 self.article = refreshed
-                self.detailView.configure(with: refreshed)
+                self.renderArticle()
                 self.onArticleUpdated?(refreshed)
             }
         } catch {
             await MainActor.run { self.showToast("Views Error", error.localizedDescription) }
         }
+    }
+
+    private func renderArticle() {
+        detailView.configure(with: article)
+
+        guard shouldLoadFullWebArticle(for: article),
+              let url = preferredArticleURL(for: article)
+        else {
+            detailView.showTextContent()
+            return
+        }
+
+        detailView.showWebContentLoading()
+        let request = URLRequest(url: url, cachePolicy: .returnCacheDataElseLoad, timeoutInterval: 30)
+        detailView.webView.load(request)
+    }
+
+    private func shouldLoadFullWebArticle(for article: ArticleRow) -> Bool {
+        let contentLength = article.content?
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+            .count ?? 0
+        return contentLength < 900 && preferredArticleURL(for: article) != nil
+    }
+
+    private func preferredArticleURL(for article: ArticleRow) -> URL? {
+        let candidates = [article.url, article.source_url]
+        for candidate in candidates {
+            guard let raw = candidate?.trimmingCharacters(in: .whitespacesAndNewlines),
+                  !raw.isEmpty,
+                  let url = URL(string: raw),
+                  let scheme = url.scheme?.lowercased(),
+                  scheme == "http" || scheme == "https"
+            else { continue }
+            return url
+        }
+        return nil
+    }
+
+    func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
+        detailView.showWebContentLoaded()
+    }
+
+    func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: Error) {
+        detailView.showTextContent()
+    }
+
+    func webView(_ webView: WKWebView, didFailProvisionalNavigation navigation: WKNavigation!, withError error: Error) {
+        detailView.showTextContent()
     }
 
     private func showToast(_ title: String, _ message: String) {
